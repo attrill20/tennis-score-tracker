@@ -24,6 +24,9 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <Link href="/profile" className="hover:text-green-300 transition-colors">
               Profile
             </Link>
+            <Link href="/contact" className="hover:text-green-300 transition-colors">
+              Contact
+            </Link>
             {isAdmin && (
               <div className="relative group">
                 <button className="hover:text-green-300 transition-colors">Admin ▾</button>
