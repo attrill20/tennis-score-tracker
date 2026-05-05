@@ -156,6 +156,8 @@ A web app for Queen's Park Tennis Club (QPTC) to manage singles leagues, track s
 ---
 
 ## Stretch Features (post-MVP)
+- [ ] Profile pictures (upload photo; default to first-letter avatar in a circle)
+- [ ] Honours on profile page (league winner / runner-up badges by season/year)
 - [ ] In-app messaging between members
 - [ ] Matchmaking: players post availability for friendly games
 - [ ] Strength rating per player based on H2H results

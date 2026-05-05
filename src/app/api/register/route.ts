@@ -3,9 +3,9 @@ import bcrypt from 'bcryptjs';
 import sql from '@/lib/db';
 
 export async function POST(req: NextRequest) {
-  const { email, password, fullName } = await req.json();
+  const { email, password, title, firstName, lastName } = await req.json();
 
-  if (!email || !password || !fullName) {
+  if (!email || !password || !firstName || !lastName) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
   }
 
@@ -19,10 +19,11 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
+  const fullName = [title, firstName, lastName].filter(Boolean).join(' ');
 
   await sql`
-    INSERT INTO profiles (email, full_name, password_hash, role)
-    VALUES (${email}, ${fullName}, ${passwordHash}, 'member')
+    INSERT INTO profiles (email, full_name, title, first_name, last_name, password_hash, role)
+    VALUES (${email}, ${fullName}, ${title || null}, ${firstName}, ${lastName}, ${passwordHash}, 'member')
   `;
 
   return NextResponse.json({ success: true }, { status: 201 });
