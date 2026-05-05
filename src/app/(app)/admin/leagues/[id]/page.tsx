@@ -38,7 +38,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
     <div className="space-y-8 max-w-xl">
       <div>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{league.name as string}</h1>
-        <p className="text-sm text-gray-400">Admin — League management</p>
+        <p className="text-sm text-gray-400">Admin - League management</p>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">

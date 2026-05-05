@@ -33,7 +33,7 @@ export default async function AdminDisputesPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Admin — Disputes</h1>
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Admin - Disputes</h1>
         <p className="text-sm text-gray-400">{open.length} open dispute{open.length !== 1 ? 's' : ''}</p>
       </div>
 
