@@ -183,7 +183,33 @@ SUPABASE_SERVICE_ROLE_KEY=    # server-side only, never expose to client
 npm run dev        # localhost:3000
 npm run build      # production build
 npm run lint       # ESLint
+npm test           # run all tests
+npm run test:watch # run tests in watch mode
 ```
+
+---
+
+## Testing
+
+### Setup
+- **Framework:** Jest 29 + React Testing Library
+- **Config:** `jest.config.js` (CommonJS, async function) — uses `next/jest` base config spread into a `projects` array
+- **Setup file:** `jest.setup.js` — loads `@testing-library/jest-dom`
+- **Two test environments:**
+  - `components` project → `jsdom`, matches `**/__tests__/components/**/*.test.tsx`
+  - `api` project → `node`, matches `**/__tests__/api/**/*.test.ts`
+- **Note:** Must use Jest 29, not 30 — Jest 30 is incompatible with `next/jest`
+
+### Existing tests (all passing)
+| File | Tests |
+|---|---|
+| `__tests__/components/login.test.tsx` | Renders fields, calls signIn, redirects on success, shows error on failure, disables button while loading |
+| `__tests__/components/create-league.test.tsx` | Renders fields, submits correct data to API, shows error on API failure, refreshes page on success |
+
+### Rules
+- **Run `npm test` before every commit** and confirm all tests pass before proceeding.
+- **When a new feature is built**, prompt James to write tests covering it before moving on. Suggest specific test cases based on the feature's behaviour.
+- Labels in forms **must** have `htmlFor` matching the input's `id` — required for both accessibility and `getByLabelText` in tests.
 
 ---
 
