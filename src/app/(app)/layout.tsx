@@ -1,5 +1,6 @@
 import { auth, signOut } from '@/auth';
 import Link from 'next/link';
+import AdminDropdown from './AdminDropdown';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -28,16 +29,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Contact
             </Link>
             {isAdmin && (
-              <div className="relative group">
-                <button className="hover:text-green-300 transition-colors">Admin ▾</button>
-                <div className="absolute right-0 top-6 hidden group-hover:flex flex-col bg-green-900 border border-green-700 rounded-lg overflow-hidden min-w-36 z-10 shadow-lg">
-                  <Link href="/admin/leagues" className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Leagues</Link>
-                  <Link href="/admin/disputes" className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Disputes</Link>
-                  {session?.user?.role === 'super_admin' && (
-                    <Link href="/admin/users" className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Users</Link>
-                  )}
-                </div>
-              </div>
+              <AdminDropdown isSuperAdmin={session?.user?.role === 'super_admin'} />
             )}
             <form
               action={async () => {
