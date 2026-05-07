@@ -9,6 +9,10 @@ export default function CreateLeagueForm() {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [status, setStatus] = useState<'upcoming' | 'active'>('upcoming');
+  const [maxPlayers, setMaxPlayers] = useState(8);
+  const [scoringMethod, setScoringMethod] = useState('best_of_3_tiebreak');
+  const [numPromoted, setNumPromoted] = useState(2);
+  const [numRelegated, setNumRelegated] = useState(2);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +24,7 @@ export default function CreateLeagueForm() {
     const res = await fetch('/api/admin/leagues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status }),
+      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated }),
     });
 
     const data = await res.json();
@@ -74,6 +78,66 @@ export default function CreateLeagueForm() {
             required
             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="scoringMethod" className="block text-sm font-medium text-gray-700 mb-1">Scoring method</label>
+        <select
+          id="scoringMethod"
+          value={scoringMethod}
+          onChange={(e) => setScoringMethod(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
+          <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
+          <option value="best_of_3_tiebreak">Best of 3 sets (allow tiebreaker)</option>
+          <option value="best_of_3_no_tiebreak">Best of 3 sets (no tiebreaker)</option>
+          <option value="best_of_5_tiebreak">Best of 5 sets (allow tiebreaker)</option>
+          <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">Number of players</label>
+        <select
+          id="maxPlayers"
+          value={maxPlayers}
+          onChange={(e) => setMaxPlayers(Number(e.target.value))}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          {Array.from({ length: 11 }, (_, i) => i + 2).map((n) => (
+            <option key={n} value={n}>{n}</option>
+          ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label htmlFor="numPromoted" className="block text-sm font-medium text-gray-700 mb-1">Number promoted</label>
+          <select
+            id="numPromoted"
+            value={numPromoted}
+            onChange={(e) => setNumPromoted(Number(e.target.value))}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="numRelegated" className="block text-sm font-medium text-gray-700 mb-1">Number relegated</label>
+          <select
+            id="numRelegated"
+            value={numRelegated}
+            onChange={(e) => setNumRelegated(Number(e.target.value))}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            {[0, 1, 2, 3, 4, 5].map((n) => (
+              <option key={n} value={n}>{n}</option>
+            ))}
+          </select>
         </div>
       </div>
 

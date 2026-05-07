@@ -8,15 +8,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { name, startDate, endDate, status } = await req.json();
+  const { name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated } = await req.json();
 
   if (!name || !startDate || !endDate) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
   }
 
+  const playerCount = Number(maxPlayers);
+  if (playerCount < 2 || playerCount > 12 || !Number.isInteger(playerCount)) {
+    return NextResponse.json({ error: 'Max players must be between 2 and 12' }, { status: 400 });
+  }
+
+  const validScoringMethods = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
+  if (!validScoringMethods.includes(scoringMethod)) {
+    return NextResponse.json({ error: 'Invalid scoring method' }, { status: 400 });
+  }
+
+  const promoted = Number(numPromoted ?? 2);
+  const relegated = Number(numRelegated ?? 2);
+
   await sql`
-    INSERT INTO leagues (name, season_start, season_end, status, created_by)
-    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? 'upcoming'}, ${session.user.id})
+    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, created_by)
+    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? 'upcoming'}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${session.user.id})
   `;
 
   return NextResponse.json({ success: true }, { status: 201 });
