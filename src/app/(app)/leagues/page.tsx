@@ -40,7 +40,7 @@ export default async function LeaguesPage() {
               <p className="text-xs text-gray-400 mt-1">
                 {league.player_count as string} players ·{' '}
                 {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                {' – '}
+                {' - '}
                 {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
               </p>
             </Link>

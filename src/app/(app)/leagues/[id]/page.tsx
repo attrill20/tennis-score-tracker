@@ -58,7 +58,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       </div>
       <p className="text-sm text-gray-400 mb-6">
         {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
-        {' – '}
+        {' - '}
         {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
       </p>
 
@@ -127,7 +127,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       {match.player1_name as string}
                     </span>
                     <span className="font-bold text-gray-800">
-                      {match.score_player1 as number} – {match.score_player2 as number}
+                      {match.score_player1 as number} - {match.score_player2 as number}
                     </span>
                     <span className={`font-medium ${(match.score_player2 as number) > (match.score_player1 as number) ? 'text-gray-800' : 'text-gray-400'}`}>
                       {match.player2_name as string}

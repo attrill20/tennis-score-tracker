@@ -8,13 +8,23 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params;
 
-  // Return all players in the league except the requesting user
+  // Return league players the requesting user hasn't played yet
   const players = await sql`
     SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name
     FROM profiles p
     JOIN league_players lp ON lp.player_id = p.id
     WHERE lp.league_id = ${id}
     AND p.id != ${session.user.id}
+    AND NOT EXISTS (
+      SELECT 1 FROM matches m
+      WHERE m.league_id = ${id}
+      AND m.status != 'disputed'
+      AND (
+        (m.player1_id = ${session.user.id} AND m.player2_id = p.id)
+        OR
+        (m.player2_id = ${session.user.id} AND m.player1_id = p.id)
+      )
+    )
     ORDER BY p.last_name, p.first_name
   `;
 

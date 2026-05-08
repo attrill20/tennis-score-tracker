@@ -52,7 +52,7 @@ export default function CreateLeagueForm() {
           onChange={(e) => setName(e.target.value)}
           required
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-          placeholder="e.g. Division 1 — Spring 2026"
+          placeholder="e.g. Division 1 - Spring 2026"
         />
       </div>
 

@@ -11,8 +11,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav className="bg-green-900 text-white px-4 py-3">
         <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/qptc-logo.jpg" alt="QPTC" className="w-9 h-9 rounded-full object-cover" />
+            <Link href="/dashboard">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/qptc-logo.jpg" alt="QPTC" className="w-9 h-9 rounded-full object-cover" />
+            </Link>
             <Link href="/dashboard" className="font-semibold text-sm">
               Score Tracker
             </Link>

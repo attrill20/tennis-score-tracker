@@ -48,7 +48,7 @@ export default async function AdminDisputesPage() {
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
                   <p className="text-sm font-medium text-gray-800">
-                    {d.player1_name as string} <span className="font-bold">{d.score_player1 as number}–{d.score_player2 as number}</span> {d.player2_name as string}
+                    {d.player1_name as string} <span className="font-bold">{d.score_player1 as number}-{d.score_player2 as number}</span> {d.player2_name as string}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
                     {d.league_name as string} · {new Date(d.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
@@ -62,7 +62,7 @@ export default async function AdminDisputesPage() {
               <DisputeResolveForm
                 disputeId={d.id as string}
                 matchId={d.match_id as string}
-                currentScore={`${d.score_player1}–${d.score_player2}`}
+                currentScore={`${d.score_player1}-${d.score_player2}`}
                 player1Name={d.player1_name as string}
                 player2Name={d.player2_name as string}
               />

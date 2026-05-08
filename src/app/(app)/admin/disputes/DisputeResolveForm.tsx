@@ -84,7 +84,7 @@ export default function DisputeResolveForm({
               onChange={(e) => setP1Score(e.target.value)}
               className="w-14 px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
             />
-            <span className="text-gray-400">–</span>
+            <span className="text-gray-400">-</span>
             <input
               type="number"
               min="0"

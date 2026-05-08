@@ -82,7 +82,7 @@ export default function ProfileForm({
             onChange={(e) => setTitle(e.target.value)}
             className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
-            {TITLES.map((t) => <option key={t} value={t}>{t || '—'}</option>)}
+            {TITLES.map((t) => <option key={t} value={t}>{t || '-'}</option>)}
           </select>
         </div>
         <div>

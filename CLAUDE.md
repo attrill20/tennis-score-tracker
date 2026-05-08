@@ -217,5 +217,6 @@ npm run test:watch # run tests in watch mode
 
 - All auth flows use Supabase's built-in email/password provider
 - RLS policies enforce that members can only see/submit their own match data — admins bypass via service role where needed
-- Score disputes do NOT block the score from counting — they flag it for review
+- Score disputes do NOT block the score from counting - they flag it for review
 - Promotion/relegation is calculated at season end but admins can override before it's finalised
+- Never use em dashes (—) or en dashes (–) anywhere in the UI — always use regular hyphens (-)
