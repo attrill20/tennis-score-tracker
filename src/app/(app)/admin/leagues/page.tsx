@@ -66,7 +66,7 @@ export default async function AdminLeaguesPage() {
                       league.status === 'active' ? 'bg-green-100 text-green-700'
                       : league.status === 'upcoming' ? 'bg-yellow-100 text-yellow-700'
                       : 'bg-gray-100 text-gray-500'
-                    }`}>{league.status as string}</span>
+                    }`}>{(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-400">{playerCount}/{maxPlayers} players</span>

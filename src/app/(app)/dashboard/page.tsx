@@ -110,7 +110,7 @@ export default async function DashboardPage() {
                         ? 'bg-yellow-100 text-yellow-700'
                         : 'bg-gray-100 text-gray-500'
                     }`}>
-                      {league.status as string}
+                      {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
                     </span>
                   </div>
                 </div>

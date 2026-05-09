@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const { name, seasonStart, seasonEnd } = await req.json();
+  const { name, seasonStart, seasonEnd, isPublic, description, status } = await req.json();
 
   if (name !== undefined) {
     if (!name.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -24,6 +24,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 });
     }
     await sql`UPDATE leagues SET season_start = ${seasonStart}, season_end = ${seasonEnd} WHERE id = ${id}`;
+  }
+
+  if (isPublic !== undefined) {
+    await sql`UPDATE leagues SET is_public = ${isPublic} WHERE id = ${id}`;
+  }
+
+  if (status !== undefined) {
+    const valid = ['upcoming', 'active', 'completed'];
+    if (!valid.includes(status)) return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+    await sql`UPDATE leagues SET status = ${status} WHERE id = ${id}`;
+  }
+
+  if (description !== undefined) {
+    await sql`UPDATE leagues SET description = ${description || null} WHERE id = ${id}`;
   }
 
   return NextResponse.json({ ok: true });

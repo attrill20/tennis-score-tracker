@@ -1,11 +1,19 @@
+import { auth } from '@/auth';
 import sql from '@/lib/db';
 import Link from 'next/link';
 
 export default async function LeaguesPage() {
+  const session = await auth();
+  const userId = session!.user.id;
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin';
+
   const leagues = await sql`
-    SELECT id, name, status, season_start, season_end,
+    SELECT id, name, status, season_start, season_end, is_public,
       (SELECT COUNT(*) FROM league_players WHERE league_id = leagues.id) AS player_count
     FROM leagues
+    WHERE is_public = true
+      OR ${isAdmin}
+      OR EXISTS (SELECT 1 FROM league_players WHERE league_id = leagues.id AND player_id = ${userId})
     ORDER BY season_start DESC
   `;
 
@@ -35,15 +43,20 @@ export default async function LeaguesPage() {
                   </p>
                 </div>
                 <div className="flex flex-col items-end gap-1">
-                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                    league.status === 'active'
-                      ? 'bg-green-100 text-green-700'
-                      : league.status === 'upcoming'
-                      ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-gray-100 text-gray-500'
-                  }`}>
-                    {league.status as string}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {!league.is_public && (
+                      <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>
+                    )}
+                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                      league.status === 'active'
+                        ? 'bg-green-100 text-green-700'
+                        : league.status === 'upcoming'
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
+                    </span>
+                  </div>
                   <span className="text-xs text-gray-400">{league.player_count as string} players</span>
                 </div>
               </div>

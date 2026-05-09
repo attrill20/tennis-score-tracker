@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated } = await req.json();
+  const { name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, isPublic, description } = await req.json();
 
   if (!name || !startDate || !endDate) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -28,8 +28,8 @@ export async function POST(req: NextRequest) {
   const relegated = Number(numRelegated ?? 2);
 
   await sql`
-    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, created_by)
-    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? 'upcoming'}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${session.user.id})
+    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, created_by, is_public, description)
+    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? 'upcoming'}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${session.user.id}, ${isPublic !== false}, ${description ?? null})
   `;
 
   return NextResponse.json({ success: true }, { status: 201 });

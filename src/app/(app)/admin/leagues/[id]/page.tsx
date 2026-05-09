@@ -1,11 +1,10 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
+import Link from 'next/link';
 import { calculateStandings } from '@/lib/league';
 import PromotionForm from './PromotionForm';
-import LeagueStatusForm from './LeagueStatusForm';
-import LeagueDatesForm from './LeagueDatesForm';
-import LeagueNameForm from './LeagueNameForm';
+import EditLeagueForm from './EditLeagueForm';
 import DeleteLeagueButton from './DeleteLeagueButton';
 
 export default async function AdminLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -41,27 +40,21 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
     <div className="space-y-8 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{league.name as string}</h1>
-        <p className="text-sm text-gray-400">Admin - League management</p>
+        <p className="text-sm text-gray-400 mb-2">Admin - League management</p>
+        <Link href="/admin/leagues" className="text-sm text-green-700 hover:underline">
+          ← Back to leagues
+        </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-base font-semibold text-gray-700 mb-4">League name</h2>
-        <LeagueNameForm leagueId={id} currentName={league.name as string} />
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-base font-semibold text-gray-700 mb-4">League status</h2>
-        <LeagueStatusForm leagueId={id} currentStatus={league.status as string} />
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-base font-semibold text-gray-700 mb-4">Season dates</h2>
-        <LeagueDatesForm
-          leagueId={id}
-          seasonStart={new Date(league.season_start as string).toISOString().split('T')[0]}
-          seasonEnd={new Date(league.season_end as string).toISOString().split('T')[0]}
-        />
-      </div>
+      <EditLeagueForm
+        leagueId={id}
+        currentName={league.name as string}
+        currentDescription={(league.description as string) ?? ''}
+        currentStatus={league.status as string}
+        currentSeasonStart={new Date(league.season_start as string).toISOString().split('T')[0]}
+        currentSeasonEnd={new Date(league.season_end as string).toISOString().split('T')[0]}
+        currentIsPublic={league.is_public as boolean ?? true}
+      />
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-base font-semibold text-gray-700 mb-1">Promotion & relegation</h2>

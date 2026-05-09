@@ -57,17 +57,30 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           : league.status === 'upcoming' ? 'bg-yellow-100 text-yellow-700'
           : 'bg-gray-100 text-gray-500'
         }`}>
-          {league.status as string}
+          {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
         </span>
       </div>
-      <p className="text-sm text-gray-400 mb-6">
+      <p className="text-sm text-gray-400 mb-2">
         {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
         {' - '}
         {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
       </p>
+      {league.description && (
+        <p className="text-sm text-gray-600 mb-6">{league.description as string}</p>
+      )}
 
       {/* League Table */}
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Table</h2>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Table</h2>
+        {isInLeague && league.status === 'active' && (
+          <Link
+            href={`/leagues/${id}/submit`}
+            className="text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
+          >
+            Submit a result
+          </Link>
+        )}
+      </div>
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
         <table className="w-full text-sm">
           <thead>
@@ -81,11 +94,18 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             </tr>
           </thead>
           <tbody>
-            {standings.map((s, i) => (
-              <tr key={s.id} className={`border-t border-gray-100 ${s.id === userId ? 'bg-green-50' : ''}`}>
-                <td className="px-4 py-3 font-medium text-gray-800">
+            {standings.map((s, i) => {
+              const numPromoted = league.num_promoted as number ?? 0;
+              const numRelegated = league.num_relegated as number ?? 0;
+              const total = standings.length;
+              const isPromotion = numPromoted > 0 && i < numPromoted;
+              const isRelegation = numRelegated > 0 && i >= total - numRelegated;
+              const rowClass = isPromotion ? 'bg-green-50' : isRelegation ? 'bg-red-50' : '';
+              return (
+              <tr key={s.id} className={`border-t border-gray-100 ${rowClass}`}>
+                <td className="px-4 py-3 text-gray-800">
                   <span className="text-gray-400 mr-2">{i + 1}</span>
-                  {s.name}
+                  <span className={s.id === userId ? 'font-bold' : 'font-medium'}>{s.name}</span>
                 </td>
                 <td className="text-center px-2 py-3 text-gray-600">{s.played}</td>
                 <td className="text-center px-2 py-3 text-gray-600">{s.won}</td>
@@ -93,23 +113,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                 <td className="text-center px-2 py-3 text-gray-600">{s.setsFor}-{s.setsAgainst}</td>
                 <td className="text-center px-2 py-3 font-semibold text-gray-800">{s.points}</td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
 
       {/* Submit Score */}
-      {isInLeague && league.status === 'active' && (
-        <div className="mb-6">
-          <Link
-            href={`/leagues/${id}/submit`}
-            className="inline-block bg-green-700 hover:bg-green-800 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
-          >
-            Submit a result
-          </Link>
-        </div>
-      )}
-
       {/* Recent Results */}
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Results</h2>
       {matches.length === 0 ? (
@@ -119,56 +129,78 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       ) : (
         <div className="space-y-2">
           {matches.map((match) => {
-            const canDispute =
-              (match.player1_id === userId || match.player2_id === userId) &&
-              match.status === 'confirmed' &&
-              match.submitted_by !== userId;
-            const p1Won = (match.score_player1 as number) > (match.score_player2 as number);
-            const winnerName = p1Won ? match.player1_name as string : match.player2_name as string;
-            const loserName = p1Won ? match.player2_name as string : match.player1_name as string;
-            const winnerScore = p1Won ? match.score_player1 as number : match.score_player2 as number;
-            const loserScore = p1Won ? match.score_player2 as number : match.score_player1 as number;
+            const isPlayer1 = match.player1_id === userId;
+            const isInvolved = match.player1_id === userId || match.player2_id === userId;
+            const submittedByMe = match.submitted_by === userId;
+            const canEdit = submittedByMe && match.status === 'confirmed';
+            const canDispute = isInvolved && match.status === 'confirmed' && !submittedByMe;
             const setScores = match.set_scores as [number, number][] | null;
+
+            // From current user's perspective if involved, otherwise winner first
+            const p1Won = (match.score_player1 as number) > (match.score_player2 as number);
+            const topIsPlayer1 = isInvolved ? isPlayer1 : p1Won;
+            const topName = topIsPlayer1 ? match.player1_name as string : match.player2_name as string;
+            const bottomName = topIsPlayer1 ? match.player2_name as string : match.player1_name as string;
+            const topScore = topIsPlayer1 ? match.score_player1 as number : match.score_player2 as number;
+            const bottomScore = topIsPlayer1 ? match.score_player2 as number : match.score_player1 as number;
+            const topWon = topScore > bottomScore;
+
+            const result = isInvolved ? (topWon ? 'W' : topScore < bottomScore ? 'L' : 'D') : null;
+            const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
+
+            const href = canEdit
+              ? `/leagues/${id}/matches/${match.id as string}/edit`
+              : `/leagues/${id}/matches/${match.id as string}`;
+
             return (
               <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
-                <Link href={`/leagues/${id}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl" />
-                <div className="relative flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-semibold text-gray-800">{winnerName}</span>
-                    <span className="font-bold text-gray-800">{winnerScore}</span>
-                    <span className="text-gray-300">v</span>
-                    <span className="font-bold text-gray-400">{loserScore}</span>
-                    <span className="font-medium text-gray-400">{loserName}</span>
-                    {setScores && setScores.length > 0 && (
-                      <>
-                        <span className="text-xs text-gray-300">|</span>
-                        {setScores.map(([p1, p2], i) => {
-                          const winnerSetScore = p1Won ? p1 : p2;
-                          const loserSetScore = p1Won ? p2 : p1;
-                          return (
-                            <span key={i} className={`text-xs font-medium ${winnerSetScore > loserSetScore ? 'text-gray-700' : 'text-gray-400'}`}>
-                              {winnerSetScore}-{loserSetScore}
-                            </span>
-                          );
-                        })}
-                      </>
-                    )}
+                <Link href={href} className="absolute inset-0 rounded-xl z-10" />
+                <div className="relative flex items-center gap-3">
+                  {result && (
+                    <span className={`text-xs font-bold px-1.5 py-1 rounded shrink-0 self-center ${badgeClass}`}>{result}</span>
+                  )}
+                  <div className="flex-1 min-w-0 text-sm">
+                    <div className="flex items-center">
+                      <span className={`font-medium w-24 shrink-0 truncate ${topWon ? 'text-gray-800' : 'text-gray-400'}`}>{topName}</span>
+                      <div className="flex items-center gap-1.5">
+                        {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
+                          const top = topIsPlayer1 ? p1 : p2;
+                          const bot = topIsPlayer1 ? p2 : p1;
+                          return <span key={i} className={`text-xs font-medium w-6 text-center ${top > bot ? 'text-gray-700' : 'text-gray-400'}`}>{top}</span>;
+                        }) : <span className="text-xs font-medium text-gray-700">{topScore}</span>}
+                      </div>
+                    </div>
+                    <div className="flex items-center mt-0.5">
+                      <span className={`font-medium w-24 shrink-0 truncate ${!topWon ? 'text-gray-800' : 'text-gray-400'}`}>{bottomName}</span>
+                      <div className="flex items-center gap-1.5">
+                        {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
+                          const top = topIsPlayer1 ? p1 : p2;
+                          const bot = topIsPlayer1 ? p2 : p1;
+                          return <span key={i} className={`text-xs font-medium w-6 text-center ${bot > top ? 'text-gray-700' : 'text-gray-400'}`}>{bot}</span>;
+                        }) : <span className="text-xs font-medium text-gray-400">{bottomScore}</span>}
+                      </div>
+                    </div>
                   </div>
-                  <div className="relative flex items-center gap-2 z-10">
-                    {match.status === 'disputed' && (
-                      <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
-                    )}
-                    {match.status === 'overridden' && (
-                      <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
-                    )}
-                    {canDispute && (
-                      <DisputeButton matchId={match.id as string} />
-                    )}
+                  <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+                    <div className="flex items-center gap-2 relative z-10">
+                      {match.status === 'disputed' && (
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
+                      )}
+                      {match.status === 'overridden' && (
+                        <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
+                      )}
+                      {canEdit && (
+                        <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-blue-600 hover:underline">Edit</Link>
+                      )}
+                      {canDispute && (
+                        <div className="relative z-20"><DisputeButton matchId={match.id as string} /></div>
+                      )}
+                    </div>
+                    <span className="text-xs text-gray-400">
+                      {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                    </span>
                   </div>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">
-                  {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
-                </p>
               </div>
             );
           })}

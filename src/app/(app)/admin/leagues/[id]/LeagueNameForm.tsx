@@ -36,7 +36,6 @@ export default function LeagueNameForm({ leagueId, currentName }: { leagueId: st
   return (
     <form onSubmit={handleSubmit} className="flex items-end gap-3">
       <div className="flex-1">
-        <label htmlFor="leagueName" className="block text-sm font-medium text-gray-700 mb-1">League name</label>
         <input
           id="leagueName"
           type="text"

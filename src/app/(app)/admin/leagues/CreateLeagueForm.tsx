@@ -13,6 +13,8 @@ export default function CreateLeagueForm() {
   const [scoringMethod, setScoringMethod] = useState('best_of_3_tiebreak');
   const [numPromoted, setNumPromoted] = useState(2);
   const [numRelegated, setNumRelegated] = useState(2);
+  const [isPublic, setIsPublic] = useState(true);
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -24,7 +26,7 @@ export default function CreateLeagueForm() {
     const res = await fetch('/api/admin/leagues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated }),
+      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, isPublic, description }),
     });
 
     const data = await res.json();
@@ -63,7 +65,14 @@ export default function CreateLeagueForm() {
             id="startDate"
             type="date"
             value={startDate}
-            onChange={(e) => setStartDate(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setStartDate(val);
+              if (val) {
+                const today = new Date().toISOString().split('T')[0];
+                setStatus(val > today ? 'upcoming' : 'active');
+              }
+            }}
             required
             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
@@ -151,6 +160,31 @@ export default function CreateLeagueForm() {
         >
           <option value="upcoming">Upcoming</option>
           <option value="active">Active</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+        <textarea
+          id="description"
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          rows={3}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
+          placeholder="e.g. Summer singles league for intermediate players..."
+        />
+      </div>
+
+      <div>
+        <label htmlFor="visibility" className="block text-sm font-medium text-gray-700 mb-1">Visibility</label>
+        <select
+          id="visibility"
+          value={isPublic ? 'public' : 'private'}
+          onChange={(e) => setIsPublic(e.target.value === 'public')}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="public">Public - visible to all members</option>
+          <option value="private">Private - invited players and admins only</option>
         </select>
       </div>
 
