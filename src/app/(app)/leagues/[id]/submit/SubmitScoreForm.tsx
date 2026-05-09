@@ -58,17 +58,15 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       return;
     }
 
+    const playedSets = sets
+      .filter((s) => s.my !== '' && s.their !== '')
+      .map((s) => [parseInt(s.my), parseInt(s.their)]);
+
     setLoading(true);
     const res = await fetch('/api/matches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        leagueId,
-        opponentId: opponent,
-        myScore: mySetsWon,
-        theirScore: theirSetsWon,
-        playedAt,
-      }),
+      body: JSON.stringify({ leagueId, opponentId: opponent, sets: playedSets, playedAt }),
     });
     const data = await res.json();
     setLoading(false);

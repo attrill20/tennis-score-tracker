@@ -9,26 +9,42 @@ export default async function AdminDisputesPage() {
     redirect('/dashboard');
   }
 
-  const disputes = await sql`
-    SELECT
-      d.id, d.reason, d.status,
-      d.match_id,
-      m.score_player1, m.score_player2, m.played_at, m.league_id,
-      (p1.first_name || ' ' || p1.last_name) AS player1_name,
-      (p2.first_name || ' ' || p2.last_name) AS player2_name,
-      (rb.first_name || ' ' || rb.last_name) AS raised_by_name,
-      l.name AS league_name
-    FROM disputes d
-    JOIN matches m ON m.id = d.match_id
-    JOIN profiles p1 ON p1.id = m.player1_id
-    JOIN profiles p2 ON p2.id = m.player2_id
-    JOIN profiles rb ON rb.id = d.raised_by
-    JOIN leagues l ON l.id = m.league_id
-    ORDER BY d.status ASC, m.played_at DESC
-  `;
-
-  const open = disputes.filter((d) => d.status === 'open');
-  const resolved = disputes.filter((d) => d.status === 'resolved');
+  const [open, resolved] = await Promise.all([
+    sql`
+      SELECT
+        d.id, d.reason, d.status, d.match_id,
+        m.score_player1, m.score_player2, m.played_at, m.league_id,
+        (p1.first_name || ' ' || p1.last_name) AS player1_name,
+        (p2.first_name || ' ' || p2.last_name) AS player2_name,
+        (rb.first_name || ' ' || rb.last_name) AS raised_by_name,
+        l.name AS league_name
+      FROM disputes d
+      JOIN matches m ON m.id = d.match_id
+      JOIN profiles p1 ON p1.id = m.player1_id
+      JOIN profiles p2 ON p2.id = m.player2_id
+      JOIN profiles rb ON rb.id = d.raised_by
+      JOIN leagues l ON l.id = m.league_id
+      WHERE d.status = 'open'
+      ORDER BY m.played_at DESC
+    `,
+    sql`
+      SELECT
+        d.id, d.reason, d.status, d.match_id,
+        m.score_player1, m.score_player2, m.played_at, m.league_id,
+        (p1.first_name || ' ' || p1.last_name) AS player1_name,
+        (p2.first_name || ' ' || p2.last_name) AS player2_name,
+        (rb.first_name || ' ' || rb.last_name) AS raised_by_name,
+        l.name AS league_name
+      FROM disputes d
+      JOIN matches m ON m.id = d.match_id
+      JOIN profiles p1 ON p1.id = m.player1_id
+      JOIN profiles p2 ON p2.id = m.player2_id
+      JOIN profiles rb ON rb.id = d.raised_by
+      JOIN leagues l ON l.id = m.league_id
+      WHERE d.status = 'resolved'
+      ORDER BY m.played_at DESC
+    `,
+  ]);
 
   return (
     <div className="space-y-8">
@@ -51,7 +67,7 @@ export default async function AdminDisputesPage() {
                     {d.player1_name as string} <span className="font-bold">{d.score_player1 as number}-{d.score_player2 as number}</span> {d.player2_name as string}
                   </p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {d.league_name as string} · {new Date(d.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    {d.league_name as string} · {new Date(d.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                   </p>
                 </div>
                 <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full shrink-0">Open</span>

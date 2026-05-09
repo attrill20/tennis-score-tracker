@@ -13,22 +13,26 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const league = leagues[0];
   if (!league) notFound();
 
-  const players = await sql`
-    SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name
-    FROM profiles p
-    JOIN league_players lp ON lp.player_id = p.id
-    WHERE lp.league_id = ${id}
-    ORDER BY p.last_name, p.first_name
-  `;
-
-  const matches = await sql`
-    SELECT m.*, (p1.first_name || ' ' || p1.last_name) AS player1_name, (p2.first_name || ' ' || p2.last_name) AS player2_name
-    FROM matches m
-    JOIN profiles p1 ON p1.id = m.player1_id
-    JOIN profiles p2 ON p2.id = m.player2_id
-    WHERE m.league_id = ${id}
-    ORDER BY m.played_at DESC, m.submitted_at DESC
-  `;
+  const [players, matches] = await Promise.all([
+    sql`
+      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name
+      FROM profiles p
+      JOIN league_players lp ON lp.player_id = p.id
+      WHERE lp.league_id = ${id}
+      ORDER BY p.last_name, p.first_name
+    `,
+    sql`
+      SELECT m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
+             m.set_scores, m.status, m.submitted_by, m.played_at,
+             (p1.first_name || ' ' || p1.last_name) AS player1_name,
+             (p2.first_name || ' ' || p2.last_name) AS player2_name
+      FROM matches m
+      JOIN profiles p1 ON p1.id = m.player1_id
+      JOIN profiles p2 ON p2.id = m.player2_id
+      WHERE m.league_id = ${id}
+      ORDER BY m.played_at DESC, m.submitted_at DESC
+    `,
+  ]);
 
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
@@ -119,21 +123,38 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               (match.player1_id === userId || match.player2_id === userId) &&
               match.status === 'confirmed' &&
               match.submitted_by !== userId;
+            const p1Won = (match.score_player1 as number) > (match.score_player2 as number);
+            const winnerName = p1Won ? match.player1_name as string : match.player2_name as string;
+            const loserName = p1Won ? match.player2_name as string : match.player1_name as string;
+            const winnerScore = p1Won ? match.score_player1 as number : match.score_player2 as number;
+            const loserScore = p1Won ? match.score_player2 as number : match.score_player1 as number;
+            const setScores = match.set_scores as [number, number][] | null;
             return (
-              <div key={match.id as string} className="bg-white rounded-xl border border-gray-200 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className={`font-medium ${(match.score_player1 as number) > (match.score_player2 as number) ? 'text-gray-800' : 'text-gray-400'}`}>
-                      {match.player1_name as string}
-                    </span>
-                    <span className="font-bold text-gray-800">
-                      {match.score_player1 as number} - {match.score_player2 as number}
-                    </span>
-                    <span className={`font-medium ${(match.score_player2 as number) > (match.score_player1 as number) ? 'text-gray-800' : 'text-gray-400'}`}>
-                      {match.player2_name as string}
-                    </span>
+              <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
+                <Link href={`/leagues/${id}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl" />
+                <div className="relative flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-semibold text-gray-800">{winnerName}</span>
+                    <span className="font-bold text-gray-800">{winnerScore}</span>
+                    <span className="text-gray-300">v</span>
+                    <span className="font-bold text-gray-400">{loserScore}</span>
+                    <span className="font-medium text-gray-400">{loserName}</span>
+                    {setScores && setScores.length > 0 && (
+                      <>
+                        <span className="text-xs text-gray-300">|</span>
+                        {setScores.map(([p1, p2], i) => {
+                          const winnerSetScore = p1Won ? p1 : p2;
+                          const loserSetScore = p1Won ? p2 : p1;
+                          return (
+                            <span key={i} className={`text-xs font-medium ${winnerSetScore > loserSetScore ? 'text-gray-700' : 'text-gray-400'}`}>
+                              {winnerSetScore}-{loserSetScore}
+                            </span>
+                          );
+                        })}
+                      </>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="relative flex items-center gap-2 z-10">
                     {match.status === 'disputed' && (
                       <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
                     )}
@@ -146,7 +167,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   </div>
                 </div>
                 <p className="text-xs text-gray-400 mt-1">
-                  {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                 </p>
               </div>
             );

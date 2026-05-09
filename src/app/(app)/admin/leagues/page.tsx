@@ -10,24 +10,22 @@ export default async function AdminLeaguesPage() {
     redirect('/dashboard');
   }
 
-  const leagues = await sql`
-    SELECT
-      l.id,
-      l.name,
-      l.status,
-      l.max_players,
-      COUNT(DISTINCT lp.player_id) AS player_count,
-      COUNT(DISTINCT m.id) AS matches_played
-    FROM leagues l
-    LEFT JOIN league_players lp ON lp.league_id = l.id
-    LEFT JOIN matches m ON m.league_id = l.id
-    GROUP BY l.id, l.name, l.status, l.max_players
-    ORDER BY l.created_at DESC
-  `;
-
-  const members = await sql`
-    SELECT id, (first_name || ' ' || last_name) AS full_name FROM profiles ORDER BY first_name, last_name
-  `;
+  const [leagues, members] = await Promise.all([
+    sql`
+      SELECT
+        l.id, l.name, l.status, l.max_players,
+        COUNT(DISTINCT lp.player_id) AS player_count,
+        COUNT(DISTINCT m.id) AS matches_played
+      FROM leagues l
+      LEFT JOIN league_players lp ON lp.league_id = l.id
+      LEFT JOIN matches m ON m.league_id = l.id
+      GROUP BY l.id, l.name, l.status, l.max_players
+      ORDER BY l.created_at DESC
+    `,
+    sql`
+      SELECT id, (first_name || ' ' || last_name) AS full_name FROM profiles ORDER BY first_name, last_name
+    `,
+  ]);
 
   return (
     <div className="space-y-8">

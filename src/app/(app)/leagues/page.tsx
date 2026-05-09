@@ -25,24 +25,28 @@ export default async function LeaguesPage() {
               href={`/leagues/${league.id}`}
               className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors"
             >
-              <div className="flex items-center justify-between">
-                <span className="font-medium text-gray-800">{league.name as string}</span>
-                <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                  league.status === 'active'
-                    ? 'bg-green-100 text-green-700'
-                    : league.status === 'upcoming'
-                    ? 'bg-yellow-100 text-yellow-700'
-                    : 'bg-gray-100 text-gray-500'
-                }`}>
-                  {league.status as string}
-                </span>
+              <div className="flex items-start justify-between">
+                <div>
+                  <span className="font-medium text-gray-800">{league.name as string}</span>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    {' - '}
+                    {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                  </p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    league.status === 'active'
+                      ? 'bg-green-100 text-green-700'
+                      : league.status === 'upcoming'
+                      ? 'bg-yellow-100 text-yellow-700'
+                      : 'bg-gray-100 text-gray-500'
+                  }`}>
+                    {league.status as string}
+                  </span>
+                  <span className="text-xs text-gray-400">{league.player_count as string} players</span>
+                </div>
               </div>
-              <p className="text-xs text-gray-400 mt-1">
-                {league.player_count as string} players ·{' '}
-                {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                {' - '}
-                {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-              </p>
             </Link>
           ))}
         </div>

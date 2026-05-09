@@ -7,10 +7,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { matchId } = await params;
-  const { myScore, theirScore, playedAt } = await req.json();
+  const { sets, playedAt } = await req.json();
 
-  if (myScore === undefined || theirScore === undefined || !playedAt) {
+  if (!sets?.length || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+  }
+
+  let myScore = 0, theirScore = 0;
+  for (const [p1, p2] of sets) {
+    if (p1 > p2) myScore++;
+    else if (p2 > p1) theirScore++;
   }
 
   if (myScore === theirScore) {
@@ -26,7 +32,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
   await sql`
     UPDATE matches
-    SET score_player1 = ${myScore}, score_player2 = ${theirScore}, played_at = ${playedAt}
+    SET score_player1 = ${myScore}, score_player2 = ${theirScore},
+        set_scores = ${JSON.stringify(sets)}, played_at = ${playedAt}
     WHERE id = ${matchId}
   `;
 

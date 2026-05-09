@@ -33,7 +33,7 @@ export default function ContactPage() {
 
   if (success) {
     return (
-      <div className="max-w-md">
+      <div className="max-w-md sm:max-w-2xl mx-auto">
         <div className="bg-white rounded-xl border border-green-200 p-8 text-center">
           <div className="text-4xl mb-3">✓</div>
           <h2 className="text-lg font-semibold text-gray-800 mb-1">Message sent</h2>
@@ -50,9 +50,9 @@ export default function ContactPage() {
   }
 
   return (
-    <div className="max-w-md">
+    <div className="max-w-md sm:max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold text-gray-800 mb-1">Contact</h1>
-      <p className="text-sm text-gray-500 mb-6">Get in touch with the club admin.</p>
+      <p className="text-sm text-gray-500 mb-6">Get in touch with the site admin to ask any questions, report any issues or make suggestions to improve the site further. We will get back to you as soon as we can via email.</p>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         <div>
