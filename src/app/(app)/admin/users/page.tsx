@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 import RoleForm from './RoleForm';
 
 export default async function AdminUsersPage() {
@@ -52,9 +53,19 @@ export default async function AdminUsersPage() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  {user.id !== session.user.id && user.role !== 'super_admin' && (
-                    <RoleForm userId={user.id as string} currentRole={user.role as string} />
-                  )}
+                  <div className="flex items-center gap-2">
+                    {user.id !== session.user.id && user.role !== 'super_admin' && (
+                      <RoleForm userId={user.id as string} currentRole={user.role as string} />
+                    )}
+                    {user.role !== 'super_admin' && (
+                      <Link
+                        href={`/admin/users/${user.id}`}
+                        className="text-xs px-3 py-1.5 rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 transition-colors"
+                      >
+                        Edit
+                      </Link>
+                    )}
+                  </div>
                 </td>
               </tr>
             ))}
