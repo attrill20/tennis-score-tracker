@@ -7,7 +7,7 @@ export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { title, firstName, lastName, email, currentPassword, newPassword, isInjured } = await req.json();
+  const { title, firstName, lastName, email, phone, currentPassword, newPassword, isInjured } = await req.json();
 
   if (!firstName || !lastName || !email) {
     return NextResponse.json({ error: 'First name, last name and email are required' }, { status: 400 });
@@ -32,7 +32,7 @@ export async function PATCH(req: NextRequest) {
     await sql`
       UPDATE profiles
       SET title = ${title || null}, first_name = ${firstName}, last_name = ${lastName},
-          full_name = ${fullName}, email = ${email}, password_hash = ${newHash},
+          full_name = ${fullName}, email = ${email}, phone = ${phone || null}, password_hash = ${newHash},
           is_injured = ${isInjured ?? false}
       WHERE id = ${session.user.id}
     `;
@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest) {
     await sql`
       UPDATE profiles
       SET title = ${title || null}, first_name = ${firstName}, last_name = ${lastName},
-          full_name = ${fullName}, email = ${email}, is_injured = ${isInjured ?? false}
+          full_name = ${fullName}, email = ${email}, phone = ${phone || null}, is_injured = ${isInjured ?? false}
       WHERE id = ${session.user.id}
     `;
   }

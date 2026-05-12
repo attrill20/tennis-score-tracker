@@ -107,7 +107,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               <tr key={s.id} className={`border-t border-gray-100 ${rowClass}`}>
                 <td className="px-4 py-3 text-gray-800">
                   <span className="text-gray-400 mr-2">{i + 1}</span>
-                  <span className={s.id === userId ? 'font-bold' : 'font-medium'}>{s.name}</span>
+                  <Link href={`/players/${s.id}`} className="hover:underline hover:text-green-700 transition-colors">
+                    <span className={s.id === userId ? 'font-bold' : 'font-medium'}>{s.name}</span>
+                  </Link>
                   {injuredIds.has(s.id) && (
                     <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full ml-1.5" title="Injured">
                       <svg className="w-2.5 h-2.5 text-red-500" viewBox="0 0 16 16" fill="currentColor">

@@ -15,6 +15,9 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "QPTC Score Tracker",
   description: "Queen's Park Tennis Club league score tracker",
+  icons: {
+    icon: '/favicon-circle.png',
+  },
 };
 
 export default function RootLayout({

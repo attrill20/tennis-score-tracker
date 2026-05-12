@@ -10,17 +10,20 @@ export default function ProfileForm({
   initialLastName,
   initialEmail,
   initialIsInjured,
+  initialPhone,
 }: {
   initialTitle: string;
   initialFirstName: string;
   initialLastName: string;
   initialEmail: string;
   initialIsInjured: boolean;
+  initialPhone: string;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [firstName, setFirstName] = useState(initialFirstName);
   const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(initialEmail);
+  const [phone, setPhone] = useState(initialPhone);
   const [isInjured, setIsInjured] = useState(initialIsInjured);
   const [hasBeenTicked, setHasBeenTicked] = useState(initialIsInjured);
   const [currentPassword, setCurrentPassword] = useState('');
@@ -57,6 +60,7 @@ export default function ProfileForm({
         firstName,
         lastName,
         email,
+        phone: phone || undefined,
         currentPassword: currentPassword || undefined,
         newPassword: newPassword || undefined,
         isInjured,
@@ -78,7 +82,7 @@ export default function ProfileForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
+    <form onSubmit={handleSubmit} onChange={() => setSuccess('')} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
       <div className="grid grid-cols-3 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
@@ -119,6 +123,17 @@ export default function ProfileForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
+        <input
+          type="tel"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          placeholder="Optional - visible to your league members"
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         />
       </div>
@@ -186,7 +201,6 @@ export default function ProfileForm({
       )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-      {success && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{success}</p>}
 
       <button
         type="submit"
@@ -195,6 +209,8 @@ export default function ProfileForm({
       >
         {loading ? 'Saving...' : 'Save changes'}
       </button>
+
+      {success && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{success}</p>}
     </form>
   );
 }

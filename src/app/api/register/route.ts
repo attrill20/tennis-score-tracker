@@ -5,7 +5,7 @@ import sql from '@/lib/db';
 import { sendVerificationEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
-  const { email, password, title, firstName, lastName } = await req.json();
+  const { email, password, title, firstName, lastName, phone } = await req.json();
 
   if (!email || !password || !firstName || !lastName) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -27,11 +27,11 @@ export async function POST(req: NextRequest) {
 
   await sql`
     INSERT INTO profiles (
-      email, full_name, title, first_name, last_name, password_hash, role,
+      email, full_name, title, first_name, last_name, phone, password_hash, role,
       email_verified, verification_token, verification_token_expires
     )
     VALUES (
-      ${email}, ${fullName}, ${title || null}, ${firstName}, ${lastName}, ${passwordHash}, 'member',
+      ${email}, ${fullName}, ${title || null}, ${firstName}, ${lastName}, ${phone || null}, ${passwordHash}, 'member',
       false, ${verificationToken}, ${verificationTokenExpires.toISOString()}
     )
   `;

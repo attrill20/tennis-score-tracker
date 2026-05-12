@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
           <img
             src="/qptc-logo.jpg"
             alt="Queens Park Tennis Club"
-            className="w-32 h-32 rounded-full object-cover"
+            className="w-32 h-32 aspect-square shrink-0 rounded-full object-cover"
           />
         </div>
         {children}

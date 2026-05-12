@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-3">
             <Link href="/dashboard">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/qptc-logo.jpg" alt="QPTC" className="w-9 h-9 rounded-full object-cover" />
+              <img src="/qptc-logo.jpg" alt="QPTC" className="w-9 h-9 aspect-square shrink-0 rounded-full object-cover" />
             </Link>
             <Link href="/dashboard" className="font-semibold text-sm">
               Score Tracker
