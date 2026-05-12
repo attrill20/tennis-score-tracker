@@ -4,6 +4,7 @@ import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import DisputeButton from './DisputeButton';
+import StandingsRow from './StandingsRow';
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -104,26 +105,21 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               const isRelegation = numRelegated > 0 && i >= total - numRelegated;
               const rowClass = isPromotion ? 'bg-green-50' : isRelegation ? 'bg-red-50' : '';
               return (
-              <tr key={s.id} className={`border-t border-gray-100 ${rowClass}`}>
-                <td className="px-4 py-3 text-gray-800">
-                  <span className="text-gray-400 mr-2">{i + 1}</span>
-                  <Link href={`/players/${s.id}`} className="hover:underline hover:text-green-700 transition-colors">
-                    <span className={s.id === userId ? 'font-bold' : 'font-medium'}>{s.name}</span>
-                  </Link>
-                  {injuredIds.has(s.id) && (
-                    <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full ml-1.5" title="Injured">
-                      <svg className="w-2.5 h-2.5 text-red-500" viewBox="0 0 16 16" fill="currentColor">
-                        <path d="M7 2h2v5h5v2h-5v5H7v-5H2V7h5z"/>
-                      </svg>
-                    </span>
-                  )}
-                </td>
-                <td className="text-center px-2 py-3 text-gray-600">{s.played}</td>
-                <td className="text-center px-2 py-3 text-gray-600">{s.won}</td>
-                <td className="text-center px-2 py-3 text-gray-600">{s.lost}</td>
-                <td className="text-center px-2 py-3 text-gray-600">{s.setsFor}-{s.setsAgainst}</td>
-                <td className="text-center px-2 py-3 font-semibold text-gray-800">{s.points}</td>
-              </tr>
+                <StandingsRow
+                  key={s.id}
+                  playerId={s.id}
+                  userId={userId}
+                  name={s.name}
+                  isInjured={injuredIds.has(s.id)}
+                  position={i + 1}
+                  played={s.played}
+                  won={s.won}
+                  lost={s.lost}
+                  setsFor={s.setsFor}
+                  setsAgainst={s.setsAgainst}
+                  points={s.points}
+                  rowClass={rowClass}
+                />
               );
             })}
           </tbody>

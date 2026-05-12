@@ -6,26 +6,39 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const { id } = await params;
   const session = await auth();
   const userId = session!.user.id;
+  const role = session!.user.role as string;
+  const isAdmin = role === 'admin' || role === 'super_admin';
 
-  // Only allow viewing if the viewer shares a league with this player
-  const shared = await sql`
-    SELECT 1
-    FROM league_players lp1
-    JOIN league_players lp2 ON lp1.league_id = lp2.league_id
-    WHERE lp1.player_id = ${userId} AND lp2.player_id = ${id}
-    LIMIT 1
-  `;
+  if (!isAdmin && id !== userId) {
+    const shared = await sql`
+      SELECT 1
+      FROM league_players lp1
+      JOIN league_players lp2 ON lp1.league_id = lp2.league_id
+      WHERE lp1.player_id = ${userId} AND lp2.player_id = ${id}
+      LIMIT 1
+    `;
+    if (shared.length === 0) notFound();
+  }
 
-  if (shared.length === 0 && id !== userId) notFound();
-
-  const rows = await sql`
-    SELECT first_name, last_name, title, email, phone, is_injured
-    FROM profiles
-    WHERE id = ${id}
-  `;
+  const [rows, matches] = await Promise.all([
+    sql`SELECT first_name, last_name, title, email, phone, is_injured FROM profiles WHERE id = ${id}`,
+    sql`SELECT player1_id, player2_id, score_player1, score_player2 FROM matches WHERE player1_id = ${id} OR player2_id = ${id}`,
+  ]);
 
   const player = rows[0];
   if (!player) notFound();
+
+  const total = matches.length;
+  const wins = matches.filter((m) => {
+    const isP1 = m.player1_id === id;
+    return isP1 ? (m.score_player1 as number) > (m.score_player2 as number) : (m.score_player2 as number) > (m.score_player1 as number);
+  }).length;
+  const losses = matches.filter((m) => {
+    const isP1 = m.player1_id === id;
+    return isP1 ? (m.score_player1 as number) < (m.score_player2 as number) : (m.score_player2 as number) < (m.score_player1 as number);
+  }).length;
+  const draws = total - wins - losses;
+  const pct = (n: number) => total === 0 ? '0%' : Math.round((n / total) * 100) + '%';
 
   const name = [player.title, player.first_name, player.last_name].filter(Boolean).join(' ');
 
@@ -34,6 +47,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       <h1 className="text-2xl font-bold text-gray-800 mb-6">{name}</h1>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Info</h2>
         {player.is_injured && (
           <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
             <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full shrink-0">
@@ -62,6 +76,32 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
             <p className="text-sm text-gray-400">Not provided</p>
           )}
         </div>
+      </div>
+
+      <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Overall Stats</h2>
+        {total === 0 ? (
+          <p className="text-sm text-gray-400">No matches played yet.</p>
+        ) : (
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-gray-500">Played</span>
+              <span className="font-semibold text-gray-800">{total}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Wins</span>
+              <span className="font-semibold text-green-700">{wins} <span className="text-xs text-green-600">({pct(wins)})</span></span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Losses</span>
+              <span className="font-semibold text-red-500">{losses} <span className="text-xs text-red-400">({pct(losses)})</span></span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-500">Draws</span>
+              <span className="font-semibold text-yellow-500">{draws} <span className="text-xs text-yellow-400">({pct(draws)})</span></span>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
