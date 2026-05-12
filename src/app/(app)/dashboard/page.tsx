@@ -8,13 +8,17 @@ export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const leagues = await sql`
-    SELECT l.id, l.name, l.status, l.season_start, l.season_end
-    FROM leagues l
-    JOIN league_players lp ON lp.league_id = l.id
-    WHERE lp.player_id = ${userId}
-    ORDER BY l.season_start DESC
-  `;
+  const [leagues, profileRows] = await Promise.all([
+    sql`
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end
+      FROM leagues l
+      JOIN league_players lp ON lp.league_id = l.id
+      WHERE lp.player_id = ${userId}
+      ORDER BY l.season_start DESC
+    `,
+    sql`SELECT is_injured FROM profiles WHERE id = ${userId}`,
+  ]);
+  const isInjured = (profileRows[0]?.is_injured as boolean) ?? false;
 
   const leagueIds = leagues.map((l) => l.id as string);
 
@@ -73,6 +77,22 @@ export default async function DashboardPage() {
         Welcome back, {session?.user?.name?.split(' ')[0]}
       </h1>
       <p className="text-gray-500 text-sm mb-6">Queen's Park Tennis Club</p>
+
+      {isInjured && (
+        <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">
+          <span className="inline-flex items-center justify-center w-5 h-5 bg-white border border-red-300 rounded-full shrink-0 mt-0.5">
+            <svg className="w-3 h-3 text-red-500" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M7 2h2v5h5v2h-5v5H7v-5H2V7h5z"/>
+            </svg>
+          </span>
+          <span>
+            You have currently marked yourself as injured. If you have recovered, please{' '}
+            <Link href="/profile" className="font-medium underline underline-offset-2 hover:text-red-900">
+              click here to unmark yourself
+            </Link>.
+          </span>
+        </div>
+      )}
 
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Leagues</h2>
 

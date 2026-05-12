@@ -9,16 +9,20 @@ export default function ProfileForm({
   initialFirstName,
   initialLastName,
   initialEmail,
+  initialIsInjured,
 }: {
   initialTitle: string;
   initialFirstName: string;
   initialLastName: string;
   initialEmail: string;
+  initialIsInjured: boolean;
 }) {
   const [title, setTitle] = useState(initialTitle);
   const [firstName, setFirstName] = useState(initialFirstName);
   const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(initialEmail);
+  const [isInjured, setIsInjured] = useState(initialIsInjured);
+  const [hasBeenTicked, setHasBeenTicked] = useState(initialIsInjured);
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -55,6 +59,7 @@ export default function ProfileForm({
         email,
         currentPassword: currentPassword || undefined,
         newPassword: newPassword || undefined,
+        isInjured,
       }),
     });
 
@@ -156,6 +161,29 @@ export default function ProfileForm({
           placeholder="Repeat new password"
         />
       </div>
+
+      <hr className="border-gray-100" />
+
+      <label className="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          id="is_injured"
+          type="checkbox"
+          checked={isInjured}
+          onChange={(e) => { setIsInjured(e.target.checked); if (e.target.checked) setHasBeenTicked(true); }}
+          className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+        />
+        <span className="text-sm font-medium text-gray-700">Mark myself as injured</span>
+      </label>
+      {isInjured && (
+        <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg -mt-2">
+          Your name will show an injury indicator in league tables while this is ticked.
+        </p>
+      )}
+      {hasBeenTicked && !isInjured && (
+        <p className="text-xs text-green-700 bg-green-50 px-3 py-2 rounded-lg -mt-2">
+          Great to hear you have recovered, welcome back to the courts!
+        </p>
+      )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
       {success && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{success}</p>}

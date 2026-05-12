@@ -15,7 +15,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const [players, matches] = await Promise.all([
     sql`
-      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name
+      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured
       FROM profiles p
       JOIN league_players lp ON lp.player_id = p.id
       WHERE lp.league_id = ${id}
@@ -44,6 +44,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       status: string;
     }[]
   );
+
+  const injuredIds = new Set(players.filter((p) => p.is_injured).map((p) => p.id as string));
 
   const isInLeague = players.some((p) => p.id === session?.user?.id);
   const userId = session?.user?.id;
@@ -106,6 +108,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                 <td className="px-4 py-3 text-gray-800">
                   <span className="text-gray-400 mr-2">{i + 1}</span>
                   <span className={s.id === userId ? 'font-bold' : 'font-medium'}>{s.name}</span>
+                  {injuredIds.has(s.id) && (
+                    <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full ml-1.5" title="Injured">
+                      <svg className="w-2.5 h-2.5 text-red-500" viewBox="0 0 16 16" fill="currentColor">
+                        <path d="M7 2h2v5h5v2h-5v5H7v-5H2V7h5z"/>
+                      </svg>
+                    </span>
+                  )}
                 </td>
                 <td className="text-center px-2 py-3 text-gray-600">{s.played}</td>
                 <td className="text-center px-2 py-3 text-gray-600">{s.won}</td>

@@ -8,7 +8,7 @@ export default async function ProfilePage() {
   const userId = session!.user.id;
 
   const [rows, matches] = await Promise.all([
-    sql`SELECT title, first_name, last_name, email FROM profiles WHERE id = ${userId}`,
+    sql`SELECT title, first_name, last_name, email, is_injured FROM profiles WHERE id = ${userId}`,
     sql`
       SELECT player1_id, player2_id, score_player1, score_player2
       FROM matches
@@ -45,6 +45,7 @@ export default async function ProfilePage() {
             initialFirstName={(profile.first_name as string) ?? ''}
             initialLastName={(profile.last_name as string) ?? ''}
             initialEmail={profile.email as string}
+            initialIsInjured={(profile.is_injured as boolean) ?? false}
           />
         </div>
 

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import sql from '@/lib/db';
+import { sendVerificationEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
   const { email, password, title, firstName, lastName } = await req.json();
@@ -20,11 +22,21 @@ export async function POST(req: NextRequest) {
 
   const passwordHash = await bcrypt.hash(password, 12);
   const fullName = [title, firstName, lastName].filter(Boolean).join(' ');
+  const verificationToken = crypto.randomBytes(32).toString('hex');
+  const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   await sql`
-    INSERT INTO profiles (email, full_name, title, first_name, last_name, password_hash, role)
-    VALUES (${email}, ${fullName}, ${title || null}, ${firstName}, ${lastName}, ${passwordHash}, 'member')
+    INSERT INTO profiles (
+      email, full_name, title, first_name, last_name, password_hash, role,
+      email_verified, verification_token, verification_token_expires
+    )
+    VALUES (
+      ${email}, ${fullName}, ${title || null}, ${firstName}, ${lastName}, ${passwordHash}, 'member',
+      false, ${verificationToken}, ${verificationTokenExpires.toISOString()}
+    )
   `;
+
+  await sendVerificationEmail(email, verificationToken);
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

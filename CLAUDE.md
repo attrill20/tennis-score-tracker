@@ -6,7 +6,7 @@ A web app for Queen's Park Tennis Club (QPTC) to manage singles leagues, track s
 
 **Repo name:** `qptc-score-tracker`
 **Deployment:** Vercel
-**Database:** Supabase (PostgreSQL + Auth)
+**Database:** Neon (PostgreSQL via `@neondatabase/serverless`, connected through `DATABASE_URL`)
 
 ---
 
@@ -17,8 +17,8 @@ A web app for Queen's Park Tennis Club (QPTC) to manage singles leagues, track s
 | Framework | Next.js 14+ (App Router) | SSR, API routes, works natively with Vercel |
 | Language | TypeScript | User expanding from JS/React |
 | Styling | Tailwind CSS | Mobile-first utility classes, fast to build with |
-| Auth | Supabase Auth | Handles hashed passwords, JWTs, sessions |
-| Database | Supabase (PostgreSQL) | Auth + DB in one platform |
+| Auth | Custom (bcrypt + NextAuth) | Handles hashed passwords, JWTs, sessions |
+| Database | Neon (PostgreSQL) | Serverless Postgres, connected via Vercel integration |
 | Deployment | Vercel | One-click from GitHub |
 
 > Note on React Native: Business logic kept in custom hooks and utility functions so a future React Native port is feasible. Components kept thin.
@@ -27,7 +27,7 @@ A web app for Queen's Park Tennis Club (QPTC) to manage singles leagues, track s
 
 ## Database Schema
 
-### `profiles` (extends Supabase auth.users)
+### `profiles`
 - `id` (uuid, FK → auth.users)
 - `full_name` (text)
 - `role` (enum: `super_admin` | `admin` | `member`)

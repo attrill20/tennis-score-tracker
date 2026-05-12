@@ -1,7 +1,11 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
 import sql from '@/lib/db';
+
+class EmailNotVerifiedError extends CredentialsSignin {
+  code = 'EMAIL_NOT_VERIFIED';
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -14,7 +18,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         const rows = await sql`
-          SELECT id, email, first_name, last_name, password_hash, role
+          SELECT id, email, first_name, last_name, password_hash, role, email_verified
           FROM profiles
           WHERE email = ${credentials.email as string}
         `;
@@ -28,6 +32,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         );
 
         if (!passwordMatch) return null;
+
+        if (!user.email_verified) {
+          throw new EmailNotVerifiedError();
+        }
 
         return {
           id: user.id as string,
