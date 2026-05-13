@@ -64,8 +64,8 @@ export default async function AdminLeaguesPage() {
                     <a href={`/admin/leagues/${league.id}`} className="text-sm text-gray-800 hover:text-green-700 hover:underline">{league.name as string}</a>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       league.status === 'active' ? 'bg-green-100 text-green-700'
-                      : league.status === 'upcoming' ? 'bg-yellow-100 text-yellow-700'
-                      : 'bg-gray-100 text-gray-500'
+                      : league.status === 'upcoming' ? 'bg-blue-100 text-blue-700'
+                      : 'bg-slate-100 text-slate-600'
                     }`}>{(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}</span>
                   </div>
                   <div className="flex items-center gap-3">

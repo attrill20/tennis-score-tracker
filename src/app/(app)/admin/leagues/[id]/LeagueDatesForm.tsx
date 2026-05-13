@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import DatePicker from '@/components/DatePicker';
 
 export default function LeagueDatesForm({
   leagueId,
@@ -47,24 +48,20 @@ export default function LeagueDatesForm({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label htmlFor="seasonStart" className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-          <input
+          <DatePicker
             id="seasonStart"
-            type="date"
             value={start}
-            onChange={(e) => { setStart(e.target.value); setSaved(false); }}
+            onChange={(val) => { setStart(val); setSaved(false); }}
             required
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div>
           <label htmlFor="seasonEnd" className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-          <input
+          <DatePicker
             id="seasonEnd"
-            type="date"
             value={end}
-            onChange={(e) => { setEnd(e.target.value); setSaved(false); }}
+            onChange={(val) => { setEnd(val); setSaved(false); }}
             required
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
       </div>

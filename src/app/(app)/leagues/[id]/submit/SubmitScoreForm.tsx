@@ -1,7 +1,8 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import TennisBallCelebration from '@/components/TennisBallCelebration';
 
 type Player = { id: string; full_name: string };
 
@@ -19,6 +20,9 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   const [playedAt, setPlayedAt] = useState(new Date().toISOString().split('T')[0]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [celebrationOrigin, setCelebrationOrigin] = useState<{ x: number; y: number } | null>(null);
+
+  const submitButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     fetch(`/api/leagues/${leagueId}/players`)
@@ -76,97 +80,120 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       return;
     }
 
-    router.push(`/leagues/${leagueId}`);
+    if (mySetsWon > theirSetsWon) {
+      const btn = submitButtonRef.current;
+      if (btn) {
+        const rect = btn.getBoundingClientRect();
+        setCelebrationOrigin({
+          x: rect.left + rect.width / 2,
+          y: rect.top + rect.height / 2,
+        });
+      } else {
+        router.push(`/leagues/${leagueId}`);
+      }
+    } else {
+      router.push(`/leagues/${leagueId}`);
+    }
   }
 
   const opponentName = players.find((p) => p.id === opponent)?.full_name ?? 'Opponent';
 
   return (
-    <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Submit a result</h1>
+    <>
+      {celebrationOrigin && (
+        <TennisBallCelebration
+          origin={celebrationOrigin}
+          onDone={() => router.push(`/leagues/${leagueId}`)}
+        />
+      )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 space-y-6">
-        <div>
-          <label htmlFor="opponent" className="block text-sm font-medium text-gray-700 mb-1">Opponent</label>
-          <select
-            id="opponent"
-            value={opponent}
-            onChange={(e) => setOpponent(e.target.value)}
-            required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+      <div className="max-w-lg mx-auto">
+        <h1 className="text-2xl font-bold text-gray-800 mb-6">Submit a result</h1>
+
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 space-y-6">
+          <div>
+            <label htmlFor="opponent" className="block text-sm font-medium text-gray-700 mb-1">Opponent</label>
+            <select
+              id="opponent"
+              value={opponent}
+              onChange={(e) => setOpponent(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            >
+              <option value="">
+                {players.length === 0 ? 'No remaining opponents' : 'Select opponent...'}
+              </option>
+              {players.map((p) => (
+                <option key={p.id} value={p.id}>{p.full_name}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="flex-1" />
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
+            </div>
+
+            <div className="flex items-center gap-3 mb-3">
+              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{userName}</span>
+              {sets.map((set, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  inputMode="numeric"
+                  value={set.my}
+                  onChange={(e) => updateSet(i, 'my', e.target.value)}
+                  className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
+                  placeholder="-"
+                />
+              ))}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <span className="flex-1 text-sm text-gray-500 truncate">{opponentName}</span>
+              {sets.map((set, i) => (
+                <input
+                  key={i}
+                  type="text"
+                  inputMode="numeric"
+                  value={set.their}
+                  onChange={(e) => updateSet(i, 'their', e.target.value)}
+                  className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
+                  placeholder="-"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label htmlFor="playedAt" className="block text-sm font-medium text-gray-700 mb-1">Date played</label>
+            <input
+              id="playedAt"
+              type="date"
+              value={playedAt}
+              onChange={(e) => setPlayedAt(e.target.value)}
+              required
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            />
+          </div>
+
+          {error && (
+            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          )}
+
+          <button
+            ref={submitButtonRef}
+            type="submit"
+            disabled={loading}
+            className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
           >
-            <option value="">
-              {players.length === 0 ? 'No remaining opponents' : 'Select opponent...'}
-            </option>
-            {players.map((p) => (
-              <option key={p.id} value={p.id}>{p.full_name}</option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="flex-1" />
-            <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
-            <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
-            <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
-          </div>
-
-          <div className="flex items-center gap-3 mb-3">
-            <span className="flex-1 text-sm font-medium text-gray-800 truncate">{userName}</span>
-            {sets.map((set, i) => (
-              <input
-                key={i}
-                type="text"
-                inputMode="numeric"
-                value={set.my}
-                onChange={(e) => updateSet(i, 'my', e.target.value)}
-                className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                placeholder="-"
-              />
-            ))}
-          </div>
-
-          <div className="flex items-center gap-3">
-            <span className="flex-1 text-sm text-gray-500 truncate">{opponentName}</span>
-            {sets.map((set, i) => (
-              <input
-                key={i}
-                type="text"
-                inputMode="numeric"
-                value={set.their}
-                onChange={(e) => updateSet(i, 'their', e.target.value)}
-                className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                placeholder="-"
-              />
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="playedAt" className="block text-sm font-medium text-gray-700 mb-1">Date played</label>
-          <input
-            id="playedAt"
-            type="date"
-            value={playedAt}
-            onChange={(e) => setPlayedAt(e.target.value)}
-            required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-          />
-        </div>
-
-        {error && (
-          <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
-        >
-          {loading ? 'Submitting...' : 'Submit result'}
-        </button>
-      </form>
-    </div>
+            {loading ? 'Submitting...' : 'Submit result'}
+          </button>
+        </form>
+      </div>
+    </>
   );
 }

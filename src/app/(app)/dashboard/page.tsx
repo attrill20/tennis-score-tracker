@@ -10,9 +10,9 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end, lp.final_position
       FROM leagues l
-      JOIN league_players lp ON lp.league_id = l.id
+      JOIN league_players lp ON lp.league_id = l.id AND lp.player_id = ${userId}
       WHERE lp.player_id = ${userId}
       ORDER BY l.season_start DESC
     `,
@@ -111,24 +111,28 @@ export default async function DashboardPage() {
               const v = n % 100;
               return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
             };
+            const medal = (n: number) => n === 1 ? ' 🥇' : n === 2 ? ' 🥈' : n === 3 ? ' 🥉' : '';
             return (
             <div key={id} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
               <Link href={`/leagues/${id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name as string} />
               <div className="relative">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-800">{league.name as string}</span>
-                  <div className="flex items-center gap-3">
-                    {stats && league.status === 'active' && (
-                      <span className="text-xs text-gray-400">
-                        Position: {ordinal(stats.position)} &nbsp; Games played: {stats.played}/{stats.total}
-                      </span>
+                  <div className="flex items-center gap-2">
+                    {league.status === 'active' && (
+                      <Link
+                        href={`/leagues/${id}/submit`}
+                        className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+                      >
+                        Submit a result
+                      </Link>
                     )}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       league.status === 'active'
                         ? 'bg-green-100 text-green-700'
                         : league.status === 'upcoming'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-500'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'bg-slate-100 text-slate-600'
                     }`}>
                       {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
                     </span>
@@ -140,13 +144,13 @@ export default async function DashboardPage() {
                     {' - '}
                     {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                   </p>
-                  {league.status === 'active' && (
-                    <Link
-                      href={`/leagues/${id}/submit`}
-                      className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
-                    >
-                      Submit a score
-                    </Link>
+                  {stats && (league.status === 'active' || league.status === 'completed') && (
+                    <span className="text-xs text-gray-400">
+                      {league.status === 'completed'
+                        ? <>Finished: {ordinal(league.final_position != null ? league.final_position as number : stats.position)}{medal(league.final_position != null ? league.final_position as number : stats.position)} &nbsp; Games Played: {stats.played}/{stats.total}</>
+                        : <>Position: {ordinal(stats.position)} &nbsp; Games played: {stats.played}/{stats.total}</>
+                      }
+                    </span>
                   )}
                 </div>
               </div>
@@ -156,7 +160,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-6">
+      <div className="mt-3">
         <Link
           href="/leagues"
           className="text-sm text-green-700 font-medium hover:underline"
@@ -252,7 +256,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <div className="mt-4">
+      <div className="mt-3">
         <Link href="/matches" className="text-sm text-green-700 font-medium hover:underline">
           View all my matches →
         </Link>

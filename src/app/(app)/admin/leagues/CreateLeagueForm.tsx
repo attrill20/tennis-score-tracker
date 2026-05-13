@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import DatePicker from '@/components/DatePicker';
 
 export default function CreateLeagueForm() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function CreateLeagueForm() {
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [created, setCreated] = useState(false);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,6 +42,7 @@ export default function CreateLeagueForm() {
     setName('');
     setStartDate('');
     setEndDate('');
+    setCreated(true);
     router.refresh();
   }
 
@@ -61,12 +64,10 @@ export default function CreateLeagueForm() {
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-          <input
+          <DatePicker
             id="startDate"
-            type="date"
             value={startDate}
-            onChange={(e) => {
-              const val = e.target.value;
+            onChange={(val) => {
               setStartDate(val);
               if (val) {
                 const today = new Date().toISOString().split('T')[0];
@@ -74,18 +75,15 @@ export default function CreateLeagueForm() {
               }
             }}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div>
           <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-          <input
+          <DatePicker
             id="endDate"
-            type="date"
             value={endDate}
-            onChange={(e) => setEndDate(e.target.value)}
+            onChange={setEndDate}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
       </div>
@@ -190,13 +188,16 @@ export default function CreateLeagueForm() {
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
-      <button
-        type="submit"
-        disabled={loading}
-        className="bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
-      >
-        {loading ? 'Creating...' : 'Create league'}
-      </button>
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={loading}
+          className="bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
+        >
+          {loading ? 'Creating...' : 'Create league'}
+        </button>
+        {created && <span className="text-sm text-green-700 font-medium">League created!</span>}
+      </div>
     </form>
   );
 }
