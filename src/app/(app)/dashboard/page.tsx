@@ -10,7 +10,8 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end, lp.final_position
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end, lp.final_position,
+        (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
       FROM leagues l
       JOIN league_players lp ON lp.league_id = l.id AND lp.player_id = ${userId}
       WHERE lp.player_id = ${userId}
@@ -141,19 +142,21 @@ export default async function DashboardPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  <p className="text-xs text-gray-400">
-                    {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    {' - '}
-                    {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
-                  </p>
-                  {stats && (league.status === 'active' || league.status === 'completed') && (
+                  {league.status === 'upcoming' ? (
+                    <span className="text-xs text-gray-400">Players Registered: {league.player_count as string}</span>
+                  ) : stats && (league.status === 'active' || league.status === 'completed') ? (
                     <span className="text-xs text-gray-400">
                       {league.status === 'completed'
                         ? <>Finished: {ordinal(league.final_position != null ? league.final_position as number : stats.position)}{medal(league.final_position != null ? league.final_position as number : stats.position)} &nbsp; Games Played: {stats.played}/{stats.total}</>
                         : <>Position: {ordinal(stats.position)} &nbsp; Games played: {stats.played}/{stats.total}</>
                       }
                     </span>
-                  )}
+                  ) : <span />}
+                  <p className="text-xs text-gray-400">
+                    {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    {' - '}
+                    {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  </p>
                 </div>
               </div>
             </div>

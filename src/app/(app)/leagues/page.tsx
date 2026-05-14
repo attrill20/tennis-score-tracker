@@ -23,33 +23,34 @@ function LeagueCard({ league }: { league: League }) {
       className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors"
     >
       <div className="flex items-start justify-between">
-        <div>
-          <span className="font-medium text-gray-800">{league.name}</span>
-          <p className="text-xs text-gray-400 mt-1">
-            {new Date(league.season_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-            {' - '}
-            {new Date(league.season_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </p>
-        </div>
-        <div className="flex flex-col items-end gap-1">
-          <div className="flex items-center gap-2">
-            {!league.is_public && (
-              <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>
-            )}
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-              league.status === 'active'
-                ? 'bg-green-100 text-green-700'
-                : league.status === 'upcoming'
-                ? 'bg-blue-100 text-blue-700'
-                : 'bg-slate-100 text-slate-600'
-            }`}>
-              {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
-            </span>
-          </div>
-          <span className="text-xs text-gray-400">
-            Games Played: {league.matches_played}/{totalPossible} | Players: {league.player_count}
+        <span className="font-medium text-gray-800">{league.name}</span>
+        <div className="flex items-center gap-2">
+          {!league.is_public && (
+            <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>
+          )}
+          <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+            league.status === 'active'
+              ? 'bg-green-100 text-green-700'
+              : league.status === 'upcoming'
+              ? 'bg-blue-100 text-blue-700'
+              : 'bg-slate-100 text-slate-600'
+          }`}>
+            {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
           </span>
         </div>
+      </div>
+      <div className="flex items-center justify-between mt-2">
+        <span className="text-xs text-gray-400">
+          {league.status === 'upcoming'
+            ? <>Players Registered: {league.player_count}</>
+            : <>Players: {league.player_count} | Games Played: {league.matches_played}/{totalPossible}</>
+          }
+        </span>
+        <p className="text-xs text-gray-400">
+          {new Date(league.season_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+          {' - '}
+          {new Date(league.season_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+        </p>
       </div>
     </Link>
   );
@@ -93,7 +94,8 @@ export default async function LeaguesPage() {
 
   const leagues = rows as unknown as League[];
 
-  const active    = leagues.filter((l) => l.status === 'active' || l.status === 'upcoming');
+  const active    = leagues.filter((l) => l.status === 'active');
+  const upcoming  = leagues.filter((l) => l.status === 'upcoming');
   const myLeagues = leagues.filter((l) => l.is_member);
   const completed = leagues.filter((l) => l.status === 'completed');
 
@@ -101,6 +103,7 @@ export default async function LeaguesPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-6">Leagues</h1>
       <Section title="Active Leagues" leagues={active} />
+      <Section title="Upcoming Leagues" leagues={upcoming} />
       <Section title="My Leagues" leagues={myLeagues} />
       <Section title="Completed Leagues" leagues={completed} />
     </div>
