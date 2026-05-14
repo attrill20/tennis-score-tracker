@@ -9,14 +9,12 @@ export default function ProfileForm({
   initialFirstName,
   initialLastName,
   initialEmail,
-  initialIsInjured,
   initialPhone,
 }: {
   initialTitle: string;
   initialFirstName: string;
   initialLastName: string;
   initialEmail: string;
-  initialIsInjured: boolean;
   initialPhone: string;
 }) {
   const [title, setTitle] = useState(initialTitle);
@@ -24,9 +22,6 @@ export default function ProfileForm({
   const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState(initialPhone);
-  const [isInjured, setIsInjured] = useState(initialIsInjured);
-  const [hasBeenTicked, setHasBeenTicked] = useState(initialIsInjured);
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -46,10 +41,6 @@ export default function ProfileForm({
       setError('New password must be at least 8 characters');
       return;
     }
-    if (newPassword && !currentPassword) {
-      setError('Enter your current password to set a new one');
-      return;
-    }
 
     setLoading(true);
     const res = await fetch('/api/profile', {
@@ -61,9 +52,7 @@ export default function ProfileForm({
         lastName,
         email,
         phone: phone || undefined,
-        currentPassword: currentPassword || undefined,
         newPassword: newPassword || undefined,
-        isInjured,
       }),
     });
 
@@ -76,7 +65,6 @@ export default function ProfileForm({
     }
 
     setSuccess('Profile updated successfully');
-    setCurrentPassword('');
     setNewPassword('');
     setConfirmPassword('');
   }
@@ -142,18 +130,6 @@ export default function ProfileForm({
       <p className="text-xs text-gray-400">Leave password fields blank to keep your current password</p>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Current password</label>
-        <input
-          type="password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          autoComplete="current-password"
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-          placeholder="Required to change password"
-        />
-      </div>
-
-      <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
         <input
           type="password"
@@ -177,29 +153,6 @@ export default function ProfileForm({
         />
       </div>
 
-      <hr className="border-gray-100" />
-
-      <label className="flex items-center gap-3 cursor-pointer select-none">
-        <input
-          id="is_injured"
-          type="checkbox"
-          checked={isInjured}
-          onChange={(e) => { setIsInjured(e.target.checked); if (e.target.checked) setHasBeenTicked(true); }}
-          className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
-        />
-        <span className="text-sm font-medium text-gray-700">Mark myself as injured</span>
-      </label>
-      {isInjured && (
-        <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg -mt-2">
-          Your name will show an injury indicator in league tables while this is ticked.
-        </p>
-      )}
-      {hasBeenTicked && !isInjured && (
-        <p className="text-xs text-green-700 bg-green-50 px-3 py-2 rounded-lg -mt-2">
-          Great to hear you have recovered, welcome back to the courts!
-        </p>
-      )}
-
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
       <button
@@ -210,7 +163,7 @@ export default function ProfileForm({
         {loading ? 'Saving...' : 'Save changes'}
       </button>
 
-      {success && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">{success}</p>}
+      {success && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg text-center">{success}</p>}
     </form>
   );
 }

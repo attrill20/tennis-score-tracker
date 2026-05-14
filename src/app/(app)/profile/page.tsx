@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import Link from 'next/link';
+import InjuryToggle from './InjuryToggle';
 import ProfileForm from './ProfileForm';
 
 export default async function ProfilePage() {
@@ -45,12 +46,12 @@ export default async function ProfilePage() {
             initialFirstName={(profile.first_name as string) ?? ''}
             initialLastName={(profile.last_name as string) ?? ''}
             initialEmail={profile.email as string}
-            initialIsInjured={(profile.is_injured as boolean) ?? false}
             initialPhone={(profile.phone as string) ?? ''}
           />
         </div>
 
         <div className="w-full sm:w-80 space-y-4 shrink-0">
+          <InjuryToggle initialIsInjured={(profile.is_injured as boolean) ?? false} />
           <div className="bg-white rounded-xl border border-gray-200 p-5">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">My Overall Stats</h2>
             {total === 0 ? (

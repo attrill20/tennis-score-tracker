@@ -14,7 +14,9 @@ export default async function DashboardPage() {
       FROM leagues l
       JOIN league_players lp ON lp.league_id = l.id AND lp.player_id = ${userId}
       WHERE lp.player_id = ${userId}
-      ORDER BY l.season_start DESC
+      ORDER BY
+        CASE l.status WHEN 'active' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
+        l.season_start DESC
     `,
     sql`SELECT is_injured FROM profiles WHERE id = ${userId}`,
   ]);
