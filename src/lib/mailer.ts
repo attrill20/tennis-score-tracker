@@ -13,7 +13,7 @@ const APP_URL = process.env.AUTH_URL ||
   (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
 export async function sendVerificationEmail(to: string, token: string) {
-  const link = `${APP_URL}/verify-email?token=${token}`;
+  const link = `${APP_URL}/api/verify-email?token=${token}`;
   await transporter.sendMail({
     from: `"QPTC Score Tracker" <${process.env.CONTACT_EMAIL}>`,
     to,
