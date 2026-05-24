@@ -16,9 +16,9 @@ function ResetPasswordForm() {
 
   if (!token) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-8 text-center">
+      <div className="bg-white rounded-2xl shadow-sm border border-green-900/20 p-8 text-center">
         <p className="text-sm text-red-600 mb-4">This reset link is invalid or has expired.</p>
-        <Link href="/forgot-password" className="text-sm text-green-700 font-medium hover:underline">
+        <Link href="/forgot-password" className="text-sm text-green-900 font-medium hover:underline">
           Request a new link
         </Link>
       </div>
@@ -54,7 +54,7 @@ function ResetPasswordForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-8">
+    <div className="bg-white rounded-2xl shadow-sm border border-green-900/20 p-8">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Set new password</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -70,7 +70,7 @@ function ResetPasswordForm() {
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="Min. 8 characters"
           />
         </div>
@@ -86,7 +86,7 @@ function ResetPasswordForm() {
             onChange={(e) => setConfirm(e.target.value)}
             required
             autoComplete="new-password"
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="••••••••"
           />
         </div>
@@ -98,7 +98,7 @@ function ResetPasswordForm() {
         <button
           type="submit"
           disabled={status === 'loading'}
-          className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
+          className="w-full bg-green-900 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
         >
           {status === 'loading' ? 'Saving...' : 'Set new password'}
         </button>

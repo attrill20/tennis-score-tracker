@@ -40,7 +40,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-8">
+    <div className="bg-white rounded-2xl shadow-sm border border-green-900/20 p-8">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Create account</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -51,7 +51,7 @@ export default function RegisterPage() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             >
               {TITLES.map((t) => <option key={t} value={t}>{t || '-'}</option>)}
             </select>
@@ -64,7 +64,7 @@ export default function RegisterPage() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
               placeholder="James"
             />
           </div>
@@ -76,7 +76,7 @@ export default function RegisterPage() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
               placeholder="Attrill"
             />
           </div>
@@ -90,7 +90,7 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="you@example.com"
           />
         </div>
@@ -102,7 +102,7 @@ export default function RegisterPage() {
             type="tel"
             value={phone}
             onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="Shared with your league members"
           />
         </div>
@@ -117,7 +117,7 @@ export default function RegisterPage() {
             required
             minLength={8}
             autoComplete="new-password"
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="Min. 8 characters"
           />
         </div>
@@ -127,7 +127,7 @@ export default function RegisterPage() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
+          className="w-full bg-green-900 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
         >
           {loading ? 'Creating account...' : 'Create account'}
         </button>
@@ -135,7 +135,7 @@ export default function RegisterPage() {
 
       <p className="text-sm text-center text-gray-500 mt-6">
         Already have an account?{' '}
-        <Link href="/login" className="text-green-700 font-medium hover:underline">
+        <Link href="/login" className="text-green-900 font-medium hover:underline">
           Sign in
         </Link>
       </p>

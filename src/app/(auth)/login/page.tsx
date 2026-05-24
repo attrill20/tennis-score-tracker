@@ -41,7 +41,7 @@ function LoginForm() {
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-green-100 p-8">
+    <div className="bg-white rounded-2xl shadow-sm border border-green-900/20 p-8">
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Sign in</h2>
 
       {registered && !verified && (
@@ -50,12 +50,12 @@ function LoginForm() {
         </div>
       )}
       {verified && (
-        <div className="mb-4 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+        <div className="mb-4 text-sm text-green-900 bg-green-50 px-3 py-2 rounded-lg">
           Email verified! You can now sign in.
         </div>
       )}
       {reset && (
-        <div className="mb-4 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+        <div className="mb-4 text-sm text-green-900 bg-green-50 px-3 py-2 rounded-lg">
           Password updated! You can now sign in with your new password.
         </div>
       )}
@@ -76,7 +76,8 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            autoComplete="username"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="you@example.com"
           />
         </div>
@@ -86,7 +87,7 @@ function LoginForm() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
-            <Link href="/forgot-password" className="text-xs text-green-700 hover:underline">
+            <Link href="/forgot-password" className="text-xs text-green-900 hover:underline">
               Forgot password?
             </Link>
           </div>
@@ -97,7 +98,7 @@ function LoginForm() {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
             placeholder="••••••••"
           />
         </div>
@@ -109,7 +110,7 @@ function LoginForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
+          className="w-full bg-green-900 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
         >
           {loading ? 'Signing in...' : 'Sign in'}
         </button>
@@ -117,7 +118,7 @@ function LoginForm() {
 
       <p className="text-sm text-center text-gray-500 mt-6">
         No account?{' '}
-        <Link href="/register" className="text-green-700 font-medium hover:underline">
+        <Link href="/register" className="text-green-900 font-medium hover:underline">
           Register here
         </Link>
       </p>
