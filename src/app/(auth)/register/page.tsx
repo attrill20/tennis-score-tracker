@@ -4,8 +4,6 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-const TITLES = ['', 'Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof'];
-
 const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm placeholder:text-gray-500';
 
 function PasswordStrength({ password }: { password: string }) {
@@ -31,9 +29,9 @@ function PasswordStrength({ password }: { password: string }) {
 
 export default function RegisterPage() {
   const router = useRouter();
-  const [title, setTitle] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [gender, setGender] = useState<'mens' | 'womens' | ''>('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
@@ -53,6 +51,10 @@ export default function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    if (!gender) {
+      setError('Please select whether you play in Men\'s or Women\'s singles.');
+      return;
+    }
     if (!passwordValid) {
       setError('Password does not meet the requirements.');
       return;
@@ -67,7 +69,7 @@ export default function RegisterPage() {
     const res = await fetch('/api/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, phone, password, title, firstName, lastName }),
+      body: JSON.stringify({ email, phone, password, gender, firstName, lastName }),
     });
 
     const data = await res.json();
@@ -86,18 +88,7 @@ export default function RegisterPage() {
       <h2 className="text-xl font-semibold text-gray-800 mb-6">Create account</h2>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-            <select
-              id="title"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm ${title === '' ? 'text-gray-500' : 'text-gray-900'}`}
-            >
-              {TITLES.map((t) => <option key={t} value={t}>{t || '-'}</option>)}
-            </select>
-          </div>
+        <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First name</label>
             <input
@@ -127,6 +118,26 @@ export default function RegisterPage() {
         </div>
 
         <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">I play in</label>
+          <div className="grid grid-cols-2 gap-3">
+            {(['mens', 'womens'] as const).map((val) => (
+              <button
+                key={val}
+                type="button"
+                onClick={() => setGender(val)}
+                className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                  gender === val
+                    ? 'bg-green-900 border-green-900 text-white'
+                    : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
+                }`}
+              >
+                {val === 'mens' ? "Men's singles" : "Women's singles"}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <input
             id="email"
@@ -147,6 +158,7 @@ export default function RegisterPage() {
             type="tel"
             value={phone}
             onChange={handlePhone}
+            required
             autoComplete="tel"
             className={inputClass}
             placeholder="Shared with your league members"

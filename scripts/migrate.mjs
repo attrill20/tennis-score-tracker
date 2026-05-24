@@ -79,6 +79,9 @@ const statements = [
     resolved_at TIMESTAMPTZ,
     status dispute_status NOT NULL DEFAULT 'open'
   )`,
+
+  // Add gender column if it doesn't exist
+  `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('mens', 'womens'))`,
 ];
 
 async function migrate() {

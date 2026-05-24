@@ -5,10 +5,14 @@ import sql from '@/lib/db';
 import { sendVerificationEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
-  const { email, password, title, firstName, lastName, phone } = await req.json();
+  const { email, password, firstName, lastName, phone, gender } = await req.json();
 
-  if (!email || !password || !firstName || !lastName) {
+  if (!email || !password || !firstName || !lastName || !phone || !gender) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+  }
+
+  if (!['mens', 'womens'].includes(gender)) {
+    return NextResponse.json({ error: 'Invalid gender selection' }, { status: 400 });
   }
 
   if (password.length < 8) {
@@ -21,17 +25,17 @@ export async function POST(req: NextRequest) {
   }
 
   const passwordHash = await bcrypt.hash(password, 12);
-  const fullName = [title, firstName, lastName].filter(Boolean).join(' ');
+  const fullName = [firstName, lastName].join(' ');
   const verificationToken = crypto.randomBytes(32).toString('hex');
   const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
   await sql`
     INSERT INTO profiles (
-      email, full_name, title, first_name, last_name, phone, password_hash, role,
+      email, full_name, first_name, last_name, phone, gender, password_hash, role,
       email_verified, verification_token, verification_token_expires
     )
     VALUES (
-      ${email}, ${fullName}, ${title || null}, ${firstName}, ${lastName}, ${phone || null}, ${passwordHash}, 'member',
+      ${email}, ${fullName}, ${firstName}, ${lastName}, ${phone}, ${gender}, ${passwordHash}, 'member',
       false, ${verificationToken}, ${verificationTokenExpires.toISOString()}
     )
   `;
