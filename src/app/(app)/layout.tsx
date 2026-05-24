@@ -1,10 +1,17 @@
 import { auth, signOut } from '@/auth';
 import Link from 'next/link';
 import AdminDropdown from './AdminDropdown';
+import MobileNav from './MobileNav';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin';
+  const isSuperAdmin = session?.user?.role === 'super_admin';
+
+  async function handleSignOut() {
+    'use server';
+    await signOut({ redirectTo: '/login' });
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -20,7 +27,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             </Link>
           </div>
 
-          <div className="flex items-center gap-4 text-sm">
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-4 text-sm">
             <Link href="/leagues" className="hover:text-green-300 transition-colors">
               Leagues
             </Link>
@@ -31,19 +39,17 @@ export default async function AppLayout({ children }: { children: React.ReactNod
               Contact
             </Link>
             {isAdmin && (
-              <AdminDropdown isSuperAdmin={session?.user?.role === 'super_admin'} />
+              <AdminDropdown isSuperAdmin={isSuperAdmin} />
             )}
-            <form
-              action={async () => {
-                'use server';
-                await signOut({ redirectTo: '/login' });
-              }}
-            >
+            <form action={handleSignOut}>
               <button type="submit" className="hover:text-green-300 transition-colors">
                 Sign out
               </button>
             </form>
           </div>
+
+          {/* Mobile burger menu */}
+          <MobileNav isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} signOut={handleSignOut} />
         </div>
       </nav>
 
