@@ -9,7 +9,7 @@ export default async function ProfilePage() {
   const userId = session!.user.id;
 
   const [rows, matches] = await Promise.all([
-    sql`SELECT title, first_name, last_name, email, phone, is_injured FROM profiles WHERE id = ${userId}`,
+    sql`SELECT first_name, last_name, email, phone, is_injured, gender FROM profiles WHERE id = ${userId}`,
     sql`
       SELECT player1_id, player2_id, score_player1, score_player2
       FROM matches
@@ -42,11 +42,11 @@ export default async function ProfilePage() {
       <div className="flex flex-col sm:flex-row gap-6 items-start">
         <div className="w-full sm:flex-1">
           <ProfileForm
-            initialTitle={(profile.title as string) ?? ''}
             initialFirstName={(profile.first_name as string) ?? ''}
             initialLastName={(profile.last_name as string) ?? ''}
             initialEmail={profile.email as string}
             initialPhone={(profile.phone as string) ?? ''}
+            initialGender={(profile.gender as string) ?? ''}
           />
         </div>
 

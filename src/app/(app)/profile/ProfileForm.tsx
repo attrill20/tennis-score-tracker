@@ -2,26 +2,26 @@
 
 import { useState } from 'react';
 
-const TITLES = ['', 'Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof'];
+const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 text-sm text-gray-900';
 
 export default function ProfileForm({
-  initialTitle,
   initialFirstName,
   initialLastName,
   initialEmail,
   initialPhone,
+  initialGender,
 }: {
-  initialTitle: string;
   initialFirstName: string;
   initialLastName: string;
   initialEmail: string;
   initialPhone: string;
+  initialGender: string;
 }) {
-  const [title, setTitle] = useState(initialTitle);
   const [firstName, setFirstName] = useState(initialFirstName);
   const [lastName, setLastName] = useState(initialLastName);
   const [email, setEmail] = useState(initialEmail);
   const [phone, setPhone] = useState(initialPhone);
+  const [gender, setGender] = useState(initialGender);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -47,11 +47,11 @@ export default function ProfileForm({
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        title,
         firstName,
         lastName,
         email,
         phone: phone || undefined,
+        gender,
         newPassword: newPassword || undefined,
       }),
     });
@@ -71,17 +71,7 @@ export default function ProfileForm({
 
   return (
     <form onSubmit={handleSubmit} onChange={() => setSuccess('')} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
-      <div className="grid grid-cols-3 gap-3">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-          <select
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-          >
-            {TITLES.map((t) => <option key={t} value={t}>{t || '-'}</option>)}
-          </select>
-        </div>
+      <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
           <input
@@ -89,7 +79,7 @@ export default function ProfileForm({
             value={firstName}
             onChange={(e) => setFirstName(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            className={inputClass}
           />
         </div>
         <div>
@@ -99,7 +89,7 @@ export default function ProfileForm({
             value={lastName}
             onChange={(e) => setLastName(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            className={inputClass}
           />
         </div>
       </div>
@@ -111,7 +101,7 @@ export default function ProfileForm({
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          className={inputClass}
         />
       </div>
 
@@ -121,9 +111,30 @@ export default function ProfileForm({
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
+          autoComplete="tel"
           placeholder="Optional - visible to your league members"
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          className={inputClass}
         />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">I play in</label>
+        <div className="grid grid-cols-2 gap-3">
+          {(['mens', 'womens'] as const).map((val) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => { setGender(val); setSuccess(''); }}
+              className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                gender === val
+                  ? 'bg-green-900 border-green-900 text-white'
+                  : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
+              }`}
+            >
+              {val === 'mens' ? "Men's singles" : "Women's singles"}
+            </button>
+          ))}
+        </div>
       </div>
 
       <hr className="border-gray-100" />
@@ -136,7 +147,7 @@ export default function ProfileForm({
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           autoComplete="new-password"
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          className={inputClass}
           placeholder="Min. 8 characters"
         />
       </div>
@@ -148,7 +159,7 @@ export default function ProfileForm({
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           autoComplete="new-password"
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          className={inputClass}
           placeholder="Repeat new password"
         />
       </div>
@@ -158,7 +169,7 @@ export default function ProfileForm({
       <button
         type="submit"
         disabled={loading}
-        className="w-full bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
+        className="w-full bg-green-900 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
       >
         {loading ? 'Saving...' : 'Save changes'}
       </button>
