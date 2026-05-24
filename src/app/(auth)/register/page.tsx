@@ -6,6 +6,29 @@ import Link from 'next/link';
 
 const TITLES = ['', 'Mr', 'Mrs', 'Ms', 'Miss', 'Dr', 'Prof'];
 
+const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm placeholder:text-gray-500';
+
+function PasswordStrength({ password }: { password: string }) {
+  const checks = [
+    { label: 'At least 8 characters', pass: password.length >= 8 },
+    { label: 'One uppercase letter', pass: /[A-Z]/.test(password) },
+    { label: 'One number', pass: /[0-9]/.test(password) },
+  ];
+
+  if (!password) return null;
+
+  return (
+    <ul className="mt-2 space-y-1">
+      {checks.map(({ label, pass }) => (
+        <li key={label} className={`text-xs flex items-center gap-1.5 ${pass ? 'text-green-700' : 'text-gray-400'}`}>
+          <span>{pass ? '✓' : '○'}</span>
+          {label}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function RegisterPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
@@ -14,12 +37,31 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const passwordValid = password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password);
+  const passwordsMatch = password === confirm;
+
+  function handlePhone(e: React.ChangeEvent<HTMLInputElement>) {
+    const val = e.target.value.replace(/[^\d\s+\-()]/g, '');
+    setPhone(val);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (!passwordValid) {
+      setError('Password does not meet the requirements.');
+      return;
+    }
+    if (!passwordsMatch) {
+      setError('Passwords do not match.');
+      return;
+    }
+
     setLoading(true);
 
     const res = await fetch('/api/register', {
@@ -51,7 +93,7 @@ export default function RegisterPage() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
+              className={`w-full px-3 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm ${title === '' ? 'text-gray-500' : 'text-gray-900'}`}
             >
               {TITLES.map((t) => <option key={t} value={t}>{t || '-'}</option>)}
             </select>
@@ -64,8 +106,9 @@ export default function RegisterPage() {
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
-              placeholder="James"
+              autoComplete="given-name"
+              className={inputClass}
+              placeholder="Forename"
             />
           </div>
           <div>
@@ -76,8 +119,9 @@ export default function RegisterPage() {
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
               required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
-              placeholder="Attrill"
+              autoComplete="family-name"
+              className={inputClass}
+              placeholder="Surname"
             />
           </div>
         </div>
@@ -90,7 +134,8 @@ export default function RegisterPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
+            autoComplete="email"
+            className={inputClass}
             placeholder="you@example.com"
           />
         </div>
@@ -101,8 +146,9 @@ export default function RegisterPage() {
             id="phone"
             type="tel"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
+            onChange={handlePhone}
+            autoComplete="tel"
+            className={inputClass}
             placeholder="Shared with your league members"
           />
         </div>
@@ -115,11 +161,31 @@ export default function RegisterPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            minLength={8}
             autoComplete="new-password"
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm"
+            className={inputClass}
             placeholder="Min. 8 characters"
           />
+          <PasswordStrength password={password} />
+        </div>
+
+        <div>
+          <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
+          <input
+            id="confirm"
+            type="password"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            required
+            autoComplete="new-password"
+            className={inputClass}
+            placeholder="Re-enter password"
+          />
+          {confirm && !passwordsMatch && (
+            <p className="text-xs text-red-500 mt-1">Passwords do not match</p>
+          )}
+          {confirm && passwordsMatch && (
+            <p className="text-xs text-green-700 mt-1">✓ Passwords match</p>
+          )}
         </div>
 
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
