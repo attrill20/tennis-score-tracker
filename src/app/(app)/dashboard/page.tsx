@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
-import DisputeButton from '../leagues/[id]/DisputeButton';
+import DisputeResolutionNotification from '@/components/DisputeResolutionNotification';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -25,7 +25,7 @@ export default async function DashboardPage() {
 
   const leagueIds = leagues.map((l) => l.id as string);
 
-  const [recentMatches, allPlayers, allMatches] = await Promise.all([
+  const [recentMatches, allPlayers, allMatches, pendingEdits, disputedMatches, resolvedDisputes] = await Promise.all([
     sql`
       SELECT
         m.id, m.score_player1, m.score_player2, m.set_scores, m.played_at,
@@ -52,6 +52,43 @@ export default async function DashboardPage() {
       FROM matches
       WHERE league_id = ANY(${leagueIds}::uuid[])
     ` : Promise.resolve([]),
+    sql`
+      SELECT m.id, m.league_id, m.pending_score_player1, m.pending_score_player2, m.pending_set_scores,
+        (p2.first_name || ' ' || p2.last_name) AS opponent_name
+      FROM matches m
+      JOIN profiles p2 ON p2.id = m.pending_edit_by
+      WHERE m.submitted_by = ${userId} AND m.status = 'pending_edit'
+    `,
+    sql`
+      SELECT m.id, m.league_id, m.score_player1, m.score_player2, m.player1_id, m.player2_id,
+        (p1.first_name || ' ' || p1.last_name) AS player1_name,
+        (p2.first_name || ' ' || p2.last_name) AS player2_name
+      FROM matches m
+      JOIN profiles p1 ON p1.id = m.player1_id
+      JOIN profiles p2 ON p2.id = m.player2_id
+      WHERE m.status = 'disputed'
+        AND (m.player1_id = ${userId} OR m.player2_id = ${userId})
+    `,
+    sql`
+      SELECT
+        d.id AS dispute_id, d.acknowledged_by_player1, d.acknowledged_by_player2,
+        m.id AS match_id, m.league_id, m.score_player1, m.score_player2, m.status AS match_status,
+        m.player1_id, m.player2_id,
+        (p1.first_name || ' ' || p1.last_name) AS player1_name,
+        (p2.first_name || ' ' || p2.last_name) AS player2_name,
+        l.name AS league_name
+      FROM disputes d
+      JOIN matches m ON m.id = d.match_id
+      JOIN profiles p1 ON p1.id = m.player1_id
+      JOIN profiles p2 ON p2.id = m.player2_id
+      JOIN leagues l ON l.id = m.league_id
+      WHERE d.status = 'resolved'
+        AND (m.player1_id = ${userId} OR m.player2_id = ${userId})
+        AND (
+          (m.player1_id = ${userId} AND d.acknowledged_by_player1 = false)
+          OR (m.player2_id = ${userId} AND d.acknowledged_by_player2 = false)
+        )
+    `,
   ]);
 
   type LeagueStats = { position: number; played: number; total: number };
@@ -94,6 +131,98 @@ export default async function DashboardPage() {
               click here to unmark yourself
             </Link>.
           </span>
+        </div>
+      )}
+
+      {resolvedDisputes.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {resolvedDisputes.map((d) => {
+            const isPlayer1 = d.player1_id === userId;
+            const myScore = isPlayer1 ? d.score_player1 as number : d.score_player2 as number;
+            const theirScore = isPlayer1 ? d.score_player2 as number : d.score_player1 as number;
+            const myName = isPlayer1 ? d.player1_name as string : d.player2_name as string;
+            const opponentName = isPlayer1 ? d.player2_name as string : d.player1_name as string;
+            return (
+              <DisputeResolutionNotification
+                key={d.dispute_id as string}
+                disputeId={d.dispute_id as string}
+                matchId={d.match_id as string}
+                leagueId={d.league_id as string}
+                leagueName={d.league_name as string}
+                myName={myName}
+                opponentName={opponentName}
+                myScore={myScore}
+                theirScore={theirScore}
+                matchStatus={d.match_status as string}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {pendingEdits.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {pendingEdits.map((pe) => {
+            const pendingSets = (pe.pending_set_scores ?? []) as [number, number][];
+            return (
+              <div key={pe.id as string} className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-200 rounded-full shrink-0 text-amber-800 font-bold text-xs">!</span>
+                  <div className="min-w-0">
+                    <p className="text-sm text-amber-800">
+                      <span className="font-medium">{pe.opponent_name as string}</span> suggested a score correction
+                    </p>
+                    <p className="text-xs text-amber-700 mt-0.5">
+                      You {pe.pending_score_player1 as number}-{pe.pending_score_player2 as number} them
+                      {pendingSets.length > 0 && (
+                        <span className="ml-1 text-amber-600">
+                          ({pendingSets.map(([p1, p2], i) => (
+                            <span key={i}>{i > 0 ? ', ' : ''}{p1}-{p2}</span>
+                          ))})
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/leagues/${pe.league_id as string}/matches/${pe.id as string}`}
+                  className="shrink-0 text-xs bg-amber-200 hover:bg-amber-300 text-amber-900 font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Review
+                </Link>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {disputedMatches.length > 0 && (
+        <div className="mb-6 space-y-2">
+          {disputedMatches.map((m) => {
+            const isPlayer1 = m.player1_id === userId;
+            const opponentName = isPlayer1 ? m.player2_name as string : m.player1_name as string;
+            const myScore = isPlayer1 ? m.score_player1 as number : m.score_player2 as number;
+            const theirScore = isPlayer1 ? m.score_player2 as number : m.score_player1 as number;
+            return (
+              <div key={m.id as string} className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className="inline-flex items-center justify-center w-5 h-5 bg-red-200 rounded-full shrink-0 text-red-800 font-bold text-xs">!</span>
+                  <div className="min-w-0">
+                    <p className="text-sm text-red-800">
+                      Your match with <span className="font-medium">{opponentName}</span> is disputed
+                    </p>
+                    <p className="text-xs text-red-600 mt-0.5">Score {myScore}-{theirScore} - awaiting admin review</p>
+                  </div>
+                </div>
+                <Link
+                  href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+                  className="shrink-0 text-xs bg-red-200 hover:bg-red-300 text-red-900 font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  View
+                </Link>
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -189,7 +318,8 @@ export default async function DashboardPage() {
             const opponentName = isPlayer1 ? match.player2_name as string : match.player1_name as string;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
-            const canDispute = !submittedByMe && match.status === 'confirmed';
+            const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&
+              (match.player1_id === userId || match.player2_id === userId);
             const setScores = match.set_scores as [number, number][] | null;
             const result = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
@@ -232,22 +362,22 @@ export default async function DashboardPage() {
                   {/* Right side: row 1 = league + edit/dispute, row 2 = date */}
                   <div className="flex flex-col items-end gap-1 shrink-0 text-right">
                     <div className="flex items-center gap-2">
-                      {match.status === 'disputed' && (
-                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
+                      {match.status === 'pending_edit' && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
                       )}
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
                       <span className="text-xs text-gray-400">{match.league_name as string}</span>
                       {canEdit && (
-                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-blue-600 hover:underline">
+                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                           Edit
                         </Link>
                       )}
-                      {canDispute && (
-                        <div className="relative z-20">
-                          <DisputeButton matchId={match.id as string} />
-                        </div>
+                      {canSuggestEdit && (
+                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                          Suggest edit
+                        </Link>
                       )}
                     </div>
                     <span className="text-xs text-gray-400">

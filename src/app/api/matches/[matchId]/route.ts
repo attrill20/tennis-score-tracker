@@ -7,8 +7,115 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { matchId } = await params;
-  const { sets, playedAt } = await req.json();
+  const body = await req.json();
 
+  const matches = await sql`SELECT * FROM matches WHERE id = ${matchId}`;
+  const match = matches[0];
+  if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+
+  const userId = session.user.id;
+  const isSubmitter = match.submitted_by === userId;
+  const isOpponent = (match.player1_id === userId || match.player2_id === userId) && !isSubmitter;
+
+  const { action } = body;
+
+  // Non-submitter proposes a correction
+  if (action === 'suggest-edit') {
+    if (!isOpponent) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (match.status !== 'confirmed') return NextResponse.json({ error: 'Match cannot be edited' }, { status: 400 });
+
+    const { sets, playedAt } = body;
+    if (!sets?.length || !playedAt) {
+      return NextResponse.json({ error: 'Sets and date are required' }, { status: 400 });
+    }
+
+    // Non-submitter is always player2, so sets arrive as [my(p2), their(p1)] — flip to [p1, p2]
+    const pendingSets = (sets as [number, number][]).map(([my, their]) => [their, my]);
+
+    let p1Score = 0, p2Score = 0;
+    for (const [p1, p2] of pendingSets) {
+      if (p1 > p2) p1Score++;
+      else if (p2 > p1) p2Score++;
+    }
+
+    if (p1Score === p2Score) {
+      return NextResponse.json({ error: 'Scores cannot be a draw' }, { status: 400 });
+    }
+
+    await sql`
+      UPDATE matches SET
+        status = 'pending_edit',
+        pending_score_player1 = ${p1Score},
+        pending_score_player2 = ${p2Score},
+        pending_set_scores = ${JSON.stringify(pendingSets)},
+        pending_edit_by = ${userId}
+      WHERE id = ${matchId}
+    `;
+
+    return NextResponse.json({ success: true });
+  }
+
+  // Submitter accepts the proposed edit
+  if (action === 'accept-edit') {
+    if (!isSubmitter) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (match.status !== 'pending_edit') return NextResponse.json({ error: 'No pending edit' }, { status: 400 });
+
+    await sql`
+      UPDATE matches SET
+        score_player1 = pending_score_player1,
+        score_player2 = pending_score_player2,
+        set_scores = pending_set_scores,
+        status = 'confirmed',
+        pending_score_player1 = NULL,
+        pending_score_player2 = NULL,
+        pending_set_scores = NULL,
+        pending_edit_by = NULL
+      WHERE id = ${matchId}
+    `;
+
+    return NextResponse.json({ success: true });
+  }
+
+  // Submitter declines the proposed edit — raises a dispute for admin to resolve
+  if (action === 'decline-edit') {
+    if (!isSubmitter) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    if (match.status !== 'pending_edit') return NextResponse.json({ error: 'No pending edit' }, { status: 400 });
+
+    const opponentId = match.pending_edit_by;
+    const reqP1 = match.pending_score_player1 as number;
+    const reqP2 = match.pending_score_player2 as number;
+    const reqSets = match.pending_set_scores ?? null;
+
+    await sql`BEGIN`;
+    try {
+      await sql`
+        UPDATE matches SET
+          status = 'disputed',
+          pending_score_player1 = NULL,
+          pending_score_player2 = NULL,
+          pending_set_scores = NULL,
+          pending_edit_by = NULL
+        WHERE id = ${matchId}
+      `;
+      await sql`
+        INSERT INTO disputes (match_id, raised_by, reason, requested_score_player1, requested_score_player2, requested_set_scores)
+        VALUES (${matchId}, ${opponentId}, 'Score correction requested but declined by submitter',
+                ${reqP1}, ${reqP2}, ${reqSets ? JSON.stringify(reqSets) : null})
+      `;
+      await sql`COMMIT`;
+    } catch (e) {
+      await sql`ROLLBACK`;
+      throw e;
+    }
+
+    return NextResponse.json({ success: true });
+  }
+
+  // Default: submitter editing their own confirmed match
+  if (!isSubmitter) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (match.status !== 'confirmed') return NextResponse.json({ error: 'Only confirmed matches can be edited' }, { status: 400 });
+
+  const { sets, playedAt } = body;
   if (!sets?.length || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
   }
@@ -23,19 +130,32 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
     return NextResponse.json({ error: 'Scores cannot be a draw' }, { status: 400 });
   }
 
-  const matches = await sql`SELECT * FROM matches WHERE id = ${matchId}`;
-  const match = matches[0];
-
-  if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
-  if (match.submitted_by !== session.user.id) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-  if (match.status !== 'confirmed') return NextResponse.json({ error: 'Only confirmed matches can be edited' }, { status: 400 });
-
   await sql`
     UPDATE matches
     SET score_player1 = ${myScore}, score_player2 = ${theirScore},
         set_scores = ${JSON.stringify(sets)}, played_at = ${playedAt}
     WHERE id = ${matchId}
   `;
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ matchId: string }> }) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { matchId } = await params;
+
+  const matches = await sql`SELECT submitted_by, league_id FROM matches WHERE id = ${matchId}`;
+  const match = matches[0];
+  if (!match) return NextResponse.json({ error: 'Match not found' }, { status: 404 });
+
+  if (match.submitted_by !== session.user.id) {
+    return NextResponse.json({ error: 'Only the match submitter can delete it' }, { status: 403 });
+  }
+
+  await sql`DELETE FROM disputes WHERE match_id = ${matchId}`;
+  await sql`DELETE FROM matches WHERE id = ${matchId}`;
 
   return NextResponse.json({ success: true });
 }

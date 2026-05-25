@@ -3,7 +3,6 @@ import sql from '@/lib/db';
 import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import DisputeButton from './DisputeButton';
 import StandingsRow from './StandingsRow';
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
@@ -140,7 +139,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             const isInvolved = match.player1_id === userId || match.player2_id === userId;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
-            const canDispute = isInvolved && match.status === 'confirmed' && !submittedByMe;
+            const canSuggestEdit = isInvolved && match.status === 'confirmed' && !submittedByMe;
             const setScores = match.set_scores as [number, number][] | null;
 
             // From current user's perspective if involved, otherwise winner first
@@ -190,17 +189,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0 text-right">
                     <div className="flex items-center gap-2 relative z-10">
-                      {match.status === 'disputed' && (
-                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
+                      {match.status === 'pending_edit' && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
                       )}
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
                       {canEdit && (
-                        <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-blue-600 hover:underline">Edit</Link>
+                        <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">Edit</Link>
                       )}
-                      {canDispute && (
-                        <div className="relative z-20"><DisputeButton matchId={match.id as string} /></div>
+                      {canSuggestEdit && (
+                        <Link href={`/leagues/${id}/matches/${match.id as string}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">Suggest edit</Link>
                       )}
                     </div>
                     <span className="text-xs text-gray-400">

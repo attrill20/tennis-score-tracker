@@ -6,48 +6,40 @@ import { useRouter } from 'next/navigation';
 export default function DisputeResolveForm({
   disputeId,
   matchId,
-  currentScore,
   player1Name,
   player2Name,
+  originalScore1,
+  originalScore2,
+  requestedScore1,
+  requestedScore2,
+  requestedSets,
 }: {
   disputeId: string;
   matchId: string;
-  currentScore: string;
   player1Name: string;
   player2Name: string;
+  originalScore1: number;
+  originalScore2: number;
+  requestedScore1: number | null;
+  requestedScore2: number | null;
+  requestedSets: [number, number][] | null;
 }) {
   const router = useRouter();
-  const [override, setOverride] = useState(false);
-  const [p1Score, setP1Score] = useState('');
-  const [p2Score, setP2Score] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState<string | null>(null);
   const [error, setError] = useState('');
 
-  async function handleResolve() {
+  async function award(score1: number, score2: number, sets: [number, number][] | null, override: boolean) {
     setError('');
-    if (override && (p1Score === '' || p2Score === '')) {
-      setError('Enter the corrected scores');
-      return;
-    }
-    if (override && p1Score === p2Score) {
-      setError('Scores cannot be a draw');
-      return;
-    }
+    setLoading(`${score1}-${score2}`);
 
-    setLoading(true);
     const res = await fetch(`/api/admin/disputes/${disputeId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        matchId,
-        override,
-        score_player1: override ? parseInt(p1Score) : undefined,
-        score_player2: override ? parseInt(p2Score) : undefined,
-      }),
+      body: JSON.stringify({ matchId, override, score_player1: score1, score_player2: score2, set_scores: sets }),
     });
 
     const data = await res.json();
-    setLoading(false);
+    setLoading(null);
 
     if (!res.ok) {
       setError(data.error || 'Something went wrong');
@@ -57,56 +49,54 @@ export default function DisputeResolveForm({
     router.refresh();
   }
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input
-            type="checkbox"
-            checked={override}
-            onChange={(e) => setOverride(e.target.checked)}
-            className="accent-green-700"
-          />
-          Override the score
-        </label>
-        <span className="text-xs text-gray-400">Current: {currentScore}</span>
-      </div>
+  const hasRequest = requestedScore1 !== null && requestedScore2 !== null;
 
-      {override && (
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="text-gray-600 w-28 truncate">{player1Name}</span>
-            <input
-              type="number"
-              min="0"
-              max="3"
-              value={p1Score}
-              onChange={(e) => setP1Score(e.target.value)}
-              className="w-14 px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="number"
-              min="0"
-              max="3"
-              value={p2Score}
-              onChange={(e) => setP2Score(e.target.value)}
-              className="w-14 px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-            />
-            <span className="text-gray-600 w-28 truncate">{player2Name}</span>
-          </div>
-        </div>
-      )}
+  return (
+    <div className="space-y-3 pt-4 border-t border-gray-100">
+      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Award match to</p>
 
       {error && <p className="text-xs text-red-600">{error}</p>}
 
-      <button
-        onClick={handleResolve}
-        disabled={loading}
-        className="bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white text-sm font-medium px-4 py-2 rounded-lg transition-colors"
-      >
-        {loading ? 'Saving...' : override ? 'Override & resolve' : 'Resolve (keep score)'}
-      </button>
+      <div className={`grid gap-2 ${hasRequest ? 'grid-cols-2' : 'grid-cols-2'}`}>
+        {/* Award to player1 (keep original) */}
+        <button
+          onClick={() => award(originalScore1, originalScore2, null, false)}
+          disabled={!!loading}
+          className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-colors disabled:opacity-50 text-center"
+        >
+          <span className="text-sm font-semibold text-gray-800">{player1Name.split(' ')[0]}</span>
+          <span className="text-xs text-gray-400">
+            {originalScore1 > originalScore2 ? 'Keep original' : 'Override'}
+          </span>
+          <span className="text-lg font-bold text-green-700">{originalScore1}-{originalScore2}</span>
+          {loading === `${originalScore1}-${originalScore2}` && <span className="text-xs text-gray-400">Saving...</span>}
+        </button>
+
+        {/* Award to player2 — either requested correction or inverse of original */}
+        {hasRequest ? (
+          <button
+            onClick={() => award(requestedScore1!, requestedScore2!, requestedSets, true)}
+            disabled={!!loading}
+            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl border-2 border-amber-200 hover:border-green-500 hover:bg-green-50 transition-colors disabled:opacity-50 text-center"
+          >
+            <span className="text-sm font-semibold text-gray-800">{player2Name.split(' ')[0]}</span>
+            <span className="text-xs text-amber-600">Apply correction</span>
+            <span className="text-lg font-bold text-green-700">{requestedScore1}-{requestedScore2}</span>
+            {loading === `${requestedScore1}-${requestedScore2}` && <span className="text-xs text-gray-400">Saving...</span>}
+          </button>
+        ) : (
+          <button
+            onClick={() => award(originalScore2, originalScore1, null, true)}
+            disabled={!!loading}
+            className="flex flex-col items-center gap-1 px-3 py-3 rounded-xl border-2 border-gray-200 hover:border-green-500 hover:bg-green-50 transition-colors disabled:opacity-50 text-center"
+          >
+            <span className="text-sm font-semibold text-gray-800">{player2Name.split(' ')[0]}</span>
+            <span className="text-xs text-gray-400">Override</span>
+            <span className="text-lg font-bold text-green-700">{originalScore2}-{originalScore1}</span>
+            {loading === `${originalScore2}-${originalScore1}` && <span className="text-xs text-gray-400">Saving...</span>}
+          </button>
+        )}
+      </div>
     </div>
   );
 }

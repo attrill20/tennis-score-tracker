@@ -43,6 +43,8 @@ export default function EditMatchForm({
   const [playedAt, setPlayedAt] = useState(initialPlayedAt);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   function updateSet(index: number, field: 'my' | 'their', value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
@@ -87,6 +89,18 @@ export default function EditMatchForm({
     }
 
     router.push(`/leagues/${leagueId}`);
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
+    setDeleting(false);
+    if (res.ok) {
+      router.push(`/leagues/${leagueId}`);
+    } else {
+      const data = await res.json();
+      setError(data.error || 'Failed to delete match');
+    }
   }
 
   const myWon = currentMyScore > currentTheirScore;
@@ -223,6 +237,40 @@ export default function EditMatchForm({
           </form>
         </>
       )}
+
+      {/* Delete match */}
+      <div className="mt-6 pt-5 border-t border-gray-200">
+        {!deleteConfirm ? (
+          <button
+            onClick={() => setDeleteConfirm(true)}
+            className="text-sm text-red-500 hover:text-red-700 transition-colors"
+          >
+            Delete this match
+          </button>
+        ) : (
+          <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+            <p className="text-sm text-red-800 font-medium">Delete this match permanently?</p>
+            <p className="text-xs text-red-600">This cannot be undone. The result will be removed from the league table.</p>
+            {error && <p className="text-xs text-red-600">{error}</p>}
+            <div className="flex gap-2">
+              <button
+                onClick={() => setDeleteConfirm(false)}
+                disabled={deleting}
+                className="flex-1 text-sm border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 text-sm bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
+              >
+                {deleting ? 'Deleting...' : 'Yes, delete'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

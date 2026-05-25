@@ -1,8 +1,6 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import Link from 'next/link';
-import DisputeButton from '../leagues/[id]/DisputeButton';
-
 export default async function MatchesPage() {
   const session = await auth();
   const userId = session!.user.id;
@@ -73,7 +71,8 @@ export default async function MatchesPage() {
             const opponentName = isPlayer1 ? match.player2_name as string : match.player1_name as string;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
-            const canDispute = !submittedByMe && match.status === 'confirmed';
+            const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&
+              (match.player1_id === userId || match.player2_id === userId);
             const setScores = match.set_scores as [number, number][] | null;
             const result = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
@@ -116,22 +115,22 @@ export default async function MatchesPage() {
                   {/* Right side: row 1 = league + edit/dispute, row 2 = date */}
                   <div className="flex flex-col items-end gap-1 shrink-0 text-right">
                     <div className="flex items-center gap-2">
-                      {match.status === 'disputed' && (
-                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
+                      {match.status === 'pending_edit' && (
+                        <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
                       )}
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
                       <span className="text-xs text-gray-400">{match.league_name as string}</span>
                       {canEdit && (
-                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-blue-600 hover:underline">
+                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                           Edit
                         </Link>
                       )}
-                      {canDispute && (
-                        <div className="relative z-20">
-                          <DisputeButton matchId={match.id as string} />
-                        </div>
+                      {canSuggestEdit && (
+                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                          Suggest edit
+                        </Link>
                       )}
                     </div>
                     <span className="text-xs text-gray-400">

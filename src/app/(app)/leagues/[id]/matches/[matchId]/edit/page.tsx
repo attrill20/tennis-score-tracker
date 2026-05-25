@@ -25,7 +25,7 @@ export default async function EditMatchPage({
   const match = matches[0];
   if (!match) notFound();
   if (match.submitted_by !== userId) redirect(`/leagues/${leagueId}`);
-  if (match.status !== 'confirmed') redirect(`/leagues/${leagueId}`);
+  if (match.status !== 'confirmed') redirect(`/leagues/${leagueId}/matches/${matchId}`);
 
   const isPlayer1 = match.player1_id === userId;
   const opponentName = isPlayer1 ? (match.player2_name as string) : (match.player1_name as string);
