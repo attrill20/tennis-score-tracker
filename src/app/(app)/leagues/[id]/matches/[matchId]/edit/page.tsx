@@ -29,6 +29,7 @@ export default async function EditMatchPage({
 
   const isPlayer1 = match.player1_id === userId;
   const opponentName = isPlayer1 ? (match.player2_name as string) : (match.player1_name as string);
+  const opponentId = isPlayer1 ? (match.player2_id as string) : (match.player1_id as string);
   const currentMyScore = isPlayer1 ? match.score_player1 as number : match.score_player2 as number;
   const currentTheirScore = isPlayer1 ? match.score_player2 as number : match.score_player1 as number;
 
@@ -39,7 +40,9 @@ export default async function EditMatchPage({
     <EditMatchForm
       matchId={matchId}
       leagueId={leagueId}
+      userId={userId}
       userName={session!.user.name ?? 'You'}
+      opponentId={opponentId}
       opponentName={opponentName}
       playedAt={new Date(match.played_at as string).toISOString().split('T')[0]}
       currentMyScore={currentMyScore}

@@ -61,18 +61,24 @@ export default async function MatchPage({
 
         <div className="flex items-center justify-between gap-4 mb-4">
           <div className="text-center flex-1">
-            <p className={`text-sm font-medium mb-1 ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}>
+            <Link
+              href={`/players/${userId}`}
+              className={`text-sm font-medium mb-1 hover:underline ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}
+            >
               {myName}
-            </p>
+            </Link>
             <p className={`text-5xl font-bold ${myScore > theirScore ? 'text-green-700' : 'text-gray-300'}`}>
               {myScore}
             </p>
           </div>
           <p className="text-2xl font-light text-gray-300">-</p>
           <div className="text-center flex-1">
-            <p className={`text-sm font-medium mb-1 ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}>
+            <Link
+              href={`/players/${isPlayer1 ? match.player2_id : match.player1_id}`}
+              className={`text-sm font-medium mb-1 hover:underline ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}
+            >
               {opponentName}
-            </p>
+            </Link>
             <p className={`text-5xl font-bold ${theirScore > myScore ? 'text-green-700' : 'text-gray-300'}`}>
               {theirScore}
             </p>
@@ -87,7 +93,7 @@ export default async function MatchPage({
               ))}
             </div>
             <div className="flex items-center gap-2 mb-1">
-              <span className={`w-[52px] text-xs truncate ${myScore > theirScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{myName.split(' ')[0]}</span>
+              <Link href={`/players/${userId}`} className={`w-[52px] text-xs truncate hover:underline ${myScore > theirScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{myName.split(' ')[0]}</Link>
               {setScores.map(([p1, p2], i) => {
                 const my = isPlayer1 ? p1 : p2;
                 const their = isPlayer1 ? p2 : p1;
@@ -99,7 +105,7 @@ export default async function MatchPage({
               })}
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-[52px] text-xs truncate ${theirScore > myScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</span>
+              <Link href={`/players/${isPlayer1 ? match.player2_id : match.player1_id}`} className={`w-[52px] text-xs truncate hover:underline ${theirScore > myScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</Link>
               {setScores.map(([p1, p2], i) => {
                 const my = isPlayer1 ? p1 : p2;
                 const their = isPlayer1 ? p2 : p1;

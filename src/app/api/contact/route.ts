@@ -4,12 +4,17 @@ import nodemailer from 'nodemailer';
 
 export async function POST(req: NextRequest) {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { subject, message } = await req.json();
+  const { email, subject, message } = await req.json();
 
   if (!subject?.trim() || !message?.trim()) {
     return NextResponse.json({ error: 'Subject and message are required' }, { status: 400 });
+  }
+
+  const fromEmail = session ? session.user.email : email?.trim();
+  const fromName = session ? session.user.name : email?.trim();
+
+  if (!fromEmail) {
+    return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
   const transporter = nodemailer.createTransport({
@@ -23,10 +28,10 @@ export async function POST(req: NextRequest) {
   await transporter.sendMail({
     from: `"QPTC Score Tracker" <${process.env.CONTACT_EMAIL}>`,
     to: process.env.CONTACT_EMAIL,
-    replyTo: session.user.email,
+    replyTo: fromEmail,
     subject: `[QPTC] ${subject}`,
     html: `
-      <p><strong>From:</strong> ${session.user.name} (${session.user.email})</p>
+      <p><strong>From:</strong> ${fromName} (${fromEmail})</p>
       <p><strong>Subject:</strong> ${subject}</p>
       <hr />
       <p>${message.replace(/\n/g, '<br />')}</p>

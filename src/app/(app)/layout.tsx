@@ -1,5 +1,6 @@
 import { auth, signOut } from '@/auth';
 import Navbar from './Navbar';
+import Footer from '@/components/Footer';
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -12,9 +13,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar isAdmin={isAdmin} isSuperAdmin={isSuperAdmin} signOut={handleSignOut} />
-      <main className="max-w-4xl mx-auto px-4 py-6">{children}</main>
+      <main className="max-w-4xl mx-auto px-4 py-6 w-full flex-1">{children}</main>
+      <Footer />
     </div>
   );
 }

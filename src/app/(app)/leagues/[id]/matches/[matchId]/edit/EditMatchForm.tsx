@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import Link from 'next/link';
 
 function toFormSets(setScores: [number, number][] | null) {
   const base = [{ my: '', their: '' }, { my: '', their: '' }, { my: '', their: '' }];
@@ -16,7 +17,9 @@ function toFormSets(setScores: [number, number][] | null) {
 export default function EditMatchForm({
   matchId,
   leagueId,
+  userId,
   userName,
+  opponentId,
   opponentName,
   playedAt: initialPlayedAt,
   currentMyScore,
@@ -25,7 +28,9 @@ export default function EditMatchForm({
 }: {
   matchId: string;
   leagueId: string;
+  userId: string;
   userName: string;
+  opponentId: string;
   opponentName: string;
   playedAt: string;
   currentMyScore: number;
@@ -102,7 +107,7 @@ export default function EditMatchForm({
         </div>
 
         <div className="flex items-center gap-3 mb-2">
-          <span className={`flex-1 text-sm font-medium truncate ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>{userName}</span>
+          <Link href={`/players/${userId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>{userName}</Link>
           {[0, 1, 2].map((i) => (
             <div key={i} className={`w-14 py-2 rounded-lg text-sm text-center font-medium ${
               setScores?.[i]
@@ -115,7 +120,7 @@ export default function EditMatchForm({
         </div>
 
         <div className="flex items-center gap-3">
-          <span className={`flex-1 text-sm font-medium truncate ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</span>
+          <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
           {[0, 1, 2].map((i) => (
             <div key={i} className={`w-14 py-2 rounded-lg text-sm text-center font-medium ${
               setScores?.[i]
@@ -153,7 +158,7 @@ export default function EditMatchForm({
               </div>
 
               <div className="flex items-center gap-3 mb-3">
-                <span className="flex-1 text-sm font-medium text-gray-800 truncate">{userName}</span>
+                <Link href={`/players/${userId}`} className="flex-1 text-sm font-medium text-gray-800 truncate hover:underline">{userName}</Link>
                 {sets.map((set, i) => (
                   <input
                     key={i}
@@ -168,7 +173,7 @@ export default function EditMatchForm({
               </div>
 
               <div className="flex items-center gap-3">
-                <span className="flex-1 text-sm text-gray-500 truncate">{opponentName}</span>
+                <Link href={`/players/${opponentId}`} className="flex-1 text-sm text-gray-500 truncate hover:underline">{opponentName}</Link>
                 {sets.map((set, i) => (
                   <input
                     key={i}
