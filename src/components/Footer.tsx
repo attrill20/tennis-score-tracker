@@ -5,14 +5,14 @@ export default function Footer() {
 
   return (
     <footer className="mt-auto border-t border-green-900 bg-green-900">
-      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-white">
+      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-row items-center justify-between gap-2 text-xs text-white">
         <span>&copy; {year} Queen's Park Tennis Club</span>
 
         <Link
           href="/contact"
           className="px-3 py-1 rounded-full bg-white text-green-900 font-medium hover:bg-green-100 transition-colors"
         >
-          Contact us
+          Contact Us
         </Link>
 
         <span>

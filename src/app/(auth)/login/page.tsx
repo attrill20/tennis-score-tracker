@@ -117,9 +117,9 @@ function LoginForm() {
       </form>
 
       <p className="text-sm text-center text-gray-500 mt-6">
-        No account?{' '}
+        New user? Please{' '}
         <Link href="/register" className="text-green-900 font-medium hover:underline">
-          Register here
+          Register Here
         </Link>
       </p>
     </div>
