@@ -19,6 +19,18 @@ function SortIcon({ col, currentSort, currentOrder }: { col: string; currentSort
   return <span className="ml-1">{currentOrder === 'asc' ? '↑' : '↓'}</span>;
 }
 
+type User = {
+  id: string;
+  title: string | null;
+  first_name: string;
+  last_name: string;
+  email: string;
+  role: string;
+  created_at: Date | null;
+  member_number: number | null;
+  deleted_at: Date | null;
+};
+
 export default async function AdminUsersPage({
   searchParams,
 }: {
@@ -37,47 +49,76 @@ export default async function AdminUsersPage({
   const search = rawSearch?.trim() ?? '';
 
   const users = await sql`
-    SELECT id, title, first_name, last_name, email, role, created_at, member_number
+    SELECT id, title, first_name, last_name, email, role, created_at, member_number, deleted_at
     FROM profiles
   `;
 
-  type User = {
-    id: string;
-    title: string | null;
-    first_name: string;
-    last_name: string;
-    email: string;
-    role: string;
-    created_at: Date | null;
-    member_number: number | null;
-  };
-
-  let filtered = users as User[];
+  let allUsers = users as User[];
 
   if (search) {
     const q = search.toLowerCase();
-    filtered = filtered.filter(
+    allUsers = allUsers.filter(
       (u) =>
         `${u.first_name} ${u.last_name}`.toLowerCase().includes(q) ||
         u.email.toLowerCase().includes(q),
     );
   }
 
-  filtered.sort((a, b) => {
-    let aVal: string, bVal: string;
-    if (sortCol === 'name') {
-      aVal = `${a.last_name} ${a.first_name}`.toLowerCase();
-      bVal = `${b.last_name} ${b.first_name}`.toLowerCase();
-    } else if (sortCol === 'created_at') {
-      aVal = a.created_at?.toISOString() ?? '';
-      bVal = b.created_at?.toISOString() ?? '';
-    } else {
-      aVal = (a[sortCol] as string)?.toLowerCase() ?? '';
-      bVal = (b[sortCol] as string)?.toLowerCase() ?? '';
-    }
-    const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
-    return sortOrder === 'asc' ? cmp : -cmp;
-  });
+  const active = allUsers.filter((u) => !u.deleted_at);
+  const archived = allUsers.filter((u) => !!u.deleted_at);
+
+  function sortUsers(list: User[]) {
+    return [...list].sort((a, b) => {
+      let aVal: string, bVal: string;
+      if (sortCol === 'name') {
+        aVal = `${a.last_name} ${a.first_name}`.toLowerCase();
+        bVal = `${b.last_name} ${b.first_name}`.toLowerCase();
+      } else if (sortCol === 'created_at') {
+        aVal = a.created_at?.toISOString() ?? '';
+        bVal = b.created_at?.toISOString() ?? '';
+      } else {
+        aVal = (a[sortCol] as string)?.toLowerCase() ?? '';
+        bVal = (b[sortCol] as string)?.toLowerCase() ?? '';
+      }
+      const cmp = aVal < bVal ? -1 : aVal > bVal ? 1 : 0;
+      return sortOrder === 'asc' ? cmp : -cmp;
+    });
+  }
+
+  const sortedActive = sortUsers(active);
+  const sortedArchived = sortUsers(archived);
+
+  function formatDate(date: Date | null) {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  const tableHeaders = (
+    <tr className="bg-gray-50 text-xs text-gray-500 border-b border-gray-200">
+      <th className="text-left px-4 py-3 font-medium">#</th>
+      <th className="text-left px-4 py-3 font-medium">
+        <Link href={sortHref('name', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
+          Member<SortIcon col="name" currentSort={sortCol} currentOrder={sortOrder} />
+        </Link>
+      </th>
+      <th className="text-left px-4 py-3 font-medium">
+        <Link href={sortHref('email', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
+          Email<SortIcon col="email" currentSort={sortCol} currentOrder={sortOrder} />
+        </Link>
+      </th>
+      <th className="text-left px-4 py-3 font-medium">
+        <Link href={sortHref('role', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
+          Role<SortIcon col="role" currentSort={sortCol} currentOrder={sortOrder} />
+        </Link>
+      </th>
+      <th className="text-left px-4 py-3 font-medium">
+        <Link href={sortHref('created_at', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
+          Date Created<SortIcon col="created_at" currentSort={sortCol} currentOrder={sortOrder} />
+        </Link>
+      </th>
+      <th className="px-4 py-3"></th>
+    </tr>
+  );
 
   return (
     <div className="space-y-6">
@@ -90,41 +131,16 @@ export default async function AdminUsersPage({
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-xs text-gray-500 border-b border-gray-200">
-              <th className="text-left px-4 py-3 font-medium">#</th>
-              <th className="text-left px-4 py-3 font-medium">
-                <Link href={sortHref('name', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
-                  Member<SortIcon col="name" currentSort={sortCol} currentOrder={sortOrder} />
-                </Link>
-              </th>
-              <th className="text-left px-4 py-3 font-medium">
-                <Link href={sortHref('email', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
-                  Email<SortIcon col="email" currentSort={sortCol} currentOrder={sortOrder} />
-                </Link>
-              </th>
-              <th className="text-left px-4 py-3 font-medium">
-                <Link href={sortHref('role', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
-                  Role<SortIcon col="role" currentSort={sortCol} currentOrder={sortOrder} />
-                </Link>
-              </th>
-              <th className="text-left px-4 py-3 font-medium">
-                <Link href={sortHref('created_at', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
-                  Date Created<SortIcon col="created_at" currentSort={sortCol} currentOrder={sortOrder} />
-                </Link>
-              </th>
-              <th className="px-4 py-3"></th>
-            </tr>
-          </thead>
+          <thead>{tableHeaders}</thead>
           <tbody>
-            {filtered.length === 0 && (
+            {sortedActive.length === 0 && (
               <tr>
                 <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
                   No users found.
                 </td>
               </tr>
             )}
-            {filtered.map((user) => (
+            {sortedActive.map((user) => (
               <tr key={user.id} className="border-t border-gray-100">
                 <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
                 <td className="px-4 py-3 text-gray-800">
@@ -141,21 +157,15 @@ export default async function AdminUsersPage({
                         ? 'bg-purple-100 text-purple-700'
                         : user.role === 'admin'
                           ? 'bg-blue-100 text-blue-700'
-                          : 'bg-gray-100 text-gray-500'
+                          : user.role === 'unverified'
+                            ? 'bg-yellow-100 text-yellow-700'
+                            : 'bg-gray-100 text-gray-500'
                     }`}
                   >
                     {user.role}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500">
-                  {user.created_at
-                    ? new Date(user.created_at).toLocaleDateString('en-GB', {
-                        day: 'numeric',
-                        month: 'short',
-                        year: 'numeric',
-                      })
-                    : '-'}
-                </td>
+                <td className="px-4 py-3 text-gray-500">{formatDate(user.created_at)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     {user.id !== session.user.id && user.role !== 'super_admin' && (
@@ -176,6 +186,37 @@ export default async function AdminUsersPage({
           </tbody>
         </table>
       </div>
+
+      {sortedArchived.length > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Archived (never verified)</h2>
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto opacity-60">
+            <table className="w-full text-sm">
+              <thead>{tableHeaders}</thead>
+              <tbody>
+                {sortedArchived.map((user) => (
+                  <tr key={user.id} className="border-t border-gray-100">
+                    <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
+                    <td className="px-4 py-3 text-gray-500">
+                      {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
+                    </td>
+                    <td className="px-4 py-3 text-gray-400">{user.email}</td>
+                    <td className="px-4 py-3">
+                      <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-600">
+                        deleted
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 text-gray-400">{formatDate(user.created_at)}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs">
+                      Archived {formatDate(user.deleted_at)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

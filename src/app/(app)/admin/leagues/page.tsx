@@ -23,7 +23,7 @@ export default async function AdminLeaguesPage() {
       ORDER BY l.created_at DESC
     `,
     sql`
-      SELECT id, (first_name || ' ' || last_name) AS full_name FROM profiles ORDER BY first_name, last_name
+      SELECT id, (first_name || ' ' || last_name) AS full_name FROM profiles WHERE role != 'unverified' ORDER BY first_name, last_name
     `,
   ]);
 

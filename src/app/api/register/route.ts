@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
       email_verified, verification_token, verification_token_expires
     )
     VALUES (
-      ${email}, ${fullName}, ${firstName}, ${lastName}, ${phone}, ${gender}, ${passwordHash}, 'member',
+      ${email}, ${fullName}, ${firstName}, ${lastName}, ${phone}, ${gender}, ${passwordHash}, 'unverified',
       false, ${verificationToken}, ${verificationTokenExpires.toISOString()}
     )
   `;

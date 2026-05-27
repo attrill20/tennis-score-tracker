@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
   await sql`
     UPDATE profiles
     SET email_verified = true,
+        role = 'member',
         verification_token = NULL,
         verification_token_expires = NULL
     WHERE id = ${rows[0].id}

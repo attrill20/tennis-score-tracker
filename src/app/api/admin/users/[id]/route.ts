@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   if (body.role !== undefined) {
-    if (!['member', 'admin'].includes(body.role)) {
+    if (!['unverified', 'member', 'admin'].includes(body.role)) {
       return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
     }
     await sql`UPDATE profiles SET role = ${body.role} WHERE id = ${targetId}`;

@@ -27,6 +27,7 @@ export default function RoleForm({ userId, currentRole }: { userId: string; curr
       disabled={loading}
       className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
     >
+      <option value="unverified">unverified</option>
       <option value="member">member</option>
       <option value="admin">admin</option>
     </select>
