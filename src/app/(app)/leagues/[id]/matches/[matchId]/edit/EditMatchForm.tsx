@@ -4,12 +4,28 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
 
+type TbEntry = { my: string; their: string };
+
+function isTiebreakSet(my: number, their: number) {
+  return (my === 7 && their === 6) || (my === 6 && their === 7);
+}
+
 function toFormSets(setScores: [number, number][] | null) {
   const base = [{ my: '', their: '' }, { my: '', their: '' }, { my: '', their: '' }];
   if (!setScores) return base;
   return base.map((_, i) =>
     setScores[i]
       ? { my: String(setScores[i][0]), their: String(setScores[i][1]) }
+      : { my: '', their: '' }
+  );
+}
+
+function toFormTiebreaks(tiebreakScores: ([number, number] | null)[] | null): TbEntry[] {
+  const base: TbEntry[] = [{ my: '', their: '' }, { my: '', their: '' }, { my: '', their: '' }];
+  if (!tiebreakScores) return base;
+  return base.map((_, i) =>
+    tiebreakScores[i]
+      ? { my: String(tiebreakScores[i]![0]), their: String(tiebreakScores[i]![1]) }
       : { my: '', their: '' }
   );
 }
@@ -25,6 +41,7 @@ export default function EditMatchForm({
   currentMyScore,
   currentTheirScore,
   setScores,
+  tiebreakScores,
 }: {
   matchId: string;
   leagueId: string;
@@ -36,10 +53,12 @@ export default function EditMatchForm({
   currentMyScore: number;
   currentTheirScore: number;
   setScores: [number, number][] | null;
+  tiebreakScores: ([number, number] | null)[] | null;
 }) {
   const router = useRouter();
   const [confirmed, setConfirmed] = useState(false);
   const [sets, setSets] = useState(toFormSets(setScores));
+  const [tiebreaks, setTiebreaks] = useState(toFormTiebreaks(tiebreakScores));
   const [playedAt, setPlayedAt] = useState(initialPlayedAt);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -49,15 +68,38 @@ export default function EditMatchForm({
   function updateSet(index: number, field: 'my' | 'their', value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
     setSets((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
+    setTiebreaks((prev) => prev.map((t, i) => {
+      if (i !== index) return t;
+      const updated = { ...sets[index], [field]: value };
+      const my = parseInt(updated.my);
+      const their = parseInt(updated.their);
+      return isTiebreakSet(my, their) ? t : { my: '', their: '' };
+    }));
+  }
+
+  function updateTiebreak(index: number, field: 'my' | 'their', value: string) {
+    if (value !== '' && !/^\d+$/.test(value)) return;
+    setTiebreaks((prev) => prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
 
-    const playedSets = sets
-      .filter((s) => s.my !== '' && s.their !== '')
-      .map((s) => [parseInt(s.my), parseInt(s.their)]);
+    const playedIndices = sets.reduce<number[]>((acc, s, i) => {
+      if (s.my !== '' && s.their !== '') acc.push(i);
+      return acc;
+    }, []);
+    const playedSets = playedIndices.map((i) => [parseInt(sets[i].my), parseInt(sets[i].their)]);
+    const playedTiebreaks = playedIndices.map((i) => {
+      const my = parseInt(sets[i].my);
+      const their = parseInt(sets[i].their);
+      if (!isTiebreakSet(my, their)) return null;
+      const tbMy = tiebreaks[i].my !== '' ? parseInt(tiebreaks[i].my) : null;
+      const tbTheir = tiebreaks[i].their !== '' ? parseInt(tiebreaks[i].their) : null;
+      if (tbMy === null && tbTheir === null) return null;
+      return [tbMy ?? 0, tbTheir ?? 0];
+    });
 
     let mySetsWon = 0, theirSetsWon = 0;
     for (const [p1, p2] of playedSets) {
@@ -78,7 +120,7 @@ export default function EditMatchForm({
     const res = await fetch(`/api/matches/${matchId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sets: playedSets, playedAt }),
+      body: JSON.stringify({ sets: playedSets, tiebreaks: playedTiebreaks, playedAt }),
     });
     const data = await res.json();
     setLoading(false);
@@ -104,6 +146,11 @@ export default function EditMatchForm({
   }
 
   const myWon = currentMyScore > currentTheirScore;
+  const anyTiebreak = sets.some((s) => {
+    const my = parseInt(s.my);
+    const their = parseInt(s.their);
+    return isTiebreakSet(my, their);
+  });
 
   return (
     <div className="max-w-lg mx-auto">
@@ -122,28 +169,42 @@ export default function EditMatchForm({
 
         <div className="flex items-center gap-3 mb-2">
           <Link href={`/players/${userId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>{userName}</Link>
-          {[0, 1, 2].map((i) => (
-            <div key={i} className={`w-14 py-2 rounded-lg text-sm text-center font-medium ${
-              setScores?.[i]
-                ? setScores[i][0] > setScores[i][1] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
-                : 'text-gray-200'
-            }`}>
-              {setScores?.[i] ? setScores[i][0] : '-'}
-            </div>
-          ))}
+          {[0, 1, 2].map((i) => {
+            const hasTb = tiebreakScores?.[i] != null;
+            const myTb = hasTb ? tiebreakScores![i]![0] : null;
+            return (
+              <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
+                setScores?.[i]
+                  ? setScores[i][0] > setScores[i][1] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
+                  : 'text-gray-200'
+              }`}>
+                {setScores?.[i] ? setScores[i][0] : '-'}
+                {myTb !== null && (
+                  <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{myTb}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="flex items-center gap-3">
           <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
-          {[0, 1, 2].map((i) => (
-            <div key={i} className={`w-14 py-2 rounded-lg text-sm text-center font-medium ${
-              setScores?.[i]
-                ? setScores[i][1] > setScores[i][0] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
-                : 'text-gray-200'
-            }`}>
-              {setScores?.[i] ? setScores[i][1] : '-'}
-            </div>
-          ))}
+          {[0, 1, 2].map((i) => {
+            const hasTb = tiebreakScores?.[i] != null;
+            const theirTb = hasTb ? tiebreakScores![i]![1] : null;
+            return (
+              <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
+                setScores?.[i]
+                  ? setScores[i][1] > setScores[i][0] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
+                  : 'text-gray-200'
+              }`}>
+                {setScores?.[i] ? setScores[i][1] : '-'}
+                {theirTb !== null && (
+                  <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{theirTb}</span>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {!confirmed && (
@@ -200,6 +261,44 @@ export default function EditMatchForm({
                   />
                 ))}
               </div>
+
+              {anyTiebreak && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-1 text-xs text-gray-400 pt-1">Tiebreak</span>
+                    {sets.map((set, i) => {
+                      const my = parseInt(set.my);
+                      const their = parseInt(set.their);
+                      return (
+                        <div key={i} className="w-14">
+                          {isTiebreakSet(my, their) ? (
+                            <div className="space-y-1">
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={tiebreaks[i].my}
+                                onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
+                                className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
+                                placeholder="Me"
+                                maxLength={2}
+                              />
+                              <input
+                                type="text"
+                                inputMode="numeric"
+                                value={tiebreaks[i].their}
+                                onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
+                                className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
+                                placeholder="Opp"
+                                maxLength={2}
+                              />
+                            </div>
+                          ) : <div />}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

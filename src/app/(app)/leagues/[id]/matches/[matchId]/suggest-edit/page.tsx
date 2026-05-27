@@ -41,6 +41,11 @@ export default async function SuggestEditPage({
   const setScores = (match.set_scores ?? null) as [number, number][] | null;
   // Flip set scores to my/their perspective (currently stored as [p1, p2] = [submitter, me])
   const mySetScores = setScores ? setScores.map(([p1, p2]) => [p2, p1] as [number, number]) : null;
+  const tiebreakScores = (match.tiebreak_scores ?? null) as ([number, number] | null)[] | null;
+  // Flip tiebreak scores too
+  const myTiebreakScores = tiebreakScores
+    ? tiebreakScores.map((tb) => tb ? [tb[1], tb[0]] as [number, number] : null)
+    : null;
   const playedAt = new Date(match.played_at as string).toISOString().split('T')[0];
 
   return (
@@ -64,6 +69,7 @@ export default async function SuggestEditPage({
         currentMyScore={currentMyScore}
         currentTheirScore={currentTheirScore}
         setScores={mySetScores}
+        tiebreakScores={myTiebreakScores}
         playedAt={playedAt}
       />
     </div>

@@ -42,6 +42,7 @@ export default async function MatchPage({
   const myName = isPlayer1 ? match.player1_name as string : match.player2_name as string;
   const opponentName = isPlayer1 ? match.player2_name as string : match.player1_name as string;
   const setScores = (match.set_scores ?? null) as [number, number][] | null;
+  const tiebreakScores = (match.tiebreak_scores ?? null) as ([number, number] | null)[] | null;
   const submittedByMe = match.submitted_by === userId;
   const isPendingEdit = match.status === 'pending_edit';
 
@@ -53,6 +54,7 @@ export default async function MatchPage({
   const myPendingScore = match.pending_score_player1 as number | null;
   const theirPendingScore = match.pending_score_player2 as number | null;
   const pendingSetScores = (match.pending_set_scores ?? null) as [number, number][] | null;
+  const pendingTiebreakScores = (match.pending_tiebreak_scores ?? null) as ([number, number] | null)[] | null;
 
   return (
     <div className="max-w-lg mx-auto">
@@ -116,9 +118,14 @@ export default async function MatchPage({
               {setScores.map(([p1, p2], i) => {
                 const my = isPlayer1 ? p1 : p2;
                 const their = isPlayer1 ? p2 : p1;
+                const tb = tiebreakScores?.[i] ?? null;
+                const myTb = tb ? (isPlayer1 ? tb[0] : tb[1]) : null;
                 return (
-                  <div key={i} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${my > their ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
+                  <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${my > their ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
                     {my}
+                    {myTb !== null && (
+                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{myTb}</span>
+                    )}
                   </div>
                 );
               })}
@@ -128,9 +135,14 @@ export default async function MatchPage({
               {setScores.map(([p1, p2], i) => {
                 const my = isPlayer1 ? p1 : p2;
                 const their = isPlayer1 ? p2 : p1;
+                const tb = tiebreakScores?.[i] ?? null;
+                const theirTb = tb ? (isPlayer1 ? tb[1] : tb[0]) : null;
                 return (
-                  <div key={i} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${their > my ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
+                  <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${their > my ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
                     {their}
+                    {theirTb !== null && (
+                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{theirTb}</span>
+                    )}
                   </div>
                 );
               })}
@@ -225,6 +237,7 @@ export default async function MatchPage({
             myPendingScore={myPendingScore}
             theirPendingScore={theirPendingScore}
             pendingSetScores={pendingSetScores}
+            pendingTiebreakScores={pendingTiebreakScores}
             opponentName={opponentName}
           />
         )}

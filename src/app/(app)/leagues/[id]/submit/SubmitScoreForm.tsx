@@ -6,6 +6,12 @@ import TennisBallCelebration from '@/components/TennisBallCelebration';
 
 type Player = { id: string; full_name: string };
 
+function isTiebreakSet(set: { my: string; their: string }) {
+  const my = parseInt(set.my);
+  const their = parseInt(set.their);
+  return (my === 7 && their === 6) || (my === 6 && their === 7);
+}
+
 export default function SubmitScoreForm({ userName }: { userName: string }) {
   const { id: leagueId } = useParams<{ id: string }>();
   const router = useRouter();
@@ -13,6 +19,11 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [opponent, setOpponent] = useState('');
   const [sets, setSets] = useState([
+    { my: '', their: '' },
+    { my: '', their: '' },
+    { my: '', their: '' },
+  ]);
+  const [tiebreaks, setTiebreaks] = useState([
     { my: '', their: '' },
     { my: '', their: '' },
     { my: '', their: '' },
@@ -37,6 +48,17 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   function updateSet(index: number, field: 'my' | 'their', value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
     setSets((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
+    // Clear tiebreak if set is no longer 7-6
+    setTiebreaks((prev) => prev.map((t, i) => {
+      if (i !== index) return t;
+      const updated = { ...sets[index], [field]: value };
+      return isTiebreakSet(updated) ? t : { my: '', their: '' };
+    }));
+  }
+
+  function updateTiebreak(index: number, field: 'my' | 'their', value: string) {
+    if (value !== '' && !/^\d+$/.test(value)) return;
+    setTiebreaks((prev) => prev.map((t, i) => (i === index ? { ...t, [field]: value } : t)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -62,15 +84,26 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       return;
     }
 
-    const playedSets = sets
-      .filter((s) => s.my !== '' && s.their !== '')
-      .map((s) => [parseInt(s.my), parseInt(s.their)]);
+    const playedIndices = sets.reduce<number[]>((acc, s, i) => {
+      if (s.my !== '' && s.their !== '') acc.push(i);
+      return acc;
+    }, []);
+
+    const playedSets = playedIndices.map((i) => [parseInt(sets[i].my), parseInt(sets[i].their)]);
+    const playedTiebreaks = playedIndices.map((i) => {
+      const set = sets[i];
+      if (!isTiebreakSet(set)) return null;
+      const my = tiebreaks[i].my !== '' ? parseInt(tiebreaks[i].my) : null;
+      const their = tiebreaks[i].their !== '' ? parseInt(tiebreaks[i].their) : null;
+      if (my === null && their === null) return null;
+      return [my ?? 0, their ?? 0];
+    });
 
     setLoading(true);
     const res = await fetch('/api/matches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leagueId, opponentId: opponent, sets: playedSets, playedAt }),
+      body: JSON.stringify({ leagueId, opponentId: opponent, sets: playedSets, tiebreaks: playedTiebreaks, playedAt }),
     });
     const data = await res.json();
     setLoading(false);
@@ -97,6 +130,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   }
 
   const opponentName = players.find((p) => p.id === opponent)?.full_name ?? 'Opponent';
+  const anyTiebreak = sets.some(isTiebreakSet);
 
   return (
     <>
@@ -166,6 +200,40 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
                 />
               ))}
             </div>
+
+            {anyTiebreak && (
+              <div className="mt-3 pt-3 border-t border-gray-100">
+                <div className="flex items-start gap-3">
+                  <span className="flex-1 text-xs text-gray-400 pt-1">Tiebreak</span>
+                  {sets.map((set, i) => (
+                    <div key={i} className="w-14">
+                      {isTiebreakSet(set) ? (
+                        <div className="space-y-1">
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={tiebreaks[i].my}
+                            onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
+                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
+                            placeholder="Me"
+                            maxLength={2}
+                          />
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            value={tiebreaks[i].their}
+                            onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
+                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
+                            placeholder="Opp"
+                            maxLength={2}
+                          />
+                        </div>
+                      ) : <div />}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

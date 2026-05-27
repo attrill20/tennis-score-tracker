@@ -9,6 +9,7 @@ export default function PendingEditReview({
   myPendingScore,
   theirPendingScore,
   pendingSetScores,
+  pendingTiebreakScores,
   opponentName,
 }: {
   matchId: string;
@@ -16,6 +17,7 @@ export default function PendingEditReview({
   myPendingScore: number;
   theirPendingScore: number;
   pendingSetScores: [number, number][] | null;
+  pendingTiebreakScores: ([number, number] | null)[] | null;
   opponentName: string;
 }) {
   const router = useRouter();
@@ -58,19 +60,31 @@ export default function PendingEditReview({
             </div>
             <div className="flex items-center gap-2 mb-1">
               <span className={`w-[52px] text-xs truncate ${myPendingScore > theirPendingScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{myName.split(' ')[0]}</span>
-              {pendingSetScores.map(([p1, p2], i) => (
-                <div key={i} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${p1 > p2 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                  {p1}
-                </div>
-              ))}
+              {pendingSetScores.map(([p1, p2], i) => {
+                const tb = pendingTiebreakScores?.[i] ?? null;
+                return (
+                  <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${p1 > p2 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                    {p1}
+                    {tb !== null && (
+                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[0]}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
             <div className="flex items-center gap-2">
               <span className={`w-[52px] text-xs truncate ${theirPendingScore > myPendingScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</span>
-              {pendingSetScores.map(([p1, p2], i) => (
-                <div key={i} className={`flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${p2 > p1 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
-                  {p2}
-                </div>
-              ))}
+              {pendingSetScores.map(([p1, p2], i) => {
+                const tb = pendingTiebreakScores?.[i] ?? null;
+                return (
+                  <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${p2 > p1 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                    {p2}
+                    {tb !== null && (
+                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[1]}</span>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         ) : (

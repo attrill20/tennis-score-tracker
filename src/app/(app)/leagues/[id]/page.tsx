@@ -23,7 +23,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     `,
     sql`
       SELECT m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
-             m.set_scores, m.status, m.submitted_by, m.played_at,
+             m.set_scores, m.tiebreak_scores, m.status, m.submitted_by, m.played_at,
              (p1.first_name || ' ' || p1.last_name) AS player1_name,
              (p2.first_name || ' ' || p2.last_name) AS player2_name
       FROM matches m
@@ -141,6 +141,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             const canEdit = submittedByMe && match.status === 'confirmed';
             const canSuggestEdit = isInvolved && match.status === 'confirmed' && !submittedByMe;
             const setScores = match.set_scores as [number, number][] | null;
+            const tiebreakScores = match.tiebreak_scores as ([number, number] | null)[] | null;
 
             // From current user's perspective if involved, otherwise winner first
             const p1Won = (match.score_player1 as number) > (match.score_player2 as number);
@@ -161,10 +162,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             return (
               <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
                 <Link href={href} className="absolute inset-0 rounded-xl z-10" />
-                <div className="relative flex items-center gap-3">
-                  {result && (
-                    <span className={`text-xs font-bold px-1.5 py-1 rounded shrink-0 self-center ${badgeClass}`}>{result}</span>
-                  )}
+                <div className="relative flex items-start gap-3">
+                  <div className="flex flex-1 min-w-0 items-center gap-3">
+                  <div className="w-8 shrink-0 flex justify-center">
+                    {result && (
+                      <span className={`text-xs font-bold px-1.5 py-1 rounded ${badgeClass}`}>{result}</span>
+                    )}
+                  </div>
                   <div className="flex-1 min-w-0 text-sm">
                     <div className="flex items-center">
                       <span className={`font-medium w-24 shrink-0 truncate ${topWon ? 'text-gray-800' : 'text-gray-400'}`}>{topName}</span>
@@ -172,7 +176,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const top = topIsPlayer1 ? p1 : p2;
                           const bot = topIsPlayer1 ? p2 : p1;
-                          return <span key={i} className={`text-xs font-medium w-6 text-center ${top > bot ? 'text-gray-700' : 'text-gray-400'}`}>{top}</span>;
+                          const tb = tiebreakScores?.[i] ?? null;
+                          const topTb = tb ? (topIsPlayer1 ? tb[0] : tb[1]) : null;
+                          return (
+                            <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${top > bot ? 'text-gray-700' : 'text-gray-400'}`}>
+                              {top}
+                              {topTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{topTb}</span>}
+                            </span>
+                          );
                         }) : <span className="text-xs font-medium text-gray-700">{topScore}</span>}
                       </div>
                     </div>
@@ -182,12 +193,20 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const top = topIsPlayer1 ? p1 : p2;
                           const bot = topIsPlayer1 ? p2 : p1;
-                          return <span key={i} className={`text-xs font-medium w-6 text-center ${bot > top ? 'text-gray-700' : 'text-gray-400'}`}>{bot}</span>;
+                          const tb = tiebreakScores?.[i] ?? null;
+                          const botTb = tb ? (topIsPlayer1 ? tb[1] : tb[0]) : null;
+                          return (
+                            <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${bot > top ? 'text-gray-700' : 'text-gray-400'}`}>
+                              {bot}
+                              {botTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{botTb}</span>}
+                            </span>
+                          );
                         }) : <span className="text-xs font-medium text-gray-400">{bottomScore}</span>}
                       </div>
                     </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 shrink-0 text-right">
+                  </div>
+                  <div className="flex flex-col items-end justify-between self-stretch shrink-0 text-right">
                     <div className="flex items-center gap-2 relative z-10">
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
@@ -195,16 +214,16 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
-                      {canEdit && (
-                        <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">Edit</Link>
-                      )}
                       {canSuggestEdit && (
                         <Link href={`/leagues/${id}/matches/${match.id as string}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">Suggest edit</Link>
                       )}
+                      <span className="text-xs text-gray-400">
+                        {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                      </span>
                     </div>
-                    <span className="text-xs text-gray-400">
-                      {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
-                    </span>
+                    {canEdit && (
+                      <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">Edit</Link>
+                    )}
                   </div>
                 </div>
               </div>

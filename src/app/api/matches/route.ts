@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { leagueId, opponentId, sets, playedAt } = await req.json();
+  const { leagueId, opponentId, sets, tiebreaks, playedAt } = await req.json();
 
   if (!leagueId || !opponentId || !sets?.length || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -43,9 +43,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'The league season has ended - no more scores can be submitted' }, { status: 400 });
   }
 
+  const hasTiebreak = Array.isArray(tiebreaks) && tiebreaks.some((t: unknown) => t !== null);
+
   await sql`
-    INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, played_at)
-    VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${session.user.id}, ${myScore}, ${theirScore}, ${JSON.stringify(sets)}, ${playedAt})
+    INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at)
+    VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${session.user.id}, ${myScore}, ${theirScore}, ${JSON.stringify(sets)}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt})
   `;
 
   return NextResponse.json({ success: true }, { status: 201 });

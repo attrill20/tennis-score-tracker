@@ -13,8 +13,8 @@ export default async function AdminDisputesPage() {
     sql`
       SELECT
         d.id, d.reason, d.status, d.match_id,
-        d.requested_score_player1, d.requested_score_player2, d.requested_set_scores,
-        m.score_player1, m.score_player2, m.set_scores, m.played_at, m.league_id,
+        d.requested_score_player1, d.requested_score_player2, d.requested_set_scores, d.requested_tiebreak_scores,
+        m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at, m.league_id,
         m.player1_id, m.player2_id,
         (p1.first_name || ' ' || p1.last_name) AS player1_name,
         (p2.first_name || ' ' || p2.last_name) AS player2_name,
@@ -63,7 +63,9 @@ export default async function AdminDisputesPage() {
         <div className="space-y-4">
           {open.map((d) => {
             const originalSets = (d.set_scores ?? null) as [number, number][] | null;
+            const originalTbs = (d.tiebreak_scores ?? null) as ([number, number] | null)[] | null;
             const requestedSets = (d.requested_set_scores ?? null) as [number, number][] | null;
+            const requestedTbs = (d.requested_tiebreak_scores ?? null) as ([number, number] | null)[] | null;
             const hasRequest = d.requested_score_player1 != null && d.requested_score_player2 != null;
 
             return (
@@ -90,6 +92,7 @@ export default async function AdminDisputesPage() {
                       score1={d.score_player1 as number}
                       score2={d.score_player2 as number}
                       sets={originalSets}
+                      tiebreaks={originalTbs}
                     />
                   </div>
 
@@ -104,6 +107,7 @@ export default async function AdminDisputesPage() {
                         score1={d.requested_score_player1 as number}
                         score2={d.requested_score_player2 as number}
                         sets={requestedSets}
+                        tiebreaks={requestedTbs}
                       />
                     </div>
                   )}
@@ -150,12 +154,13 @@ export default async function AdminDisputesPage() {
   );
 }
 
-function ScoreGrid({ player1Name, player2Name, score1, score2, sets }: {
+function ScoreGrid({ player1Name, player2Name, score1, score2, sets, tiebreaks }: {
   player1Name: string;
   player2Name: string;
   score1: number;
   score2: number;
   sets: [number, number][] | null;
+  tiebreaks: ([number, number] | null)[] | null;
 }) {
   const p1Won = score1 > score2;
   return (
@@ -169,15 +174,27 @@ function ScoreGrid({ player1Name, player2Name, score1, score2, sets }: {
           </div>
           <div className="flex items-center gap-2 mb-1">
             <span className={`w-[64px] text-xs truncate font-medium ${p1Won ? 'text-gray-800' : 'text-gray-400'}`}>{player1Name.split(' ')[0]}</span>
-            {sets.map(([p1, p2], i) => (
-              <div key={i} className={`flex-1 text-center text-sm font-semibold py-1 rounded-lg ${p1 > p2 ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{p1}</div>
-            ))}
+            {sets.map(([p1, p2], i) => {
+              const tb = tiebreaks?.[i] ?? null;
+              return (
+                <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1 rounded-lg ${p1 > p2 ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>
+                  {p1}
+                  {tb !== null && <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[0]}</span>}
+                </div>
+              );
+            })}
           </div>
           <div className="flex items-center gap-2">
             <span className={`w-[64px] text-xs truncate font-medium ${!p1Won ? 'text-gray-800' : 'text-gray-400'}`}>{player2Name.split(' ')[0]}</span>
-            {sets.map(([p1, p2], i) => (
-              <div key={i} className={`flex-1 text-center text-sm font-semibold py-1 rounded-lg ${p2 > p1 ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{p2}</div>
-            ))}
+            {sets.map(([p1, p2], i) => {
+              const tb = tiebreaks?.[i] ?? null;
+              return (
+                <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1 rounded-lg ${p2 > p1 ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>
+                  {p2}
+                  {tb !== null && <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[1]}</span>}
+                </div>
+              );
+            })}
           </div>
         </>
       ) : (

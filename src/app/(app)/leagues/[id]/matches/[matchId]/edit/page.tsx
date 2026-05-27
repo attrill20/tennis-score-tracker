@@ -35,6 +35,7 @@ export default async function EditMatchPage({
 
   // set_scores stored as [[p1,p2],...] where p1 = submitter = player1
   const setScores = (match.set_scores ?? null) as [number, number][] | null;
+  const tiebreakScores = (match.tiebreak_scores ?? null) as ([number, number] | null)[] | null;
 
   return (
     <EditMatchForm
@@ -48,6 +49,7 @@ export default async function EditMatchPage({
       currentMyScore={currentMyScore}
       currentTheirScore={currentTheirScore}
       setScores={setScores}
+      tiebreakScores={tiebreakScores}
     />
   );
 }

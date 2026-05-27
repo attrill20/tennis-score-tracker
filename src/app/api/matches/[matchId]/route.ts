@@ -24,13 +24,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
     if (!isOpponent) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (match.status !== 'confirmed') return NextResponse.json({ error: 'Match cannot be edited' }, { status: 400 });
 
-    const { sets, playedAt } = body;
+    const { sets, tiebreaks, playedAt } = body;
     if (!sets?.length || !playedAt) {
       return NextResponse.json({ error: 'Sets and date are required' }, { status: 400 });
     }
 
     // Non-submitter is always player2, so sets arrive as [my(p2), their(p1)] — flip to [p1, p2]
     const pendingSets = (sets as [number, number][]).map(([my, their]) => [their, my]);
+
+    // Flip tiebreaks too: [my(p2), their(p1)] -> [p1, p2]
+    const rawTiebreaks = tiebreaks as ([number, number] | null)[] | null;
+    const pendingTiebreaks = rawTiebreaks
+      ? rawTiebreaks.map((tb) => tb ? [tb[1], tb[0]] as [number, number] : null)
+      : null;
+    const hasPendingTiebreak = pendingTiebreaks?.some((t) => t !== null) ?? false;
 
     let p1Score = 0, p2Score = 0;
     for (const [p1, p2] of pendingSets) {
@@ -48,6 +55,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
         pending_score_player1 = ${p1Score},
         pending_score_player2 = ${p2Score},
         pending_set_scores = ${JSON.stringify(pendingSets)},
+        pending_tiebreak_scores = ${hasPendingTiebreak ? JSON.stringify(pendingTiebreaks) : null},
         pending_edit_by = ${userId}
       WHERE id = ${matchId}
     `;
@@ -65,10 +73,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
         score_player1 = pending_score_player1,
         score_player2 = pending_score_player2,
         set_scores = pending_set_scores,
+        tiebreak_scores = pending_tiebreak_scores,
         status = 'confirmed',
         pending_score_player1 = NULL,
         pending_score_player2 = NULL,
         pending_set_scores = NULL,
+        pending_tiebreak_scores = NULL,
         pending_edit_by = NULL
       WHERE id = ${matchId}
     `;
@@ -88,19 +98,21 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
     await sql`BEGIN`;
     try {
+      const reqTiebreaks = match.pending_tiebreak_scores ?? null;
       await sql`
         UPDATE matches SET
           status = 'disputed',
           pending_score_player1 = NULL,
           pending_score_player2 = NULL,
           pending_set_scores = NULL,
+          pending_tiebreak_scores = NULL,
           pending_edit_by = NULL
         WHERE id = ${matchId}
       `;
       await sql`
-        INSERT INTO disputes (match_id, raised_by, reason, requested_score_player1, requested_score_player2, requested_set_scores)
+        INSERT INTO disputes (match_id, raised_by, reason, requested_score_player1, requested_score_player2, requested_set_scores, requested_tiebreak_scores)
         VALUES (${matchId}, ${opponentId}, 'Score correction requested but declined by submitter',
-                ${reqP1}, ${reqP2}, ${reqSets ? JSON.stringify(reqSets) : null})
+                ${reqP1}, ${reqP2}, ${reqSets ? JSON.stringify(reqSets) : null}, ${reqTiebreaks ? JSON.stringify(reqTiebreaks) : null})
       `;
       await sql`COMMIT`;
     } catch (e) {
@@ -115,7 +127,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
   if (!isSubmitter) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (match.status !== 'confirmed') return NextResponse.json({ error: 'Only confirmed matches can be edited' }, { status: 400 });
 
-  const { sets, playedAt } = body;
+  const { sets, tiebreaks, playedAt } = body;
   if (!sets?.length || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
   }
@@ -130,10 +142,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
     return NextResponse.json({ error: 'Scores cannot be a draw' }, { status: 400 });
   }
 
+  const editTiebreaks = tiebreaks as ([number, number] | null)[] | null;
+  const hasEditTiebreak = editTiebreaks?.some((t) => t !== null) ?? false;
+
   await sql`
     UPDATE matches
     SET score_player1 = ${myScore}, score_player2 = ${theirScore},
-        set_scores = ${JSON.stringify(sets)}, played_at = ${playedAt}
+        set_scores = ${JSON.stringify(sets)},
+        tiebreak_scores = ${hasEditTiebreak ? JSON.stringify(editTiebreaks) : null},
+        played_at = ${playedAt}
     WHERE id = ${matchId}
   `;
 

@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   const [recentMatches, allPlayers, allMatches, pendingEdits, disputedMatches, resolvedDisputes] = await Promise.all([
     sql`
       SELECT
-        m.id, m.score_player1, m.score_player2, m.set_scores, m.played_at,
+        m.id, m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at,
         m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id,
         l.name AS league_name,
         (p1.first_name || ' ' || p1.last_name) AS player1_name,
@@ -321,6 +321,7 @@ export default async function DashboardPage() {
             const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&
               (match.player1_id === userId || match.player2_id === userId);
             const setScores = match.set_scores as [number, number][] | null;
+            const tiebreakScores = match.tiebreak_scores as ([number, number] | null)[] | null;
             const result = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
 
@@ -341,7 +342,14 @@ export default async function DashboardPage() {
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const my = isPlayer1 ? p1 : p2;
                           const their = isPlayer1 ? p2 : p1;
-                          return <span key={i} className={`text-xs font-medium w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>{my}</span>;
+                          const tb = tiebreakScores?.[i] ?? null;
+                          const myTb = tb ? (isPlayer1 ? tb[0] : tb[1]) : null;
+                          return (
+                            <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>
+                              {my}
+                              {myTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{myTb}</span>}
+                            </span>
+                          );
                         }) : <span className="text-xs font-medium text-gray-700">{myScore}</span>}
                       </div>
                     </div>
@@ -353,7 +361,14 @@ export default async function DashboardPage() {
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const my = isPlayer1 ? p1 : p2;
                           const their = isPlayer1 ? p2 : p1;
-                          return <span key={i} className={`text-xs font-medium w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>{their}</span>;
+                          const tb = tiebreakScores?.[i] ?? null;
+                          const theirTb = tb ? (isPlayer1 ? tb[1] : tb[0]) : null;
+                          return (
+                            <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>
+                              {their}
+                              {theirTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{theirTb}</span>}
+                            </span>
+                          );
                         }) : <span className="text-xs font-medium text-gray-400">{theirScore}</span>}
                       </div>
                     </div>
