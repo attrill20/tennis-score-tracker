@@ -359,30 +359,30 @@ export default async function DashboardPage() {
                     </div>
                   </div>
 
-                  {/* Right side: row 1 = league + edit/dispute, row 2 = date */}
-                  <div className="flex flex-col items-end gap-1 shrink-0 text-right">
-                    <div className="flex items-center gap-2">
+                  {/* Right side: league name, date, action link */}
+                  <div className="flex flex-col items-end gap-1 w-24 shrink-0 text-right">
+                    <div className="flex flex-col items-end gap-0.5">
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
                       )}
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
-                      <span className="text-xs text-gray-400">{match.league_name as string}</span>
-                      {canEdit && (
-                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
-                          Edit
-                        </Link>
-                      )}
-                      {canSuggestEdit && (
-                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
-                          Suggest edit
-                        </Link>
-                      )}
+                      <span className="text-xs text-gray-400 truncate w-full">{match.league_name as string}</span>
                     </div>
                     <span className="text-xs text-gray-400">
                       {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                     </span>
+                    {canEdit && (
+                      <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        Edit
+                      </Link>
+                    )}
+                    {canSuggestEdit && (
+                      <Link href={`/leagues/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        Suggest edit
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

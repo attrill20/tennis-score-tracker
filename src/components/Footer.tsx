@@ -5,18 +5,18 @@ export default function Footer() {
 
   return (
     <footer className="mt-auto border-t border-green-900 bg-green-900">
-      <div className="max-w-4xl mx-auto px-4 py-4 flex flex-row items-center justify-between gap-2 text-xs text-white">
-        <span>&copy; {year} Queen's Park Tennis Club</span>
+      <div className="max-w-4xl mx-auto px-6 py-5 flex flex-row items-center justify-between gap-4 text-xs text-white">
+        <span>&copy; {year} Queen's Park<br />Tennis Club</span>
 
         <Link
           href="/contact"
-          className="px-3 py-1 rounded-full bg-white text-green-900 font-medium hover:bg-green-100 transition-colors"
+          className="px-3 py-1 rounded-full bg-white text-green-900 font-medium hover:bg-green-100 transition-colors whitespace-nowrap"
         >
           Contact Us
         </Link>
 
-        <span>
-          Made by{' '}
+        <span className="text-right">
+          Made by<br />
           <a
             href="https://github.com/attrill20"
             target="_blank"
