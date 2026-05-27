@@ -24,8 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     await sql`UPDATE profiles SET role = ${body.role} WHERE id = ${targetId}`;
   }
 
-  if (body.firstName !== undefined || body.lastName !== undefined || body.title !== undefined || body.email !== undefined) {
-    const { firstName, lastName, title, email } = body;
+  if (body.firstName !== undefined || body.lastName !== undefined || body.email !== undefined || body.phone !== undefined || body.gender !== undefined) {
+    const { firstName, lastName, email, phone, gender } = body;
     if (!firstName?.trim() || !lastName?.trim()) {
       return NextResponse.json({ error: 'First and last name are required' }, { status: 400 });
     }
@@ -33,8 +33,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       UPDATE profiles
       SET first_name = ${firstName.trim()},
           last_name = ${lastName.trim()},
-          title = ${title?.trim() || null},
-          email = ${email?.trim() || null}
+          email = ${email?.trim() || null},
+          phone = ${phone?.trim() || null},
+          gender = ${gender || null}
       WHERE id = ${targetId}
     `;
   }

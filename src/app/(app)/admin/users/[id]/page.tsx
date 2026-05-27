@@ -12,11 +12,11 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
     redirect('/dashboard');
   }
 
-  const users = await sql`SELECT id, title, first_name, last_name, email, role FROM profiles WHERE id = ${id}`;
+  const users = await sql`SELECT id, first_name, last_name, email, role, phone, gender FROM profiles WHERE id = ${id}`;
   const user = users[0];
   if (!user) notFound();
 
-  const fullName = [user.title, user.first_name, user.last_name].filter(Boolean).join(' ');
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(' ');
   const isSelf = user.id === session.user.id;
   const isSuperAdmin = user.role === 'super_admin';
 
@@ -37,11 +37,12 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
       ) : (
         <EditUserForm
           userId={id}
-          currentTitle={(user.title as string) ?? ''}
           currentFirstName={user.first_name as string}
           currentLastName={user.last_name as string}
           currentEmail={(user.email as string) ?? ''}
           currentRole={user.role as string}
+          currentPhone={(user.phone as string) ?? ''}
+          currentGender={(user.gender as string) ?? ''}
         />
       )}
 
