@@ -6,7 +6,7 @@ export default function Footer() {
   return (
     <footer className="mt-auto border-t border-green-900 bg-green-900">
       <div className="max-w-4xl mx-auto px-6 py-5 flex flex-row items-center justify-between gap-4 text-xs text-white">
-        <span>&copy; {year} Queen's Park<br />Tennis Club</span>
+        <span>&copy; {year} Queen's Park<br className="sm:hidden" />Tennis Club</span>
 
         <Link
           href="/contact"
@@ -15,8 +15,9 @@ export default function Footer() {
           Contact Us
         </Link>
 
-        <span className="text-right">
-          Made by<br />
+        <span className="text-right sm:text-left">
+          Made by<br className="sm:hidden" />
+          {' '}
           <a
             href="https://github.com/attrill20"
             target="_blank"

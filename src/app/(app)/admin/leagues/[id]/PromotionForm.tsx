@@ -47,6 +47,7 @@ export default function PromotionForm({ leagueId, standings }: { leagueId: strin
 
   return (
     <div className="space-y-3">
+      <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-xs text-gray-400 border-b border-gray-100">
@@ -83,6 +84,7 @@ export default function PromotionForm({ leagueId, standings }: { leagueId: strin
           ))}
         </tbody>
       </table>
+      </div>
 
       <div className="flex items-center gap-4 pt-2 text-xs text-gray-400">
         <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500 inline-block"></span> Promoted: {promoted.length}</span>

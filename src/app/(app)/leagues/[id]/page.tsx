@@ -83,7 +83,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           </Link>
         )}
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto mb-6">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs">
