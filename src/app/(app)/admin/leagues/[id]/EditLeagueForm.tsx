@@ -11,6 +11,7 @@ export default function EditLeagueForm({
   currentSeasonStart,
   currentSeasonEnd,
   currentIsPublic,
+  currentTiebreaker,
 }: {
   leagueId: string;
   currentName: string;
@@ -19,6 +20,7 @@ export default function EditLeagueForm({
   currentSeasonStart: string;
   currentSeasonEnd: string;
   currentIsPublic: boolean;
+  currentTiebreaker: string;
 }) {
   const router = useRouter();
   const [name, setName] = useState(currentName);
@@ -27,6 +29,7 @@ export default function EditLeagueForm({
   const [seasonStart, setSeasonStart] = useState(currentSeasonStart);
   const [seasonEnd, setSeasonEnd] = useState(currentSeasonEnd);
   const [isPublic, setIsPublic] = useState(currentIsPublic);
+  const [tiebreaker, setTiebreaker] = useState(currentTiebreaker);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -40,7 +43,7 @@ export default function EditLeagueForm({
     const res = await fetch(`/api/leagues/${leagueId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic }),
+      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker }),
     });
 
     const data = await res.json();
@@ -120,6 +123,20 @@ export default function EditLeagueForm({
             className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="leagueTiebreaker" className="block text-sm font-medium text-gray-700 mb-1">Position tiebreaker</label>
+        <select
+          id="leagueTiebreaker"
+          value={tiebreaker}
+          onChange={(e) => { setTiebreaker(e.target.value); setSaved(false); }}
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="head_to_head">Head-to-head result</option>
+          <option value="most_sets_won">Most sets won</option>
+          <option value="set_difference">Set difference (sets for - sets against)</option>
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

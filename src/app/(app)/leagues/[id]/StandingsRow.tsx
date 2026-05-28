@@ -11,6 +11,7 @@ type Props = {
   position: number;
   played: number;
   won: number;
+  drawn: number;
   lost: number;
   setsFor: number;
   setsAgainst: number;
@@ -18,7 +19,7 @@ type Props = {
   rowClass: string;
 };
 
-export default function StandingsRow({ playerId, userId, name, isInjured, position, played, won, lost, setsFor, setsAgainst, points, rowClass }: Props) {
+export default function StandingsRow({ playerId, userId, name, isInjured, position, played, won, drawn, lost, setsFor, setsAgainst, points, rowClass }: Props) {
   const router = useRouter();
 
   return (
@@ -45,6 +46,7 @@ export default function StandingsRow({ playerId, userId, name, isInjured, positi
       </td>
       <td className="text-center px-2 py-3 text-gray-600">{played}</td>
       <td className="text-center px-2 py-3 text-gray-600">{won}</td>
+      <td className="text-center px-2 py-3 text-gray-600">{drawn}</td>
       <td className="text-center px-2 py-3 text-gray-600">{lost}</td>
       <td className="text-center px-2 py-3 text-gray-600">{setsFor}-{setsAgainst}</td>
       <td className="text-center px-2 py-3 font-semibold text-gray-800">{points}</td>

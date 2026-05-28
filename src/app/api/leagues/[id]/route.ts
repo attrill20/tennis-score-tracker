@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const { name, seasonStart, seasonEnd, isPublic, description, status } = await req.json();
+  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker } = await req.json();
 
   if (name !== undefined) {
     if (!name.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -38,6 +38,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (description !== undefined) {
     await sql`UPDATE leagues SET description = ${description || null} WHERE id = ${id}`;
+  }
+
+  if (tiebreaker !== undefined) {
+    const valid = ['head_to_head', 'most_sets_won', 'set_difference'];
+    if (!valid.includes(tiebreaker)) return NextResponse.json({ error: 'Invalid tiebreaker' }, { status: 400 });
+    await sql`UPDATE leagues SET tiebreaker = ${tiebreaker} WHERE id = ${id}`;
   }
 
   return NextResponse.json({ ok: true });

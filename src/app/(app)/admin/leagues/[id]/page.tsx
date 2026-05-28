@@ -33,7 +33,8 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
 
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
-    matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string }[]
+    matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string }[],
+    (league.tiebreaker as string ?? 'head_to_head') as import('@/lib/league').Tiebreaker
   );
 
   return (
@@ -54,6 +55,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentSeasonStart={new Date(league.season_start as string).toISOString().split('T')[0]}
         currentSeasonEnd={new Date(league.season_end as string).toISOString().split('T')[0]}
         currentIsPublic={league.is_public as boolean ?? true}
+        currentTiebreaker={(league.tiebreaker as string) ?? 'head_to_head'}
       />
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">

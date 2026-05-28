@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
-import { calculateStandings } from '@/lib/league';
+import { calculateStandings, type Tiebreaker } from '@/lib/league';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import StandingsRow from './StandingsRow';
@@ -36,13 +36,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
-    matches as {
-      player1_id: string;
-      player2_id: string;
-      score_player1: number;
-      score_player2: number;
-      status: string;
-    }[]
+    matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string }[],
+    ((league.tiebreaker as string) ?? 'head_to_head') as Tiebreaker
   );
 
   const injuredIds = new Set(players.filter((p) => p.is_injured).map((p) => p.id as string));
@@ -90,6 +85,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               <th className="text-left px-4 py-3 font-medium">Player</th>
               <th className="text-center px-2 py-3 font-medium">P</th>
               <th className="text-center px-2 py-3 font-medium">W</th>
+              <th className="text-center px-2 py-3 font-medium">D</th>
               <th className="text-center px-2 py-3 font-medium">L</th>
               <th className="text-center px-2 py-3 font-medium">Sets</th>
               <th className="text-center px-2 py-3 font-medium">Pts</th>
@@ -113,6 +109,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   position={i + 1}
                   played={s.played}
                   won={s.won}
+                  drawn={s.drawn}
                   lost={s.lost}
                   setsFor={s.setsFor}
                   setsAgainst={s.setsAgainst}

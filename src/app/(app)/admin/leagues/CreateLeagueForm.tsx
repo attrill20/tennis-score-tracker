@@ -14,6 +14,7 @@ export default function CreateLeagueForm() {
   const [scoringMethod, setScoringMethod] = useState('best_of_3_tiebreak');
   const [numPromoted, setNumPromoted] = useState(2);
   const [numRelegated, setNumRelegated] = useState(2);
+  const [tiebreaker, setTiebreaker] = useState('head_to_head');
   const [isPublic, setIsPublic] = useState(true);
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
@@ -28,7 +29,7 @@ export default function CreateLeagueForm() {
     const res = await fetch('/api/admin/leagues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, isPublic, description }),
+      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, description }),
     });
 
     const data = await res.json();
@@ -171,6 +172,20 @@ export default function CreateLeagueForm() {
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
           placeholder="e.g. Summer singles league for intermediate players..."
         />
+      </div>
+
+      <div>
+        <label htmlFor="tiebreaker" className="block text-sm font-medium text-gray-700 mb-1">Position tiebreaker</label>
+        <select
+          id="tiebreaker"
+          value={tiebreaker}
+          onChange={(e) => setTiebreaker(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="head_to_head">Head-to-head result</option>
+          <option value="most_sets_won">Most sets won</option>
+          <option value="set_difference">Set difference (sets for - sets against)</option>
+        </select>
       </div>
 
       <div>
