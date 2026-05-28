@@ -54,7 +54,7 @@ export default async function DashboardPage() {
       WHERE league_id = ANY(${leagueIds}::uuid[])
     ` : Promise.resolve([]),
     sql`
-      SELECT m.id, m.league_id, m.pending_score_player1, m.pending_score_player2, m.pending_set_scores,
+      SELECT m.id, m.league_id, m.pending_score_player1, m.pending_score_player2, m.pending_set_scores, m.pending_match_type,
         l.name AS league_name,
         (p2.first_name || ' ' || p2.last_name) AS opponent_name
       FROM matches m
@@ -192,23 +192,73 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {(newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0) && (
+      {(newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0 || leagueStartedNotifications.length > 0 || leagueEndedNotifications.length > 0) && (
         <div className="mb-4 space-y-2">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Notifications</h2>
 
-          {pendingEdits.map((m) => (
-            <Link key={m.id as string} href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
-              className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
-              <svg className="shrink-0 w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+          {leagueStartedNotifications.map((l) => (
+            <Link key={`started-${l.id as string}`} href={`/leagues/${l.id as string}`}
+              className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
+              <svg className="shrink-0 w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-800">{m.opponent_name as string} has suggested a correction</p>
-                <p className="text-xs text-gray-500 mt-0.5">{m.league_name as string}</p>
+                <p className="text-sm text-gray-800">Your {l.name as string} league has started</p>
+                <p className="text-xs text-gray-500 mt-0.5">Good luck for your matches!</p>
               </div>
-              <span className="shrink-0 text-xs text-gray-600 font-medium">Review &rarr;</span>
             </Link>
           ))}
+
+          {leagueEndedNotifications.map((l) => {
+            const stats = leagueStats[l.id as string];
+            const finalPos = l.final_position != null ? l.final_position as number : stats?.position;
+            const ordinal = (n: number) => { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] ?? s[v] ?? s[0]); };
+            return (
+              <Link key={`ended-${l.id as string}`} href={`/leagues/${l.id as string}`}
+                className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
+                <svg className="shrink-0 w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800">Your {l.name as string} league has finished</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{finalPos ? `You finished ${ordinal(finalPos)}` : 'Season complete'}</p>
+                </div>
+              </Link>
+            );
+          })}
+
+          {pendingEdits.map((m) => {
+            const myPending = m.pending_score_player1 as number;
+            const theirPending = m.pending_score_player2 as number;
+            const pendingMatchType = m.pending_match_type as string | null;
+            const pendingSetScores = (m.pending_set_scores ?? null) as [number, number][] | null;
+            const outcome = myPending > theirPending ? 'W' : myPending < theirPending ? 'L' : 'D';
+            const badgeClass = outcome === 'W' ? 'bg-green-100 text-green-700' : outcome === 'L' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500';
+            const scoreLabel = pendingMatchType === 'walkover'
+              ? 'Walkover'
+              : pendingSetScores && pendingSetScores.length > 0
+              ? pendingSetScores.map(([p1, p2]) => `${p1}-${p2}`).join(', ')
+              : `${myPending}-${theirPending}`;
+            return (
+              <div key={m.id as string} className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                <svg className="shrink-0 w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <Link href={`/leagues/${m.league_id as string}/matches/${m.id as string}`} className="group block">
+                    <p className="text-sm text-gray-800 group-hover:text-blue-600 group-hover:underline">{m.opponent_name as string} has suggested a correction</p>
+                  </Link>
+                  <div className="flex items-center gap-2 mt-1">
+                    <Link href={`/leagues/${m.league_id as string}/matches/${m.id as string}`} className="group flex items-center gap-2">
+                      <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold shrink-0 ${badgeClass}`}>{outcome}</span>
+                      <span className="text-xs text-gray-700 group-hover:text-blue-600 group-hover:underline">{scoreLabel}</span>
+                    </Link>
+                    <Link href={`/leagues/${m.league_id as string}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{m.league_name as string}</Link>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
 
           {disputedMatches.map((m) => {
             const opponentName = m.player1_id === userId ? m.player2_name as string : m.player1_name as string;
@@ -230,7 +280,6 @@ export default async function DashboardPage() {
             const winnerId = m.winner_id as string | null;
             const iWon = winnerId ? winnerId !== m.player1_id : (m.score_player2 as number) > (m.score_player1 as number);
             const setScores = (m.set_scores ?? null) as [number, number][] | null;
-            // Flip set scores to opponent's perspective: [p1, p2] -> show p2 first (me) vs p1
             const mySetScores = setScores ? setScores.map(([p1, p2]) => [p2, p1] as [number, number]) : null;
             return (
               <NewMatchNotification
@@ -245,106 +294,6 @@ export default async function DashboardPage() {
                 matchType={m.match_type as string | null}
                 iWon={iWon}
               />
-            );
-          })}
-        </div>
-      )}
-
-      {leagueStartedNotifications.map((l) => (
-        <div key={`started-${l.id as string}`} className="mb-2 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className="inline-flex items-center justify-center w-5 h-5 bg-teal-200 rounded-full shrink-0 text-teal-800 font-bold text-xs">!</span>
-            <p className="text-sm text-teal-900">
-              Your <span className="font-medium">{l.name as string}</span> league has started - good luck!
-            </p>
-          </div>
-          <Link href={`/leagues/${l.id as string}`} className="shrink-0 text-xs bg-teal-200 hover:bg-teal-300 text-teal-900 font-medium px-3 py-1.5 rounded-lg transition-colors">
-            View
-          </Link>
-        </div>
-      ))}
-
-      {leagueEndedNotifications.map((l) => {
-        const stats = leagueStats[l.id as string];
-        const finalPos = l.final_position != null ? l.final_position as number : stats?.position;
-        const ordinal = (n: number) => { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] ?? s[v] ?? s[0]); };
-        return (
-          <div key={`ended-${l.id as string}`} className="mb-2 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 min-w-0">
-              <span className="inline-flex items-center justify-center w-5 h-5 bg-purple-200 rounded-full shrink-0 text-purple-800 font-bold text-xs">!</span>
-              <p className="text-sm text-purple-900">
-                Your <span className="font-medium">{l.name as string}</span> league has finished
-                {finalPos ? ` - you finished ${ordinal(finalPos)}` : ''}.
-              </p>
-            </div>
-            <Link href={`/leagues/${l.id as string}`} className="shrink-0 text-xs bg-purple-200 hover:bg-purple-300 text-purple-900 font-medium px-3 py-1.5 rounded-lg transition-colors">
-              View
-            </Link>
-          </div>
-        );
-      })}
-
-      {pendingEdits.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {pendingEdits.map((pe) => {
-            const pendingSets = (pe.pending_set_scores ?? []) as [number, number][];
-            return (
-              <div key={pe.id as string} className="flex items-center justify-between gap-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="inline-flex items-center justify-center w-5 h-5 bg-amber-200 rounded-full shrink-0 text-amber-800 font-bold text-xs">!</span>
-                  <div className="min-w-0">
-                    <p className="text-sm text-amber-800">
-                      <span className="font-medium">{pe.opponent_name as string}</span> suggested a score correction
-                    </p>
-                    <p className="text-xs text-amber-700 mt-0.5">
-                      You {pe.pending_score_player1 as number}-{pe.pending_score_player2 as number} them
-                      {pendingSets.length > 0 && (
-                        <span className="ml-1 text-amber-600">
-                          ({pendingSets.map(([p1, p2], i) => (
-                            <span key={i}>{i > 0 ? ', ' : ''}{p1}-{p2}</span>
-                          ))})
-                        </span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                <Link
-                  href={`/leagues/${pe.league_id as string}/matches/${pe.id as string}`}
-                  className="shrink-0 text-xs bg-amber-200 hover:bg-amber-300 text-amber-900 font-medium px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  Review
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
-      {disputedMatches.length > 0 && (
-        <div className="mb-6 space-y-2">
-          {disputedMatches.map((m) => {
-            const isPlayer1 = m.player1_id === userId;
-            const opponentName = isPlayer1 ? m.player2_name as string : m.player1_name as string;
-            const myScore = isPlayer1 ? m.score_player1 as number : m.score_player2 as number;
-            const theirScore = isPlayer1 ? m.score_player2 as number : m.score_player1 as number;
-            return (
-              <div key={m.id as string} className="flex items-center justify-between gap-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  <span className="inline-flex items-center justify-center w-5 h-5 bg-red-200 rounded-full shrink-0 text-red-800 font-bold text-xs">!</span>
-                  <div className="min-w-0">
-                    <p className="text-sm text-red-800">
-                      Your match with <span className="font-medium">{opponentName}</span> is disputed
-                    </p>
-                    <p className="text-xs text-red-600 mt-0.5">Score {myScore}-{theirScore} - awaiting admin review</p>
-                  </div>
-                </div>
-                <Link
-                  href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
-                  className="shrink-0 text-xs bg-red-200 hover:bg-red-300 text-red-900 font-medium px-3 py-1.5 rounded-lg transition-colors"
-                >
-                  View
-                </Link>
-              </div>
             );
           })}
         </div>
