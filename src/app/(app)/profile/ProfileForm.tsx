@@ -25,8 +25,51 @@ export default function ProfileForm({
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [nameWarning, setNameWarning] = useState('');
+  const [emailWarning, setEmailWarning] = useState('');
+  const [phoneWarning, setPhoneWarning] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function toTitleCase(val: string) {
+    return val.toLowerCase().replace(/(?:^|\s|-)[a-z]/g, (c) => c.toUpperCase());
+  }
+
+  async function checkName(first: string, last: string) {
+    if (!first.trim() || !last.trim()) return;
+    const res = await fetch(`/api/check-name?firstName=${encodeURIComponent(first)}&lastName=${encodeURIComponent(last)}`);
+    const data = await res.json();
+    setNameWarning(data.taken
+      ? `A member called ${first} ${last} is already registered - please add a slightly different name to distinguish yourself from the other member, e.g. a middle name or initial, a nickname, or a shortened version (e.g. Dan instead of Daniel).`
+      : ''
+    );
+  }
+
+  function handleFirstNameBlur() {
+    const normalized = toTitleCase(firstName);
+    setFirstName(normalized);
+    checkName(normalized, lastName);
+  }
+
+  function handleLastNameBlur() {
+    const normalized = toTitleCase(lastName);
+    setLastName(normalized);
+    checkName(firstName, normalized);
+  }
+
+  async function handleEmailBlur() {
+    if (!email.trim()) return;
+    const res = await fetch(`/api/check-field?field=email&value=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    setEmailWarning(data.taken ? 'An account with this email address already exists.' : '');
+  }
+
+  async function handlePhoneBlur() {
+    if (!phone.trim()) return;
+    const res = await fetch(`/api/check-field?field=phone&value=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+    setPhoneWarning(data.taken ? 'This phone number is already registered to another account.' : '');
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,36 +116,45 @@ export default function ProfileForm({
     <form onSubmit={handleSubmit} onChange={() => setSuccess('')} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">First name <span className="text-red-500">*</span></label>
           <input
             type="text"
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) => { setFirstName(e.target.value); setNameWarning(''); }}
+            onBlur={handleFirstNameBlur}
             required
             className={inputClass}
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Last name <span className="text-red-500">*</span></label>
           <input
             type="text"
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) => { setLastName(e.target.value); setNameWarning(''); }}
+            onBlur={handleLastNameBlur}
             required
             className={inputClass}
           />
         </div>
       </div>
+      {nameWarning && (
+        <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">{nameWarning}</p>
+      )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
         <input
           type="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => { setEmail(e.target.value); setEmailWarning(''); }}
+          onBlur={handleEmailBlur}
           required
           className={inputClass}
         />
+        {emailWarning && (
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{emailWarning}</p>
+        )}
       </div>
 
       <div>
@@ -110,15 +162,19 @@ export default function ProfileForm({
         <input
           type="tel"
           value={phone}
-          onChange={(e) => setPhone(e.target.value)}
+          onChange={(e) => { setPhone(e.target.value); setPhoneWarning(''); }}
+          onBlur={handlePhoneBlur}
           autoComplete="tel"
           placeholder="Optional - visible to your league members"
           className={inputClass}
         />
+        {phoneWarning && (
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{phoneWarning}</p>
+        )}
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">I play in</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">I play in <span className="text-red-500">*</span></label>
         <div className="grid grid-cols-2 gap-3">
           {(['mens', 'womens'] as const).map((val) => (
             <button

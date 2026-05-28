@@ -37,7 +37,50 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [error, setError] = useState('');
+  const [nameWarning, setNameWarning] = useState('');
+  const [emailWarning, setEmailWarning] = useState('');
+  const [phoneWarning, setPhoneWarning] = useState('');
   const [loading, setLoading] = useState(false);
+
+  function toTitleCase(val: string) {
+    return val.toLowerCase().replace(/(?:^|\s|-)[a-z]/g, (c) => c.toUpperCase());
+  }
+
+  async function checkName(first: string, last: string) {
+    if (!first.trim() || !last.trim()) return;
+    const res = await fetch(`/api/check-name?firstName=${encodeURIComponent(first)}&lastName=${encodeURIComponent(last)}`);
+    const data = await res.json();
+    setNameWarning(data.taken
+      ? `A member called ${first} ${last} is already registered - please add a slightly different name to distinguish yourself from the other member, e.g. a middle name or initial, a nickname, or a shortened version (e.g. Dan instead of Daniel).`
+      : ''
+    );
+  }
+
+  function handleFirstNameBlur() {
+    const normalized = toTitleCase(firstName);
+    setFirstName(normalized);
+    checkName(normalized, lastName);
+  }
+
+  function handleLastNameBlur() {
+    const normalized = toTitleCase(lastName);
+    setLastName(normalized);
+    checkName(firstName, normalized);
+  }
+
+  async function handleEmailBlur() {
+    if (!email.trim()) return;
+    const res = await fetch(`/api/check-field?field=email&value=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    setEmailWarning(data.taken ? 'An account with this email address already exists.' : '');
+  }
+
+  async function handlePhoneBlur() {
+    if (!phone.trim()) return;
+    const res = await fetch(`/api/check-field?field=phone&value=${encodeURIComponent(phone)}`);
+    const data = await res.json();
+    setPhoneWarning(data.taken ? 'This phone number is already registered to another account.' : '');
+  }
 
   const passwordValid = password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password);
   const passwordsMatch = password === confirm;
@@ -90,12 +133,13 @@ export default function RegisterPage() {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First name</label>
+            <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First name <span className="text-red-500">*</span></label>
             <input
               id="firstName"
               type="text"
               value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
+              onChange={(e) => { setFirstName(e.target.value); setNameWarning(''); }}
+              onBlur={handleFirstNameBlur}
               required
               autoComplete="given-name"
               className={inputClass}
@@ -103,12 +147,13 @@ export default function RegisterPage() {
             />
           </div>
           <div>
-            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
+            <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last name <span className="text-red-500">*</span></label>
             <input
               id="lastName"
               type="text"
               value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
+              onChange={(e) => { setLastName(e.target.value); setNameWarning(''); }}
+              onBlur={handleLastNameBlur}
               required
               autoComplete="family-name"
               className={inputClass}
@@ -116,9 +161,12 @@ export default function RegisterPage() {
             />
           </div>
         </div>
+        {nameWarning && (
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg">{nameWarning}</p>
+        )}
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">I play in</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">I play in <span className="text-red-500">*</span></label>
           <div className="grid grid-cols-2 gap-3">
             {(['mens', 'womens'] as const).map((val) => (
               <button
@@ -138,17 +186,21 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
           <input
             id="email"
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => { setEmail(e.target.value); setEmailWarning(''); }}
+            onBlur={handleEmailBlur}
             required
             autoComplete="email"
             className={inputClass}
             placeholder="you@example.com"
           />
+          {emailWarning && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{emailWarning}</p>
+          )}
         </div>
 
         <div>
@@ -157,16 +209,19 @@ export default function RegisterPage() {
             id="phone"
             type="tel"
             value={phone}
-            onChange={handlePhone}
-            required
+            onChange={(e) => { handlePhone(e); setPhoneWarning(''); }}
+            onBlur={handlePhoneBlur}
             autoComplete="tel"
             className={inputClass}
-            placeholder="Shared with your league members"
+            placeholder="Optional - visible to your league members"
           />
+          {phoneWarning && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{phoneWarning}</p>
+          )}
         </div>
 
         <div>
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
           <input
             id="password"
             type="password"
@@ -181,7 +236,7 @@ export default function RegisterPage() {
         </div>
 
         <div>
-          <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm password</label>
+          <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm password <span className="text-red-500">*</span></label>
           <input
             id="confirm"
             type="password"

@@ -26,6 +26,17 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: 'That email is already in use' }, { status: 409 });
   }
 
+  const nameClash = await sql`
+    SELECT id FROM profiles
+    WHERE LOWER(first_name) = LOWER(${firstName}) AND LOWER(last_name) = LOWER(${lastName})
+    AND id != ${session.user.id}
+  `;
+  if (nameClash.length > 0) {
+    return NextResponse.json({
+      error: `A member called ${firstName} ${lastName} is already registered - please add a slightly different name to distinguish yourself from the other member, e.g. a middle name or initial, a nickname, or a shortened version (e.g. Dan instead of Daniel).`,
+    }, { status: 409 });
+  }
+
   const fullName = [firstName, lastName].join(' ');
 
   if (newPassword) {

@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   const { email: rawEmail, password, firstName, lastName, phone, gender } = await req.json();
   const email = rawEmail?.toLowerCase().trim();
 
-  if (!email || !password || !firstName || !lastName || !phone || !gender) {
+  if (!email || !password || !firstName || !lastName || !gender) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
   }
 
@@ -23,6 +23,16 @@ export async function POST(req: NextRequest) {
   const existing = await sql`SELECT id FROM profiles WHERE LOWER(email) = ${email}`;
   if (existing.length > 0) {
     return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
+  }
+
+  const nameClash = await sql`
+    SELECT id FROM profiles
+    WHERE LOWER(first_name) = LOWER(${firstName}) AND LOWER(last_name) = LOWER(${lastName})
+  `;
+  if (nameClash.length > 0) {
+    return NextResponse.json({
+      error: `A member called ${firstName} ${lastName} is already registered - please add a slightly different name to distinguish yourself from the other member, e.g. a middle name or initial, a nickname, or a shortened version (e.g. Dan instead of Daniel).`,
+    }, { status: 409 });
   }
 
   const passwordHash = await bcrypt.hash(password, 12);

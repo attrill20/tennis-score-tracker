@@ -46,7 +46,7 @@ function LoginForm() {
 
       {registered && !verified && (
         <div className="mb-4 text-sm text-blue-700 bg-blue-50 px-3 py-2 rounded-lg">
-          Account created! Please check your email to verify your address before signing in.
+          Account created! Please check your email to verify your address before signing in (please check your spam folder if it doesn&apos;t arrive within a couple of minutes).
         </div>
       )}
       {verified && (
