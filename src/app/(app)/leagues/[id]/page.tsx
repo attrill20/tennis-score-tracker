@@ -184,7 +184,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${top > bot ? 'text-gray-700' : 'text-gray-400'}`}>
                               {top}
-                              {topTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{topTb}</span>}
+                              {topTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[9px] font-normal leading-none opacity-50">{topTb}</span>}
                             </span>
                           );
                         }) : <span className="text-xs font-medium text-gray-700">{topScore}</span>}
@@ -201,7 +201,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${bot > top ? 'text-gray-700' : 'text-gray-400'}`}>
                               {bot}
-                              {botTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{botTb}</span>}
+                              {botTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[9px] font-normal leading-none opacity-50">{botTb}</span>}
                             </span>
                           );
                         }) : <span className="text-xs font-medium text-gray-400">{bottomScore}</span>}

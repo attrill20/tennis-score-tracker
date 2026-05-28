@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
 import DisputeResolutionNotification from '@/components/DisputeResolutionNotification';
+import NewMatchNotification from '@/components/NewMatchNotification';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
 
   const leagueIds = leagues.map((l) => l.id as string);
 
-  const [recentMatches, allPlayers, allMatches, pendingEdits, disputedMatches, resolvedDisputes] = await Promise.all([
+  const [recentMatches, allPlayers, allMatches, pendingEdits, disputedMatches, resolvedDisputes, newMatchNotifications] = await Promise.all([
     sql`
       SELECT
         m.id, m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at,
@@ -89,7 +90,34 @@ export default async function DashboardPage() {
           OR (m.player2_id = ${userId} AND d.acknowledged_by_player2 = false)
         )
     `,
+    sql`
+      SELECT m.id, m.league_id, m.score_player1, m.score_player2, m.set_scores,
+             m.match_type, m.winner_id, m.player1_id,
+             l.name AS league_name,
+             (p1.first_name || ' ' || p1.last_name) AS submitter_name
+      FROM matches m
+      JOIN leagues l ON l.id = m.league_id
+      JOIN profiles p1 ON p1.id = m.player1_id
+      WHERE m.player2_id = ${userId}
+        AND m.submitted_by != ${userId}
+        AND m.opponent_seen = false
+        AND m.submitted_at > NOW() - INTERVAL '30 days'
+      ORDER BY m.submitted_at DESC
+    `,
   ]);
+
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const leagueStartedNotifications = leagues.filter((l) => {
+    const start = new Date(l.season_start as string);
+    return l.status === 'active' && start >= sevenDaysAgo && start <= now;
+  });
+
+  const leagueEndedNotifications = leagues.filter((l) => {
+    const end = new Date(l.season_end as string);
+    return l.status === 'completed' && end >= sevenDaysAgo && end <= now;
+  });
 
   type LeagueStats = { position: number; played: number; total: number };
 
@@ -159,6 +187,66 @@ export default async function DashboardPage() {
           })}
         </div>
       )}
+
+      {newMatchNotifications.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {newMatchNotifications.map((m) => {
+            const winnerId = m.winner_id as string | null;
+            const iWon = winnerId ? winnerId !== m.player1_id : (m.score_player2 as number) > (m.score_player1 as number);
+            const setScores = (m.set_scores ?? null) as [number, number][] | null;
+            // Flip set scores to opponent's perspective: [p1, p2] -> show p2 first (me) vs p1
+            const mySetScores = setScores ? setScores.map(([p1, p2]) => [p2, p1] as [number, number]) : null;
+            return (
+              <NewMatchNotification
+                key={m.id as string}
+                matchId={m.id as string}
+                leagueId={m.league_id as string}
+                leagueName={m.league_name as string}
+                opponentName={m.submitter_name as string}
+                myScore={m.score_player2 as number}
+                theirScore={m.score_player1 as number}
+                setScores={mySetScores}
+                matchType={m.match_type as string | null}
+                iWon={iWon}
+              />
+            );
+          })}
+        </div>
+      )}
+
+      {leagueStartedNotifications.map((l) => (
+        <div key={`started-${l.id as string}`} className="mb-2 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="inline-flex items-center justify-center w-5 h-5 bg-teal-200 rounded-full shrink-0 text-teal-800 font-bold text-xs">!</span>
+            <p className="text-sm text-teal-900">
+              Your <span className="font-medium">{l.name as string}</span> league has started - good luck!
+            </p>
+          </div>
+          <Link href={`/leagues/${l.id as string}`} className="shrink-0 text-xs bg-teal-200 hover:bg-teal-300 text-teal-900 font-medium px-3 py-1.5 rounded-lg transition-colors">
+            View
+          </Link>
+        </div>
+      ))}
+
+      {leagueEndedNotifications.map((l) => {
+        const stats = leagueStats[l.id as string];
+        const finalPos = l.final_position != null ? l.final_position as number : stats?.position;
+        const ordinal = (n: number) => { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] ?? s[v] ?? s[0]); };
+        return (
+          <div key={`ended-${l.id as string}`} className="mb-2 bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="inline-flex items-center justify-center w-5 h-5 bg-purple-200 rounded-full shrink-0 text-purple-800 font-bold text-xs">!</span>
+              <p className="text-sm text-purple-900">
+                Your <span className="font-medium">{l.name as string}</span> league has finished
+                {finalPos ? ` - you finished ${ordinal(finalPos)}` : ''}.
+              </p>
+            </div>
+            <Link href={`/leagues/${l.id as string}`} className="shrink-0 text-xs bg-purple-200 hover:bg-purple-300 text-purple-900 font-medium px-3 py-1.5 rounded-lg transition-colors">
+              View
+            </Link>
+          </div>
+        );
+      })}
 
       {pendingEdits.length > 0 && (
         <div className="mb-6 space-y-2">
@@ -347,7 +435,7 @@ export default async function DashboardPage() {
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>
                               {my}
-                              {myTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{myTb}</span>}
+                              {myTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[9px] font-normal leading-none opacity-50">{myTb}</span>}
                             </span>
                           );
                         }) : <span className="text-xs font-medium text-gray-700">{myScore}</span>}
@@ -366,7 +454,7 @@ export default async function DashboardPage() {
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>
                               {their}
-                              {theirTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{theirTb}</span>}
+                              {theirTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[9px] font-normal leading-none opacity-50">{theirTb}</span>}
                             </span>
                           );
                         }) : <span className="text-xs font-medium text-gray-400">{theirScore}</span>}

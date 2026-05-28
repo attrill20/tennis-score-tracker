@@ -3,38 +3,19 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
-
-type TbEntry = { my: string; their: string };
-
-function isTiebreakSet(my: number, their: number) {
-  return (my === 7 && their === 6) || (my === 6 && their === 7);
-}
-
-function toFormSets(setScores: [number, number][] | null) {
-  const base = [{ my: '', their: '' }, { my: '', their: '' }, { my: '', their: '' }];
-  if (!setScores) return base;
-  return base.map((_, i) =>
-    setScores[i]
-      ? { my: String(setScores[i][0]), their: String(setScores[i][1]) }
-      : { my: '', their: '' }
-  );
-}
-
-function toFormTiebreaks(tiebreakScores: ([number, number] | null)[] | null): TbEntry[] {
-  const base: TbEntry[] = [{ my: '', their: '' }, { my: '', their: '' }, { my: '', their: '' }];
-  if (!tiebreakScores) return base;
-  return base.map((_, i) =>
-    tiebreakScores[i]
-      ? { my: String(tiebreakScores[i]![0]), their: String(tiebreakScores[i]![1]) }
-      : { my: '', their: '' }
-  );
-}
+import MatchScoreInputs, {
+  MatchType,
+  isTiebreakSet,
+  toFormSets,
+  toFormTiebreaks,
+} from '@/components/MatchScoreInputs';
 
 export default function EditMatchForm({
   matchId,
   leagueId,
-  userId,
-  userName,
+  leagueName,
+  myId,
+  myName,
   opponentId,
   opponentName,
   playedAt: initialPlayedAt,
@@ -42,11 +23,15 @@ export default function EditMatchForm({
   currentTheirScore,
   setScores,
   tiebreakScores,
+  existingMatchType,
+  existingWinnerId,
+  isSubmitter,
 }: {
   matchId: string;
   leagueId: string;
-  userId: string;
-  userName: string;
+  leagueName: string;
+  myId: string;
+  myName: string;
   opponentId: string;
   opponentName: string;
   playedAt: string;
@@ -54,9 +39,23 @@ export default function EditMatchForm({
   currentTheirScore: number;
   setScores: [number, number][] | null;
   tiebreakScores: ([number, number] | null)[] | null;
+  existingMatchType: string | null;
+  existingWinnerId: string | null;
+  isSubmitter: boolean;
 }) {
   const router = useRouter();
-  const [confirmed, setConfirmed] = useState(false);
+  const [confirmed, setConfirmed] = useState(!isSubmitter);
+
+  const formattedDate = new Date(initialPlayedAt + 'T00:00:00Z').toLocaleDateString('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC',
+  });
+
+  // Derive initial walkover/retirement selection from existing winner
+  const initialWinnerChoice: 'me' | 'them' = existingWinnerId === myId ? 'them' : 'me';
+
+  const [matchType, setMatchType] = useState<MatchType>((existingMatchType as MatchType | null) ?? 'normal');
+  const [walkoverId, setWalkoverId] = useState<'me' | 'them'>(initialWinnerChoice);
+  const [retiredPlayer, setRetiredPlayer] = useState<'me' | 'them'>(initialWinnerChoice);
   const [sets, setSets] = useState(toFormSets(setScores));
   const [tiebreaks, setTiebreaks] = useState(toFormTiebreaks(tiebreakScores));
   const [playedAt, setPlayedAt] = useState(initialPlayedAt);
@@ -71,9 +70,7 @@ export default function EditMatchForm({
     setTiebreaks((prev) => prev.map((t, i) => {
       if (i !== index) return t;
       const updated = { ...sets[index], [field]: value };
-      const my = parseInt(updated.my);
-      const their = parseInt(updated.their);
-      return isTiebreakSet(my, their) ? t : { my: '', their: '' };
+      return isTiebreakSet(parseInt(updated.my), parseInt(updated.their)) ? t : { my: '', their: '' };
     }));
   }
 
@@ -101,21 +98,35 @@ export default function EditMatchForm({
       return [tbMy ?? 0, tbTheir ?? 0];
     });
 
-    let mySetsWon = 0, theirSetsWon = 0;
-    for (const [p1, p2] of playedSets) {
-      if (p1 > p2) mySetsWon++;
-      else if (p2 > p1) theirSetsWon++;
-    }
-
-    if (playedSets.length < 2) {
+    if (matchType !== 'walkover' && playedSets.length < 2) {
       setError('At least 2 sets must be entered.');
       return;
     }
+
     setLoading(true);
+    const body = isSubmitter
+      ? {
+          sets: matchType === 'walkover' ? [] : playedSets,
+          tiebreaks: matchType === 'walkover' ? [] : playedTiebreaks,
+          playedAt,
+          matchType,
+          walkoverId: matchType === 'walkover' ? walkoverId : undefined,
+          retiredPlayer: matchType === 'retirement' ? retiredPlayer : undefined,
+        }
+      : {
+          action: 'suggest-edit',
+          sets: matchType === 'walkover' ? [] : playedSets,
+          tiebreaks: matchType === 'walkover' ? [] : playedTiebreaks,
+          playedAt,
+          matchType,
+          walkoverId: matchType === 'walkover' ? walkoverId : undefined,
+          retiredPlayer: matchType === 'retirement' ? retiredPlayer : undefined,
+        };
+
     const res = await fetch(`/api/matches/${matchId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sets: playedSets, tiebreaks: playedTiebreaks, playedAt }),
+      body: JSON.stringify(body),
     });
     const data = await res.json();
     setLoading(false);
@@ -125,7 +136,7 @@ export default function EditMatchForm({
       return;
     }
 
-    router.push(`/leagues/${leagueId}`);
+    router.push(isSubmitter ? `/leagues/${leagueId}` : `/leagues/${leagueId}/matches/${matchId}`);
   }
 
   async function handleDelete() {
@@ -141,230 +152,178 @@ export default function EditMatchForm({
   }
 
   const myWon = currentMyScore > currentTheirScore;
-  const anyTiebreak = sets.some((s) => {
-    const my = parseInt(s.my);
-    const their = parseInt(s.their);
-    return isTiebreakSet(my, their);
-  });
 
   return (
     <div className="max-w-lg mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Edit result</h1>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">
+          {isSubmitter ? 'Edit result' : 'Suggest a correction'}
+        </h1>
+        <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
+          &larr; {leagueName}
+        </Link>
+      </div>
 
       {/* Current result */}
       <div className="bg-white rounded-xl border border-gray-200 p-6 mb-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-4">Submitted result</p>
-
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1" />
-          <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
-          <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
-          <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">
+              {isSubmitter ? 'Submitted result' : 'Current result'}
+            </p>
+            {existingMatchType === 'walkover' && (
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
+            )}
+            {existingMatchType === 'retirement' && (
+              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
+            )}
+          </div>
+          <span className="text-xs text-gray-400">{formattedDate}</span>
         </div>
 
-        <div className="flex items-center gap-3 mb-2">
-          <Link href={`/players/${userId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>{userName}</Link>
-          {[0, 1, 2].map((i) => {
-            const hasTb = tiebreakScores?.[i] != null;
-            const myTb = hasTb ? tiebreakScores![i]![0] : null;
-            return (
-              <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
-                setScores?.[i]
-                  ? setScores[i][0] > setScores[i][1] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
-                  : 'text-gray-200'
-              }`}>
-                {setScores?.[i] ? setScores[i][0] : '-'}
-                {myTb !== null && (
-                  <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{myTb}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        {existingMatchType === 'walkover' ? (
+          <p className="text-sm text-center text-gray-500 py-1">
+            {myWon ? 'You won' : `${opponentName} won`} by walkover
+          </p>
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1" />
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
+            </div>
 
-        <div className="flex items-center gap-3">
-          <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
-          {[0, 1, 2].map((i) => {
-            const hasTb = tiebreakScores?.[i] != null;
-            const theirTb = hasTb ? tiebreakScores![i]![1] : null;
-            return (
-              <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
-                setScores?.[i]
-                  ? setScores[i][1] > setScores[i][0] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
-                  : 'text-gray-200'
-              }`}>
-                {setScores?.[i] ? setScores[i][1] : '-'}
-                {theirTb !== null && (
-                  <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{theirTb}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
+            <div className="flex items-center gap-3 mb-2">
+              <Link href={`/players/${myId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>{myName}</Link>
+              {[0, 1, 2].map((i) => {
+                const myTb = tiebreakScores?.[i] != null ? tiebreakScores![i]![0] : null;
+                return (
+                  <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
+                    setScores?.[i]
+                      ? setScores[i][0] > setScores[i][1] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
+                      : 'text-gray-200'
+                  }`}>
+                    {setScores?.[i] ? setScores[i][0] : '-'}
+                    {myTb !== null && (
+                      <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{myTb}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="flex items-center gap-3">
+              <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
+              {[0, 1, 2].map((i) => {
+                const theirTb = tiebreakScores?.[i] != null ? tiebreakScores![i]![1] : null;
+                return (
+                  <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
+                    setScores?.[i]
+                      ? setScores[i][1] > setScores[i][0] ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
+                      : 'text-gray-200'
+                  }`}>
+                    {setScores?.[i] ? setScores[i][1] : '-'}
+                    {theirTb !== null && (
+                      <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{theirTb}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
 
         {!confirmed && (
           <button
             onClick={() => setConfirmed(true)}
             className="w-full mt-6 text-sm border border-gray-300 hover:border-red-400 hover:text-red-600 text-gray-600 font-medium py-2.5 rounded-lg transition-colors"
           >
-            Edit this result
+            {isSubmitter ? 'Edit this result' : 'Suggest a correction'}
           </button>
         )}
       </div>
 
       {confirmed && (
         <>
-          <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-4 text-sm text-yellow-800">
-            Are you sure you want to edit this previously submitted score? Enter the correct set scores below.
-          </div>
+          {isSubmitter ? (
+            <div className="bg-yellow-50 border border-yellow-200 rounded-xl px-4 py-3 mb-4 text-sm text-yellow-800">
+              Are you sure you want to edit this previously submitted result?
+            </div>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 mb-4 text-sm text-blue-800">
+              Enter the correct result below. {opponentName} will be asked to accept or decline.
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 space-y-6">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="flex-1" />
-                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
-                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
-                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
-              </div>
 
-              <div className="flex items-center gap-3 mb-3">
-                <Link href={`/players/${userId}`} className="flex-1 text-sm font-medium text-gray-800 truncate hover:underline">{userName}</Link>
-                {sets.map((set, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    inputMode="numeric"
-                    value={set.my}
-                    onChange={(e) => updateSet(i, 'my', e.target.value)}
-                    className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                    placeholder="-"
-                  />
-                ))}
-              </div>
+            <MatchScoreInputs
+              myName={myName}
+              opponentName={opponentName}
+              matchType={matchType}
+              setMatchType={setMatchType}
+              walkoverId={walkoverId}
+              setWalkoverId={setWalkoverId}
+              retiredPlayer={retiredPlayer}
+              setRetiredPlayer={setRetiredPlayer}
+              sets={sets}
+              updateSet={updateSet}
+              tiebreaks={tiebreaks}
+              updateTiebreak={updateTiebreak}
+              playedAt={playedAt}
+              setPlayedAt={setPlayedAt}
+            />
 
-              <div className="flex items-center gap-3">
-                <Link href={`/players/${opponentId}`} className="flex-1 text-sm text-gray-500 truncate hover:underline">{opponentName}</Link>
-                {sets.map((set, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    inputMode="numeric"
-                    value={set.their}
-                    onChange={(e) => updateSet(i, 'their', e.target.value)}
-                    className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                    placeholder="-"
-                  />
-                ))}
-              </div>
-
-              {anyTiebreak && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-start gap-3">
-                    <span className="flex-1 text-xs text-gray-400 pt-1">Tiebreak</span>
-                    {sets.map((set, i) => {
-                      const my = parseInt(set.my);
-                      const their = parseInt(set.their);
-                      return (
-                        <div key={i} className="w-14">
-                          {isTiebreakSet(my, their) ? (
-                            <div className="space-y-1">
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={tiebreaks[i].my}
-                                onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
-                                className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
-                                placeholder="Me"
-                                maxLength={2}
-                              />
-                              <input
-                                type="text"
-                                inputMode="numeric"
-                                value={tiebreaks[i].their}
-                                onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
-                                className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
-                                placeholder="Opp"
-                                maxLength={2}
-                              />
-                            </div>
-                          ) : <div />}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <label htmlFor="playedAt" className="block text-sm font-medium text-gray-700 mb-1">Date played</label>
-              <input
-                id="playedAt"
-                type="date"
-                value={playedAt}
-                onChange={(e) => setPlayedAt(e.target.value)}
-                required
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-              />
-            </div>
-
-            {error && (
-              <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-            )}
+            {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
             <div className="flex gap-3">
-              <button
-                type="button"
-                onClick={() => setConfirmed(false)}
-                className="flex-1 text-sm border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-2.5 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
+              {isSubmitter && (
+                <button
+                  type="button"
+                  onClick={() => setConfirmed(false)}
+                  className="flex-1 text-sm border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-2.5 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+              )}
               <button
                 type="submit"
                 disabled={loading}
                 className="flex-1 bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium py-2.5 rounded-lg transition-colors text-sm"
               >
-                {loading ? 'Saving...' : 'Save changes'}
+                {loading
+                  ? (isSubmitter ? 'Saving...' : 'Sending...')
+                  : (isSubmitter ? 'Save changes' : `Send correction to ${opponentName}`)}
               </button>
             </div>
           </form>
         </>
       )}
 
-      {/* Delete match */}
-      <div className="mt-6 pt-5 border-t border-gray-200">
-        {!deleteConfirm ? (
-          <button
-            onClick={() => setDeleteConfirm(true)}
-            className="text-sm text-red-500 hover:text-red-700 transition-colors"
-          >
-            Delete this match
-          </button>
-        ) : (
-          <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
-            <p className="text-sm text-red-800 font-medium">Delete this match permanently?</p>
-            <p className="text-xs text-red-600">This cannot be undone. The result will be removed from the league table.</p>
-            {error && <p className="text-xs text-red-600">{error}</p>}
-            <div className="flex gap-2">
-              <button
-                onClick={() => setDeleteConfirm(false)}
-                disabled={deleting}
-                className="flex-1 text-sm border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="flex-1 text-sm bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {deleting ? 'Deleting...' : 'Yes, delete'}
-              </button>
+      {isSubmitter && (
+        <div className="mt-6 pt-5 border-t border-gray-200">
+          {!deleteConfirm ? (
+            <button onClick={() => setDeleteConfirm(true)} className="text-sm text-red-500 hover:text-red-700 transition-colors">
+              Delete this match
+            </button>
+          ) : (
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
+              <p className="text-sm text-red-800 font-medium">Delete this match permanently?</p>
+              <p className="text-xs text-red-600">This cannot be undone. The result will be removed from the league table.</p>
+              {error && <p className="text-xs text-red-600">{error}</p>}
+              <div className="flex gap-2">
+                <button onClick={() => setDeleteConfirm(false)} disabled={deleting} className="flex-1 text-sm border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-2 rounded-lg transition-colors disabled:opacity-50">
+                  Cancel
+                </button>
+                <button onClick={handleDelete} disabled={deleting} className="flex-1 text-sm bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg transition-colors disabled:opacity-50">
+                  {deleting ? 'Deleting...' : 'Yes, delete'}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

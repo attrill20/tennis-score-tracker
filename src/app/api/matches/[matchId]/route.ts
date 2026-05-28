@@ -19,20 +19,31 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
   const { action } = body;
 
+  // Opponent dismisses the "new match" notification
+  if (action === 'seen-by-opponent') {
+    if (match.player2_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    await sql`UPDATE matches SET opponent_seen = true WHERE id = ${matchId}`;
+    return NextResponse.json({ success: true });
+  }
+
   // Non-submitter proposes a correction
   if (action === 'suggest-edit') {
     if (!isOpponent) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     if (match.status !== 'confirmed') return NextResponse.json({ error: 'Match cannot be edited' }, { status: 400 });
 
-    const { sets, tiebreaks, playedAt } = body;
-    if (!sets?.length || !playedAt) {
+    const { sets, tiebreaks, playedAt, matchType = 'normal', walkoverId, retiredPlayer } = body;
+
+    if (matchType !== 'walkover' && (!sets?.length || !playedAt)) {
       return NextResponse.json({ error: 'Sets and date are required' }, { status: 400 });
+    }
+    if (!playedAt) {
+      return NextResponse.json({ error: 'Date is required' }, { status: 400 });
     }
 
     // Non-submitter is always player2, so sets arrive as [my(p2), their(p1)] — flip to [p1, p2]
-    const pendingSets = (sets as [number, number][]).map(([my, their]) => [their, my]);
+    const rawSets = (sets as [number, number][] | undefined) ?? [];
+    const pendingSets = matchType === 'walkover' ? null : rawSets.map(([my, their]) => [their, my]);
 
-    // Flip tiebreaks too: [my(p2), their(p1)] -> [p1, p2]
     const rawTiebreaks = tiebreaks as ([number, number] | null)[] | null;
     const pendingTiebreaks = rawTiebreaks
       ? rawTiebreaks.map((tb) => tb ? [tb[1], tb[0]] as [number, number] : null)
@@ -40,9 +51,20 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
     const hasPendingTiebreak = pendingTiebreaks?.some((t) => t !== null) ?? false;
 
     let p1Score = 0, p2Score = 0;
-    for (const [p1, p2] of pendingSets) {
-      if (p1 > p2) p1Score++;
-      else if (p2 > p1) p2Score++;
+    if (matchType !== 'walkover' && pendingSets) {
+      for (const [p1, p2] of pendingSets as [number, number][]) {
+        if (p1 > p2) p1Score++;
+        else if (p2 > p1) p2Score++;
+      }
+    }
+
+    // Determine pending winner for walkover/retirement
+    // userId here is player2 (non-submitter), match.player1_id is the submitter
+    let pendingWinnerId: string | null = null;
+    if (matchType === 'walkover') {
+      pendingWinnerId = walkoverId === 'them' ? userId : match.player1_id as string;
+    } else if (matchType === 'retirement') {
+      pendingWinnerId = retiredPlayer === 'them' ? userId : match.player1_id as string;
     }
 
     await sql`
@@ -50,8 +72,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
         status = 'pending_edit',
         pending_score_player1 = ${p1Score},
         pending_score_player2 = ${p2Score},
-        pending_set_scores = ${JSON.stringify(pendingSets)},
+        pending_set_scores = ${pendingSets ? JSON.stringify(pendingSets) : null},
         pending_tiebreak_scores = ${hasPendingTiebreak ? JSON.stringify(pendingTiebreaks) : null},
+        pending_match_type = ${matchType},
+        pending_winner_id = ${pendingWinnerId},
         pending_edit_by = ${userId}
       WHERE id = ${matchId}
     `;
@@ -70,11 +94,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
         score_player2 = pending_score_player2,
         set_scores = pending_set_scores,
         tiebreak_scores = pending_tiebreak_scores,
+        match_type = COALESCE(pending_match_type, match_type),
+        winner_id = pending_winner_id,
         status = 'confirmed',
         pending_score_player1 = NULL,
         pending_score_player2 = NULL,
         pending_set_scores = NULL,
         pending_tiebreak_scores = NULL,
+        pending_match_type = NULL,
+        pending_winner_id = NULL,
         pending_edit_by = NULL
       WHERE id = ${matchId}
     `;
@@ -102,6 +130,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
           pending_score_player2 = NULL,
           pending_set_scores = NULL,
           pending_tiebreak_scores = NULL,
+          pending_match_type = NULL,
+          pending_winner_id = NULL,
           pending_edit_by = NULL
         WHERE id = ${matchId}
       `;
@@ -123,15 +153,30 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
   if (!isSubmitter) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   if (match.status !== 'confirmed') return NextResponse.json({ error: 'Only confirmed matches can be edited' }, { status: 400 });
 
-  const { sets, tiebreaks, playedAt } = body;
-  if (!sets?.length || !playedAt) {
+  const { sets, tiebreaks, playedAt, matchType = 'normal', walkoverId, retiredPlayer } = body;
+
+  if (matchType !== 'walkover' && (!sets?.length || !playedAt)) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+  }
+  if (!playedAt) {
+    return NextResponse.json({ error: 'Date is required' }, { status: 400 });
   }
 
   let myScore = 0, theirScore = 0;
-  for (const [p1, p2] of sets) {
-    if (p1 > p2) myScore++;
-    else if (p2 > p1) theirScore++;
+  const editSets = (sets as [number, number][] | undefined) ?? [];
+  if (matchType !== 'walkover') {
+    for (const [p1, p2] of editSets) {
+      if (p1 > p2) myScore++;
+      else if (p2 > p1) theirScore++;
+    }
+  }
+
+  // Submitter is always player1; determine winner_id for walkover/retirement
+  let editWinnerId: string | null = null;
+  if (matchType === 'walkover') {
+    editWinnerId = walkoverId === 'them' ? userId : match.player2_id as string;
+  } else if (matchType === 'retirement') {
+    editWinnerId = retiredPlayer === 'them' ? userId : match.player2_id as string;
   }
 
   const editTiebreaks = tiebreaks as ([number, number] | null)[] | null;
@@ -139,10 +184,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
   await sql`
     UPDATE matches
-    SET score_player1 = ${myScore}, score_player2 = ${theirScore},
-        set_scores = ${JSON.stringify(sets)},
+    SET score_player1 = ${myScore},
+        score_player2 = ${theirScore},
+        set_scores = ${matchType === 'walkover' ? null : JSON.stringify(editSets)},
         tiebreak_scores = ${hasEditTiebreak ? JSON.stringify(editTiebreaks) : null},
-        played_at = ${playedAt}
+        played_at = ${playedAt},
+        match_type = ${matchType},
+        winner_id = ${editWinnerId}
     WHERE id = ${matchId}
   `;
 

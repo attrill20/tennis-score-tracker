@@ -66,7 +66,7 @@ export default function PendingEditReview({
                   <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${p1 > p2 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                     {p1}
                     {tb !== null && (
-                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[0]}</span>
+                      <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{tb[0]}</span>
                     )}
                   </div>
                 );
@@ -80,7 +80,7 @@ export default function PendingEditReview({
                   <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${p2 > p1 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
                     {p2}
                     {tb !== null && (
-                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[1]}</span>
+                      <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{tb[1]}</span>
                     )}
                   </div>
                 );

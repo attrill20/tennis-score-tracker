@@ -148,7 +148,7 @@ export default function SuggestEditForm({
               }`}>
                 {setScores?.[i] ? setScores[i][0] : '-'}
                 {myTb !== null && (
-                  <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{myTb}</span>
+                  <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{myTb}</span>
                 )}
               </div>
             );
@@ -167,7 +167,7 @@ export default function SuggestEditForm({
               }`}>
                 {setScores?.[i] ? setScores[i][1] : '-'}
                 {theirTb !== null && (
-                  <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{theirTb}</span>
+                  <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{theirTb}</span>
                 )}
               </div>
             );

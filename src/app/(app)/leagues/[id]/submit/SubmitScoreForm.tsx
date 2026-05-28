@@ -3,15 +3,9 @@
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import TennisBallCelebration from '@/components/TennisBallCelebration';
+import MatchScoreInputs, { MatchType, isTiebreakSet, TbEntry } from '@/components/MatchScoreInputs';
 
 type Player = { id: string; full_name: string };
-type MatchType = 'normal' | 'walkover' | 'retirement';
-
-function isTiebreakSet(set: { my: string; their: string }) {
-  const my = parseInt(set.my);
-  const their = parseInt(set.their);
-  return (my === 7 && their === 6) || (my === 6 && their === 7);
-}
 
 export default function SubmitScoreForm({ userName }: { userName: string }) {
   const { id: leagueId } = useParams<{ id: string }>();
@@ -20,14 +14,14 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [opponent, setOpponent] = useState('');
   const [matchType, setMatchType] = useState<MatchType>('normal');
-  const [retiredPlayer, setRetiredPlayer] = useState<'me' | 'them'>('them');
   const [walkoverId, setWalkoverId] = useState<'me' | 'them'>('them');
-  const [sets, setSets] = useState([
+  const [retiredPlayer, setRetiredPlayer] = useState<'me' | 'them'>('them');
+  const [sets, setSets] = useState<TbEntry[]>([
     { my: '', their: '' },
     { my: '', their: '' },
     { my: '', their: '' },
   ]);
-  const [tiebreaks, setTiebreaks] = useState([
+  const [tiebreaks, setTiebreaks] = useState<TbEntry[]>([
     { my: '', their: '' },
     { my: '', their: '' },
     { my: '', their: '' },
@@ -55,7 +49,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
     setTiebreaks((prev) => prev.map((t, i) => {
       if (i !== index) return t;
       const updated = { ...sets[index], [field]: value };
-      return isTiebreakSet(updated) ? t : { my: '', their: '' };
+      return isTiebreakSet(parseInt(updated.my), parseInt(updated.their)) ? t : { my: '', their: '' };
     }));
   }
 
@@ -73,13 +67,11 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       return acc;
     }, []);
 
-    // Validate normal matches need at least 2 sets
     if (matchType === 'normal' && playedIndices.length < 2) {
       setError('At least 2 sets must be entered.');
       return;
     }
 
-    // Validate partial sets aren't half-filled
     for (const s of sets) {
       if ((s.my === '') !== (s.their === '')) {
         setError('Each set needs scores for both players.');
@@ -89,12 +81,13 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
 
     const playedSets = playedIndices.map((i) => [parseInt(sets[i].my), parseInt(sets[i].their)]);
     const playedTiebreaks = playedIndices.map((i) => {
-      const set = sets[i];
-      if (!isTiebreakSet(set)) return null;
-      const my = tiebreaks[i].my !== '' ? parseInt(tiebreaks[i].my) : null;
-      const their = tiebreaks[i].their !== '' ? parseInt(tiebreaks[i].their) : null;
-      if (my === null && their === null) return null;
-      return [my ?? 0, their ?? 0];
+      const my = parseInt(sets[i].my);
+      const their = parseInt(sets[i].their);
+      if (!isTiebreakSet(my, their)) return null;
+      const tbMy = tiebreaks[i].my !== '' ? parseInt(tiebreaks[i].my) : null;
+      const tbTheir = tiebreaks[i].their !== '' ? parseInt(tiebreaks[i].their) : null;
+      if (tbMy === null && tbTheir === null) return null;
+      return [tbMy ?? 0, tbTheir ?? 0];
     });
 
     let mySetsWon = 0;
@@ -134,10 +127,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       const btn = submitButtonRef.current;
       if (btn) {
         const rect = btn.getBoundingClientRect();
-        setCelebrationOrigin({
-          x: rect.left + rect.width / 2,
-          y: rect.top + rect.height / 2,
-        });
+        setCelebrationOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
       } else {
         router.push(`/leagues/${leagueId}`);
       }
@@ -147,13 +137,6 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   }
 
   const opponentName = players.find((p) => p.id === opponent)?.full_name ?? 'Opponent';
-  const anyTiebreak = sets.some(isTiebreakSet);
-
-  const matchTypeLabels: Record<MatchType, string> = {
-    normal: 'Normal',
-    walkover: 'Walkover',
-    retirement: 'Retirement',
-  };
 
   return (
     <>
@@ -186,150 +169,24 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
             </select>
           </div>
 
-          <div>
-            <p className="text-sm font-medium text-gray-700 mb-2">Match type</p>
-            <div className="flex rounded-lg overflow-hidden border border-gray-300">
-              {(['normal', 'walkover', 'retirement'] as const).map((type) => (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => setMatchType(type)}
-                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                    matchType === type
-                      ? 'bg-green-700 text-white'
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  {matchTypeLabels[type]}
-                </button>
-              ))}
-            </div>
-          </div>
+          <MatchScoreInputs
+            myName={userName}
+            opponentName={opponentName}
+            matchType={matchType}
+            setMatchType={setMatchType}
+            walkoverId={walkoverId}
+            setWalkoverId={setWalkoverId}
+            retiredPlayer={retiredPlayer}
+            setRetiredPlayer={setRetiredPlayer}
+            sets={sets}
+            updateSet={updateSet}
+            tiebreaks={tiebreaks}
+            updateTiebreak={updateTiebreak}
+            playedAt={playedAt}
+            setPlayedAt={setPlayedAt}
+          />
 
-          {matchType === 'walkover' && (
-            <div>
-              <label htmlFor="walkoverId" className="block text-sm font-medium text-gray-700 mb-1">Who won?</label>
-              <select
-                id="walkoverId"
-                value={walkoverId}
-                onChange={(e) => setWalkoverId(e.target.value as 'me' | 'them')}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-              >
-                <option value="them">I won ({opponentName === 'Opponent' ? 'opponent' : opponentName} did not appear)</option>
-                <option value="me">{opponentName === 'Opponent' ? 'Opponent' : opponentName} won (I did not appear)</option>
-              </select>
-            </div>
-          )}
-
-          {matchType !== 'walkover' && (
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="flex-1" />
-                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
-                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
-                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
-              </div>
-
-              <div className="flex items-center gap-3 mb-3">
-                <span className="flex-1 text-sm font-medium text-gray-800 truncate">{userName}</span>
-                {sets.map((set, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    inputMode="numeric"
-                    value={set.my}
-                    onChange={(e) => updateSet(i, 'my', e.target.value)}
-                    className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                    placeholder="-"
-                  />
-                ))}
-              </div>
-
-              <div className="flex items-center gap-3">
-                <span className="flex-1 text-sm text-gray-500 truncate">{opponentName}</span>
-                {sets.map((set, i) => (
-                  <input
-                    key={i}
-                    type="text"
-                    inputMode="numeric"
-                    value={set.their}
-                    onChange={(e) => updateSet(i, 'their', e.target.value)}
-                    className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                    placeholder="-"
-                  />
-                ))}
-              </div>
-
-              {matchType === 'retirement' && (
-                <p className="mt-2 text-xs text-gray-400">Enter the sets completed before retirement. Partial sets are not counted.</p>
-              )}
-
-              {anyTiebreak && (
-                <div className="mt-3 pt-3 border-t border-gray-100">
-                  <div className="flex items-start gap-3">
-                    <span className="flex-1 text-xs text-gray-400 pt-1">Tiebreak</span>
-                    {sets.map((set, i) => (
-                      <div key={i} className="w-14">
-                        {isTiebreakSet(set) ? (
-                          <div className="space-y-1">
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={tiebreaks[i].my}
-                              onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
-                              className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
-                              placeholder="Me"
-                              maxLength={2}
-                            />
-                            <input
-                              type="text"
-                              inputMode="numeric"
-                              value={tiebreaks[i].their}
-                              onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
-                              className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
-                              placeholder="Opp"
-                              maxLength={2}
-                            />
-                          </div>
-                        ) : <div />}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {matchType === 'retirement' && (
-            <div>
-              <label htmlFor="retiredPlayer" className="block text-sm font-medium text-gray-700 mb-1">Who won?</label>
-              <select
-                id="retiredPlayer"
-                value={retiredPlayer}
-                onChange={(e) => setRetiredPlayer(e.target.value as 'me' | 'them')}
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-              >
-                <option value="them">I won ({opponentName === 'Opponent' ? 'opponent' : opponentName} retired)</option>
-                <option value="me">{opponentName === 'Opponent' ? 'Opponent' : opponentName} won (I retired)</option>
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label htmlFor="playedAt" className="block text-sm font-medium text-gray-700 mb-1">Date played</label>
-            <input
-              id="playedAt"
-              type="date"
-              value={playedAt}
-              onChange={(e) => setPlayedAt(e.target.value)}
-              required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-            />
-          </div>
-
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
-          )}
+          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
           <button
             ref={submitButtonRef}

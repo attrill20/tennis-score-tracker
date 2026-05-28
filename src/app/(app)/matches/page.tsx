@@ -94,7 +94,7 @@ export default async function MatchesPage() {
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>
                               {my}
-                              {myTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{myTb}</span>}
+                              {myTb !== null && <span className="absolute -top-0.5 right-1.5 text-[9px] font-normal leading-none opacity-50">{myTb}</span>}
                             </span>
                           );
                         }) : <span className="text-xs font-medium text-gray-700">{myScore}</span>}
@@ -113,7 +113,7 @@ export default async function MatchesPage() {
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>
                               {their}
-                              {theirTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[8px] font-normal leading-none opacity-50">{theirTb}</span>}
+                              {theirTb !== null && <span className="absolute -top-0.5 right-1.5 text-[9px] font-normal leading-none opacity-50">{theirTb}</span>}
                             </span>
                           );
                         }) : <span className="text-xs font-medium text-gray-400">{theirScore}</span>}

@@ -44,6 +44,7 @@ export default async function MatchPage({
   const iWon = winnerId ? winnerId === userId : myScore > theirScore;
   const myName = isPlayer1 ? match.player1_name as string : match.player2_name as string;
   const opponentName = isPlayer1 ? match.player2_name as string : match.player1_name as string;
+  const opponentPlayerId = isPlayer1 ? match.player2_id as string : match.player1_id as string;
   const setScores = (match.set_scores ?? null) as [number, number][] | null;
   const tiebreakScores = (match.tiebreak_scores ?? null) as ([number, number] | null)[] | null;
   const submittedByMe = match.submitted_by === userId;
@@ -53,7 +54,6 @@ export default async function MatchPage({
   const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&
     (match.player1_id === userId || match.player2_id === userId);
 
-  // From submitter's (player1) perspective for the pending review
   const myPendingScore = match.pending_score_player1 as number | null;
   const theirPendingScore = match.pending_score_player2 as number | null;
   const pendingSetScores = (match.pending_set_scores ?? null) as [number, number][] | null;
@@ -61,227 +61,217 @@ export default async function MatchPage({
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="mb-4">
-        <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline">
-          - {match.league_name as string}
+      {/* Page header */}
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">Match result</h1>
+          {(matchType === 'walkover' || matchType === 'retirement' || isPendingEdit || match.status === 'disputed' || match.status === 'overridden') && (
+            <div className="flex items-center gap-2 mt-1">
+              {matchType === 'walkover' && (
+                <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
+              )}
+              {matchType === 'retirement' && (
+                <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
+              )}
+              {isPendingEdit && (
+                <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
+              )}
+              {match.status === 'disputed' && (
+                <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
+              )}
+              {match.status === 'overridden' && (
+                <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
+              )}
+            </div>
+          )}
+        </div>
+        <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
+          &larr; {match.league_name as string}
         </Link>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8">
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-lg font-bold text-gray-800">Match result</h1>
-          <div className="flex items-center gap-2">
-            {matchType === 'walkover' && (
-              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
-            )}
-            {matchType === 'retirement' && (
-              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
-            )}
-            {isPendingEdit && (
-              <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
-            )}
-            {match.status === 'disputed' && (
-              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">Disputed</span>
-            )}
-            {match.status === 'overridden' && (
-              <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
-            )}
-          </div>
+      {/* Result card */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">Submitted result</p>
+          <span className="text-xs text-gray-400">
+            {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+          </span>
         </div>
 
-        <div className="flex items-center justify-between gap-4 mb-4">
-          <div className="text-center flex-1">
-            <Link
-              href={`/players/${userId}`}
-              className={`text-sm font-medium mb-1 hover:underline ${iWon ? 'text-gray-800' : 'text-gray-400'}`}
-            >
-              {myName}
-            </Link>
-            <p className={`text-5xl font-bold ${iWon ? 'text-green-700' : 'text-gray-300'}`}>
-              {matchType === 'walkover' ? '-' : myScore}
+        {matchType === 'walkover' ? (
+          <div className="text-center py-2">
+            <p className="text-sm font-semibold text-gray-800">
+              {iWon ? myName : opponentName} won by walkover
             </p>
           </div>
-          <p className="text-2xl font-light text-gray-300">-</p>
-          <div className="text-center flex-1">
-            <Link
-              href={`/players/${isPlayer1 ? match.player2_id : match.player1_id}`}
-              className={`text-sm font-medium mb-1 hover:underline ${!iWon ? 'text-gray-800' : 'text-gray-400'}`}
-            >
-              {opponentName}
-            </Link>
-            <p className={`text-5xl font-bold ${!iWon ? 'text-green-700' : 'text-gray-300'}`}>
-              {matchType === 'walkover' ? '-' : theirScore}
-            </p>
-          </div>
-        </div>
-
-        {setScores && (
-          <div className="mb-6">
-            <div className="flex items-center gap-2 mb-1 pl-[60px]">
-              {setScores.map((_, i) => (
-                <span key={i} className="flex-1 text-center text-xs text-gray-400">Set {i + 1}</span>
-              ))}
+        ) : (
+          <>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1" />
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
+              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
             </div>
-            <div className="flex items-center gap-2 mb-1">
-              <Link href={`/players/${userId}`} className={`w-[52px] text-xs truncate hover:underline ${myScore > theirScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{myName.split(' ')[0]}</Link>
-              {setScores.map(([p1, p2], i) => {
-                const my = isPlayer1 ? p1 : p2;
-                const their = isPlayer1 ? p2 : p1;
+
+            <div className="flex items-center gap-3 mb-2">
+              <Link href={`/players/${userId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${iWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                {myName}
+              </Link>
+              {[0, 1, 2].map((i) => {
+                const entry = setScores?.[i];
+                const my = entry ? (isPlayer1 ? entry[0] : entry[1]) : null;
+                const their = entry ? (isPlayer1 ? entry[1] : entry[0]) : null;
                 const tb = tiebreakScores?.[i] ?? null;
                 const myTb = tb ? (isPlayer1 ? tb[0] : tb[1]) : null;
                 return (
-                  <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${my > their ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
-                    {my}
+                  <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
+                    my !== null
+                      ? my > (their ?? 0) ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
+                      : 'text-gray-200'
+                  }`}>
+                    {my !== null ? my : '-'}
                     {myTb !== null && (
-                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{myTb}</span>
+                      <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{myTb}</span>
                     )}
                   </div>
                 );
               })}
             </div>
-            <div className="flex items-center gap-2">
-              <Link href={`/players/${isPlayer1 ? match.player2_id : match.player1_id}`} className={`w-[52px] text-xs truncate hover:underline ${theirScore > myScore ? 'text-gray-700 font-medium' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</Link>
-              {setScores.map(([p1, p2], i) => {
-                const my = isPlayer1 ? p1 : p2;
-                const their = isPlayer1 ? p2 : p1;
+
+            <div className="flex items-center gap-3">
+              <Link href={`/players/${opponentPlayerId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!iWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                {opponentName}
+              </Link>
+              {[0, 1, 2].map((i) => {
+                const entry = setScores?.[i];
+                const my = entry ? (isPlayer1 ? entry[0] : entry[1]) : null;
+                const their = entry ? (isPlayer1 ? entry[1] : entry[0]) : null;
                 const tb = tiebreakScores?.[i] ?? null;
                 const theirTb = tb ? (isPlayer1 ? tb[1] : tb[0]) : null;
                 return (
-                  <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1.5 rounded-lg ${their > my ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
-                    {their}
+                  <div key={i} className={`relative w-14 py-2 rounded-lg text-sm text-center font-medium ${
+                    their !== null
+                      ? (their ?? 0) > (my ?? 0) ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'
+                      : 'text-gray-200'
+                  }`}>
+                    {their !== null ? their : '-'}
                     {theirTb !== null && (
-                      <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{theirTb}</span>
+                      <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{theirTb}</span>
                     )}
                   </div>
                 );
               })}
             </div>
-          </div>
+          </>
         )}
 
-        <p className="text-xs text-gray-400 text-center mb-6">
-          {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
-        </p>
-
-        {/* Disputed — show original vs requested, awaiting admin */}
-        {match.status === 'disputed' && (
-          <div className="mt-2 pt-5 border-t border-red-100 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              {/* Original score */}
-              <div className="bg-gray-50 rounded-xl p-3">
-                <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Original</p>
-                <div className="flex items-center gap-2 mb-1 pl-[44px]">
-                  {setScores?.map((_, i) => (
-                    <span key={i} className="flex-1 text-center text-xs text-gray-400">S{i + 1}</span>
-                  ))}
-                </div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className={`w-[36px] text-xs truncate font-medium ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}>{myName.split(' ')[0]}</span>
-                  {setScores ? setScores.map(([p1, p2], i) => {
-                    const my = isPlayer1 ? p1 : p2;
-                    const their = isPlayer1 ? p2 : p1;
-                    return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${my > their ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{my}</div>;
-                  }) : <span className="text-sm font-bold text-gray-800">{myScore}</span>}
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className={`w-[36px] text-xs truncate font-medium ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</span>
-                  {setScores ? setScores.map(([p1, p2], i) => {
-                    const my = isPlayer1 ? p1 : p2;
-                    const their = isPlayer1 ? p2 : p1;
-                    return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${their > my ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{their}</div>;
-                  }) : <span className="text-sm font-bold text-gray-400">{theirScore}</span>}
-                </div>
-              </div>
-
-              {/* Requested correction */}
-              {dispute && dispute.requested_score_player1 != null ? (() => {
-                const reqSets = (dispute.requested_set_scores ?? null) as [number, number][] | null;
-                const reqMyScore = isPlayer1 ? dispute.requested_score_player1 as number : dispute.requested_score_player2 as number;
-                const reqTheirScore = isPlayer1 ? dispute.requested_score_player2 as number : dispute.requested_score_player1 as number;
-                return (
-                  <div className="bg-red-50 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-3">Requested</p>
-                    <div className="flex items-center gap-2 mb-1 pl-[44px]">
-                      {reqSets?.map((_, i) => (
-                        <span key={i} className="flex-1 text-center text-xs text-gray-400">S{i + 1}</span>
-                      ))}
-                    </div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className={`w-[36px] text-xs truncate font-medium ${reqMyScore > reqTheirScore ? 'text-gray-800' : 'text-gray-400'}`}>{myName.split(' ')[0]}</span>
-                      {reqSets ? reqSets.map(([p1, p2], i) => {
-                        const my = isPlayer1 ? p1 : p2;
-                        const their = isPlayer1 ? p2 : p1;
-                        return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${my > their ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{my}</div>;
-                      }) : <span className="text-sm font-bold text-gray-800">{reqMyScore}</span>}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className={`w-[36px] text-xs truncate font-medium ${reqTheirScore > reqMyScore ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</span>
-                      {reqSets ? reqSets.map(([p1, p2], i) => {
-                        const my = isPlayer1 ? p1 : p2;
-                        const their = isPlayer1 ? p2 : p1;
-                        return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${their > my ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{their}</div>;
-                      }) : <span className="text-sm font-bold text-gray-400">{reqTheirScore}</span>}
-                    </div>
-                  </div>
-                );
-              })() : (
-                <div className="bg-red-50 rounded-xl p-3 flex items-center justify-center">
-                  <p className="text-xs text-red-400 text-center">No correction recorded</p>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
-              <span className="text-red-400 text-sm">&#9888;</span>
-              <p className="text-sm text-red-700">This dispute is awaiting admin review. The original score stands in the meantime.</p>
-            </div>
-          </div>
-        )}
-
-        {/* Submitter sees pending review */}
-        {isPendingEdit && submittedByMe && myPendingScore !== null && theirPendingScore !== null && (
-          <PendingEditReview
-            matchId={matchId}
-            myName={myName}
-            myPendingScore={myPendingScore}
-            theirPendingScore={theirPendingScore}
-            pendingSetScores={pendingSetScores}
-            pendingTiebreakScores={pendingTiebreakScores}
-            opponentName={opponentName}
-          />
-        )}
-
-        {/* Non-submitter sees waiting message when their edit is pending */}
-        {isPendingEdit && !submittedByMe && (
-          <div className="mt-6 pt-4 border-t border-amber-100">
-            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
-              Your correction is awaiting {opponentName}&apos;s review.
-            </p>
-          </div>
-        )}
-
-        {/* Normal actions when confirmed */}
         {(canEdit || canSuggestEdit) && (
-          <div className="flex justify-center gap-3 pt-4 border-t border-gray-100">
-            {canEdit && (
-              <Link
-                href={`/leagues/${leagueId}/matches/${matchId}/edit`}
-                className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
-              >
-                Edit result
-              </Link>
-            )}
-            {canSuggestEdit && (
-              <Link
-                href={`/leagues/${leagueId}/matches/${matchId}/suggest-edit`}
-                className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-5 py-2.5 rounded-lg transition-colors"
-              >
-                Suggest edit
-              </Link>
-            )}
-          </div>
+          <Link
+            href={`/leagues/${leagueId}/matches/${matchId}/edit`}
+            className="mt-6 w-full block text-center text-sm border border-gray-300 hover:border-red-400 hover:text-red-600 text-gray-600 font-medium py-2.5 rounded-lg transition-colors"
+          >
+            {canEdit ? 'Edit result' : 'Suggest edit'}
+          </Link>
         )}
       </div>
+
+      {/* Disputed */}
+      {match.status === 'disputed' && (
+        <div className="mt-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Original</p>
+              <div className="flex items-center gap-2 mb-1 pl-[44px]">
+                {setScores?.map((_, i) => (
+                  <span key={i} className="flex-1 text-center text-xs text-gray-400">S{i + 1}</span>
+                ))}
+              </div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className={`w-[36px] text-xs truncate font-medium ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}>{myName.split(' ')[0]}</span>
+                {setScores ? setScores.map(([p1, p2], i) => {
+                  const my = isPlayer1 ? p1 : p2;
+                  const their = isPlayer1 ? p2 : p1;
+                  return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${my > their ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{my}</div>;
+                }) : <span className="text-sm font-bold text-gray-800">{myScore}</span>}
+              </div>
+              <div className="flex items-center gap-2">
+                <span className={`w-[36px] text-xs truncate font-medium ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</span>
+                {setScores ? setScores.map(([p1, p2], i) => {
+                  const my = isPlayer1 ? p1 : p2;
+                  const their = isPlayer1 ? p2 : p1;
+                  return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${their > my ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{their}</div>;
+                }) : <span className="text-sm font-bold text-gray-400">{theirScore}</span>}
+              </div>
+            </div>
+
+            {dispute && dispute.requested_score_player1 != null ? (() => {
+              const reqSets = (dispute.requested_set_scores ?? null) as [number, number][] | null;
+              const reqMyScore = isPlayer1 ? dispute.requested_score_player1 as number : dispute.requested_score_player2 as number;
+              const reqTheirScore = isPlayer1 ? dispute.requested_score_player2 as number : dispute.requested_score_player1 as number;
+              return (
+                <div className="bg-red-50 rounded-xl border border-red-100 p-4">
+                  <p className="text-xs font-semibold text-red-400 uppercase tracking-wide mb-3">Requested</p>
+                  <div className="flex items-center gap-2 mb-1 pl-[44px]">
+                    {reqSets?.map((_, i) => (
+                      <span key={i} className="flex-1 text-center text-xs text-gray-400">S{i + 1}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`w-[36px] text-xs truncate font-medium ${reqMyScore > reqTheirScore ? 'text-gray-800' : 'text-gray-400'}`}>{myName.split(' ')[0]}</span>
+                    {reqSets ? reqSets.map(([p1, p2], i) => {
+                      const my = isPlayer1 ? p1 : p2;
+                      const their = isPlayer1 ? p2 : p1;
+                      return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${my > their ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{my}</div>;
+                    }) : <span className="text-sm font-bold text-gray-800">{reqMyScore}</span>}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`w-[36px] text-xs truncate font-medium ${reqTheirScore > reqMyScore ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName.split(' ')[0]}</span>
+                    {reqSets ? reqSets.map(([p1, p2], i) => {
+                      const my = isPlayer1 ? p1 : p2;
+                      const their = isPlayer1 ? p2 : p1;
+                      return <div key={i} className={`flex-1 text-center text-xs font-semibold py-1 rounded-md ${their > my ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>{their}</div>;
+                    }) : <span className="text-sm font-bold text-gray-400">{reqTheirScore}</span>}
+                  </div>
+                </div>
+              );
+            })() : (
+              <div className="bg-red-50 rounded-xl border border-red-100 p-4 flex items-center justify-center">
+                <p className="text-xs text-red-400 text-center">No correction recorded</p>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2 bg-red-50 border border-red-100 rounded-xl px-4 py-3">
+            <span className="text-red-400 text-sm">&#9888;</span>
+            <p className="text-sm text-red-700">This dispute is awaiting admin review. The original score stands in the meantime.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Pending edit review (submitter) */}
+      {isPendingEdit && submittedByMe && myPendingScore !== null && theirPendingScore !== null && (
+        <PendingEditReview
+          matchId={matchId}
+          myName={myName}
+          myPendingScore={myPendingScore}
+          theirPendingScore={theirPendingScore}
+          pendingSetScores={pendingSetScores}
+          pendingTiebreakScores={pendingTiebreakScores}
+          opponentName={opponentName}
+        />
+      )}
+
+      {/* Pending edit waiting (opponent) */}
+      {isPendingEdit && !submittedByMe && (
+        <div className="mt-4">
+          <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-center">
+            Your correction is awaiting {opponentName}&apos;s review.
+          </p>
+        </div>
+      )}
+
+
     </div>
   );
 }

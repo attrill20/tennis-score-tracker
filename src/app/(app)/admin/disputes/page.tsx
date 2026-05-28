@@ -179,7 +179,7 @@ function ScoreGrid({ player1Name, player2Name, score1, score2, sets, tiebreaks }
               return (
                 <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1 rounded-lg ${p1 > p2 ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>
                   {p1}
-                  {tb !== null && <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[0]}</span>}
+                  {tb !== null && <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{tb[0]}</span>}
                 </div>
               );
             })}
@@ -191,7 +191,7 @@ function ScoreGrid({ player1Name, player2Name, score1, score2, sets, tiebreaks }
               return (
                 <div key={i} className={`relative flex-1 text-center text-sm font-semibold py-1 rounded-lg ${p2 > p1 ? 'bg-green-100 text-green-700' : 'bg-white text-gray-400'}`}>
                   {p2}
-                  {tb !== null && <span className="absolute top-1 right-2 text-[9px] font-normal leading-none opacity-60">{tb[1]}</span>}
+                  {tb !== null && <span className="absolute top-1 right-1.5 text-[10px] font-normal leading-none opacity-60">{tb[1]}</span>}
                 </div>
               );
             })}

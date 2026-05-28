@@ -23,14 +23,21 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">{fullName}</h1>
-        <p className="text-sm text-gray-400 mb-1">Admin - Edit user</p>
-        <p className="text-xs text-gray-400 mb-2">
-          Last login: {user.last_login_at
-            ? new Date(user.last_login_at as string).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
-            : 'Never'}
-        </p>
-        <Link href="/admin/users" className="text-sm text-green-700 hover:underline">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-1">{fullName}</h1>
+            <p className="text-sm text-gray-400">Admin - Edit user</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-gray-400 font-medium">Last login</p>
+            <p className="text-xs text-gray-500">
+              {user.last_login_at
+                ? new Date(user.last_login_at as string).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+                : 'Never'}
+            </p>
+          </div>
+        </div>
+        <Link href="/admin/users" className="text-sm text-green-700 hover:underline mt-2 inline-block">
           &larr; Back to users
         </Link>
       </div>
