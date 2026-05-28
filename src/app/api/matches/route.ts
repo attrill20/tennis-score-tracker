@@ -6,16 +6,32 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { leagueId, opponentId, sets, tiebreaks, playedAt } = await req.json();
+  const { leagueId, opponentId, sets, tiebreaks, playedAt, matchType = 'normal', retiredPlayer, walkoverId } = await req.json();
 
-  if (!leagueId || !opponentId || !sets?.length || !playedAt) {
+  if (!leagueId || !opponentId || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+  }
+  if (matchType === 'normal' && !sets?.length) {
+    return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
+  }
+  if (matchType === 'retirement' && !retiredPlayer) {
+    return NextResponse.json({ error: 'Please specify who retired' }, { status: 400 });
   }
 
   let myScore = 0, theirScore = 0;
-  for (const [p1, p2] of sets) {
-    if (p1 > p2) myScore++;
-    else if (p2 > p1) theirScore++;
+  if (sets?.length) {
+    for (const [p1, p2] of sets) {
+      if (p1 > p2) myScore++;
+      else if (p2 > p1) theirScore++;
+    }
+  }
+
+  // Determine winner_id for non-normal match types
+  let winnerIdToStore: string | null = null;
+  if (matchType === 'walkover') {
+    winnerIdToStore = walkoverId === 'me' ? opponentId : session.user.id;
+  } else if (matchType === 'retirement') {
+    winnerIdToStore = retiredPlayer === 'me' ? opponentId : session.user.id;
   }
 
   // Verify both players are in the league
@@ -40,10 +56,11 @@ export async function POST(req: NextRequest) {
   }
 
   const hasTiebreak = Array.isArray(tiebreaks) && tiebreaks.some((t: unknown) => t !== null);
+  const setsToStore = sets?.length ? JSON.stringify(sets) : null;
 
   await sql`
-    INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at)
-    VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${session.user.id}, ${myScore}, ${theirScore}, ${JSON.stringify(sets)}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt})
+    INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id)
+    VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${session.user.id}, ${myScore}, ${theirScore}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerIdToStore})
   `;
 
   return NextResponse.json({ success: true }, { status: 201 });

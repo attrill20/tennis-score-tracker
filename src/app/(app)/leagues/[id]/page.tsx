@@ -24,6 +24,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     sql`
       SELECT m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
              m.set_scores, m.tiebreak_scores, m.status, m.submitted_by, m.played_at,
+             m.match_type, m.winner_id,
              (p1.first_name || ' ' || p1.last_name) AS player1_name,
              (p2.first_name || ' ' || p2.last_name) AS player2_name
       FROM matches m
@@ -36,7 +37,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
-    matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string }[],
+    matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string; match_type?: string | null; winner_id?: string | null }[],
     ((league.tiebreaker as string) ?? 'head_to_head') as Tiebreaker
   );
 
@@ -139,17 +140,20 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             const canSuggestEdit = isInvolved && match.status === 'confirmed' && !submittedByMe;
             const setScores = match.set_scores as [number, number][] | null;
             const tiebreakScores = match.tiebreak_scores as ([number, number] | null)[] | null;
+            const matchType = match.match_type as string | null;
+            const winnerId = match.winner_id as string | null;
 
             // From current user's perspective if involved, otherwise winner first
-            const p1Won = (match.score_player1 as number) > (match.score_player2 as number);
+            const p1Won = winnerId ? winnerId === match.player1_id : (match.score_player1 as number) > (match.score_player2 as number);
             const topIsPlayer1 = isInvolved ? isPlayer1 : p1Won;
             const topName = topIsPlayer1 ? match.player1_name as string : match.player2_name as string;
             const bottomName = topIsPlayer1 ? match.player2_name as string : match.player1_name as string;
             const topScore = topIsPlayer1 ? match.score_player1 as number : match.score_player2 as number;
             const bottomScore = topIsPlayer1 ? match.score_player2 as number : match.score_player1 as number;
-            const topWon = topScore > bottomScore;
+            const topPlayerId = topIsPlayer1 ? match.player1_id as string : match.player2_id as string;
+            const topWon = winnerId ? winnerId === topPlayerId : topScore > bottomScore;
 
-            const result = isInvolved ? (topWon ? 'W' : topScore < bottomScore ? 'L' : 'D') : null;
+            const result = isInvolved ? (topWon ? 'W' : (winnerId || topScore < bottomScore) ? 'L' : 'D') : null;
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
 
             const href = canEdit
@@ -170,7 +174,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                     <div className="flex items-center">
                       <span className={`font-medium w-24 shrink-0 truncate ${topWon ? 'text-gray-800' : 'text-gray-400'}`}>{topName}</span>
                       <div className="flex items-center gap-1.5">
-                        {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
+                        {matchType === 'walkover' ? (
+                          <span className="text-xs text-gray-400 italic">no sets</span>
+                        ) : setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const top = topIsPlayer1 ? p1 : p2;
                           const bot = topIsPlayer1 ? p2 : p1;
                           const tb = tiebreakScores?.[i] ?? null;
@@ -187,7 +193,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                     <div className="flex items-center mt-0.5">
                       <span className={`font-medium w-24 shrink-0 truncate ${!topWon ? 'text-gray-800' : 'text-gray-400'}`}>{bottomName}</span>
                       <div className="flex items-center gap-1.5">
-                        {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
+                        {matchType === 'walkover' ? null : setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const top = topIsPlayer1 ? p1 : p2;
                           const bot = topIsPlayer1 ? p2 : p1;
                           const tb = tiebreakScores?.[i] ?? null;
@@ -205,6 +211,12 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   </div>
                   <div className="flex flex-col items-end justify-between self-stretch shrink-0 text-right">
                     <div className="flex items-center gap-2 relative z-10">
+                      {matchType === 'walkover' && (
+                        <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
+                      )}
+                      {matchType === 'retirement' && (
+                        <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
+                      )}
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
                       )}

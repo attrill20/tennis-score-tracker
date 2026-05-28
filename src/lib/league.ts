@@ -16,6 +16,8 @@ type Match = {
   score_player1: number;
   score_player2: number;
   status: string;
+  match_type?: string | null;
+  winner_id?: string | null;
 };
 
 export type Tiebreaker = 'head_to_head' | 'most_sets_won' | 'set_difference';
@@ -50,24 +52,42 @@ export function calculateStandings(
 
     p1.played++;
     p2.played++;
-    p1.setsFor += match.score_player1;
-    p1.setsAgainst += match.score_player2;
-    p2.setsFor += match.score_player2;
-    p2.setsAgainst += match.score_player1;
 
-    if (match.score_player1 > match.score_player2) {
-      p1.won++;
-      p1.points += 3;
-      p2.lost++;
-    } else if (match.score_player2 > match.score_player1) {
-      p2.won++;
-      p2.points += 3;
-      p1.lost++;
+    if (match.winner_id) {
+      // Walkover or retirement: winner is explicit
+      const winnerIsP1 = match.winner_id === match.player1_id;
+      const winner = winnerIsP1 ? p1 : p2;
+      const loser = winnerIsP1 ? p2 : p1;
+      winner.won++;
+      winner.points += 3;
+      loser.lost++;
+      // For retirement, partial sets still count; for walkover they don't
+      if (match.match_type === 'retirement') {
+        p1.setsFor += match.score_player1;
+        p1.setsAgainst += match.score_player2;
+        p2.setsFor += match.score_player2;
+        p2.setsAgainst += match.score_player1;
+      }
     } else {
-      p1.drawn++;
-      p2.drawn++;
-      p1.points += 1;
-      p2.points += 1;
+      p1.setsFor += match.score_player1;
+      p1.setsAgainst += match.score_player2;
+      p2.setsFor += match.score_player2;
+      p2.setsAgainst += match.score_player1;
+
+      if (match.score_player1 > match.score_player2) {
+        p1.won++;
+        p1.points += 3;
+        p2.lost++;
+      } else if (match.score_player2 > match.score_player1) {
+        p2.won++;
+        p2.points += 3;
+        p1.lost++;
+      } else {
+        p1.drawn++;
+        p2.drawn++;
+        p1.points += 1;
+        p2.points += 1;
+      }
     }
   }
 

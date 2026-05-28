@@ -37,8 +37,11 @@ export default async function MatchPage({
   const dispute = disputes[0] ?? null;
 
   const isPlayer1 = match.player1_id === userId;
+  const matchType = match.match_type as string | null;
+  const winnerId = match.winner_id as string | null;
   const myScore = isPlayer1 ? match.score_player1 as number : match.score_player2 as number;
   const theirScore = isPlayer1 ? match.score_player2 as number : match.score_player1 as number;
+  const iWon = winnerId ? winnerId === userId : myScore > theirScore;
   const myName = isPlayer1 ? match.player1_name as string : match.player2_name as string;
   const opponentName = isPlayer1 ? match.player2_name as string : match.player1_name as string;
   const setScores = (match.set_scores ?? null) as [number, number][] | null;
@@ -68,6 +71,12 @@ export default async function MatchPage({
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-lg font-bold text-gray-800">Match result</h1>
           <div className="flex items-center gap-2">
+            {matchType === 'walkover' && (
+              <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
+            )}
+            {matchType === 'retirement' && (
+              <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
+            )}
             {isPendingEdit && (
               <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
             )}
@@ -84,24 +93,24 @@ export default async function MatchPage({
           <div className="text-center flex-1">
             <Link
               href={`/players/${userId}`}
-              className={`text-sm font-medium mb-1 hover:underline ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}
+              className={`text-sm font-medium mb-1 hover:underline ${iWon ? 'text-gray-800' : 'text-gray-400'}`}
             >
               {myName}
             </Link>
-            <p className={`text-5xl font-bold ${myScore > theirScore ? 'text-green-700' : 'text-gray-300'}`}>
-              {myScore}
+            <p className={`text-5xl font-bold ${iWon ? 'text-green-700' : 'text-gray-300'}`}>
+              {matchType === 'walkover' ? '-' : myScore}
             </p>
           </div>
           <p className="text-2xl font-light text-gray-300">-</p>
           <div className="text-center flex-1">
             <Link
               href={`/players/${isPlayer1 ? match.player2_id : match.player1_id}`}
-              className={`text-sm font-medium mb-1 hover:underline ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}
+              className={`text-sm font-medium mb-1 hover:underline ${!iWon ? 'text-gray-800' : 'text-gray-400'}`}
             >
               {opponentName}
             </Link>
-            <p className={`text-5xl font-bold ${theirScore > myScore ? 'text-green-700' : 'text-gray-300'}`}>
-              {theirScore}
+            <p className={`text-5xl font-bold ${!iWon ? 'text-green-700' : 'text-gray-300'}`}>
+              {matchType === 'walkover' ? '-' : theirScore}
             </p>
           </div>
         </div>

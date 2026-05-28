@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 import TennisBallCelebration from '@/components/TennisBallCelebration';
 
 type Player = { id: string; full_name: string };
+type MatchType = 'normal' | 'walkover' | 'retirement';
 
 function isTiebreakSet(set: { my: string; their: string }) {
   const my = parseInt(set.my);
@@ -18,6 +19,9 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [opponent, setOpponent] = useState('');
+  const [matchType, setMatchType] = useState<MatchType>('normal');
+  const [retiredPlayer, setRetiredPlayer] = useState<'me' | 'them'>('them');
+  const [walkoverId, setWalkoverId] = useState<'me' | 'them'>('them');
   const [sets, setSets] = useState([
     { my: '', their: '' },
     { my: '', their: '' },
@@ -48,7 +52,6 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   function updateSet(index: number, field: 'my' | 'their', value: string) {
     if (value !== '' && !/^\d+$/.test(value)) return;
     setSets((prev) => prev.map((s, i) => (i === index ? { ...s, [field]: value } : s)));
-    // Clear tiebreak if set is no longer 7-6
     setTiebreaks((prev) => prev.map((t, i) => {
       if (i !== index) return t;
       const updated = { ...sets[index], [field]: value };
@@ -65,26 +68,24 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
     e.preventDefault();
     setError('');
 
-    let mySetsWon = 0, theirSetsWon = 0;
-    for (const set of sets) {
-      if (set.my !== '' && set.their !== '') {
-        const my = parseInt(set.my);
-        const their = parseInt(set.their);
-        if (my > their) mySetsWon++;
-        else if (their > my) theirSetsWon++;
-      }
-    }
-
-    if (mySetsWon + theirSetsWon < 2) {
-      setError('At least 2 sets must be entered.');
-      return;
-    }
-
-
     const playedIndices = sets.reduce<number[]>((acc, s, i) => {
       if (s.my !== '' && s.their !== '') acc.push(i);
       return acc;
     }, []);
+
+    // Validate normal matches need at least 2 sets
+    if (matchType === 'normal' && playedIndices.length < 2) {
+      setError('At least 2 sets must be entered.');
+      return;
+    }
+
+    // Validate partial sets aren't half-filled
+    for (const s of sets) {
+      if ((s.my === '') !== (s.their === '')) {
+        setError('Each set needs scores for both players.');
+        return;
+      }
+    }
 
     const playedSets = playedIndices.map((i) => [parseInt(sets[i].my), parseInt(sets[i].their)]);
     const playedTiebreaks = playedIndices.map((i) => {
@@ -96,11 +97,30 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       return [my ?? 0, their ?? 0];
     });
 
+    let mySetsWon = 0;
+    for (const [p1, p2] of playedSets) {
+      if (p1 > p2) mySetsWon++;
+    }
+    const iWon = matchType === 'walkover'
+      ? walkoverId === 'them'
+      : matchType === 'retirement'
+      ? retiredPlayer === 'them'
+      : mySetsWon > (playedSets.length - mySetsWon);
+
     setLoading(true);
     const res = await fetch('/api/matches', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ leagueId, opponentId: opponent, sets: playedSets, tiebreaks: playedTiebreaks, playedAt }),
+      body: JSON.stringify({
+        leagueId,
+        opponentId: opponent,
+        sets: matchType === 'walkover' ? [] : playedSets,
+        tiebreaks: matchType === 'walkover' ? [] : playedTiebreaks,
+        playedAt,
+        matchType,
+        retiredPlayer: matchType === 'retirement' ? retiredPlayer : undefined,
+        walkoverId: matchType === 'walkover' ? walkoverId : undefined,
+      }),
     });
     const data = await res.json();
     setLoading(false);
@@ -110,7 +130,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       return;
     }
 
-    if (mySetsWon > theirSetsWon) {
+    if (iWon) {
       const btn = submitButtonRef.current;
       if (btn) {
         const rect = btn.getBoundingClientRect();
@@ -128,6 +148,12 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
 
   const opponentName = players.find((p) => p.id === opponent)?.full_name ?? 'Opponent';
   const anyTiebreak = sets.some(isTiebreakSet);
+
+  const matchTypeLabels: Record<MatchType, string> = {
+    normal: 'Normal',
+    walkover: 'Walkover',
+    retirement: 'Retirement',
+  };
 
   return (
     <>
@@ -161,77 +187,133 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
           </div>
 
           <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="flex-1" />
-              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
-              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
-              <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
-            </div>
-
-            <div className="flex items-center gap-3 mb-3">
-              <span className="flex-1 text-sm font-medium text-gray-800 truncate">{userName}</span>
-              {sets.map((set, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  inputMode="numeric"
-                  value={set.my}
-                  onChange={(e) => updateSet(i, 'my', e.target.value)}
-                  className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                  placeholder="-"
-                />
+            <p className="text-sm font-medium text-gray-700 mb-2">Match type</p>
+            <div className="flex rounded-lg overflow-hidden border border-gray-300">
+              {(['normal', 'walkover', 'retirement'] as const).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setMatchType(type)}
+                  className={`flex-1 py-2 text-sm font-medium transition-colors ${
+                    matchType === type
+                      ? 'bg-green-700 text-white'
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  {matchTypeLabels[type]}
+                </button>
               ))}
             </div>
-
-            <div className="flex items-center gap-3">
-              <span className="flex-1 text-sm text-gray-500 truncate">{opponentName}</span>
-              {sets.map((set, i) => (
-                <input
-                  key={i}
-                  type="text"
-                  inputMode="numeric"
-                  value={set.their}
-                  onChange={(e) => updateSet(i, 'their', e.target.value)}
-                  className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
-                  placeholder="-"
-                />
-              ))}
-            </div>
-
-            {anyTiebreak && (
-              <div className="mt-3 pt-3 border-t border-gray-100">
-                <div className="flex items-start gap-3">
-                  <span className="flex-1 text-xs text-gray-400 pt-1">Tiebreak</span>
-                  {sets.map((set, i) => (
-                    <div key={i} className="w-14">
-                      {isTiebreakSet(set) ? (
-                        <div className="space-y-1">
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={tiebreaks[i].my}
-                            onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
-                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
-                            placeholder="Me"
-                            maxLength={2}
-                          />
-                          <input
-                            type="text"
-                            inputMode="numeric"
-                            value={tiebreaks[i].their}
-                            onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
-                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
-                            placeholder="Opp"
-                            maxLength={2}
-                          />
-                        </div>
-                      ) : <div />}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
+
+          {matchType === 'walkover' && (
+            <div>
+              <label htmlFor="walkoverId" className="block text-sm font-medium text-gray-700 mb-1">Who won?</label>
+              <select
+                id="walkoverId"
+                value={walkoverId}
+                onChange={(e) => setWalkoverId(e.target.value as 'me' | 'them')}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="them">I won ({opponentName === 'Opponent' ? 'opponent' : opponentName} did not appear)</option>
+                <option value="me">{opponentName === 'Opponent' ? 'Opponent' : opponentName} won (I did not appear)</option>
+              </select>
+            </div>
+          )}
+
+          {matchType !== 'walkover' && (
+            <div>
+              <div className="flex items-center gap-3 mb-2">
+                <div className="flex-1" />
+                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 1</span>
+                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 2</span>
+                <span className="w-14 text-center text-xs text-gray-400 font-medium">Set 3</span>
+              </div>
+
+              <div className="flex items-center gap-3 mb-3">
+                <span className="flex-1 text-sm font-medium text-gray-800 truncate">{userName}</span>
+                {sets.map((set, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    inputMode="numeric"
+                    value={set.my}
+                    onChange={(e) => updateSet(i, 'my', e.target.value)}
+                    className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
+                    placeholder="-"
+                  />
+                ))}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <span className="flex-1 text-sm text-gray-500 truncate">{opponentName}</span>
+                {sets.map((set, i) => (
+                  <input
+                    key={i}
+                    type="text"
+                    inputMode="numeric"
+                    value={set.their}
+                    onChange={(e) => updateSet(i, 'their', e.target.value)}
+                    className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
+                    placeholder="-"
+                  />
+                ))}
+              </div>
+
+              {matchType === 'retirement' && (
+                <p className="mt-2 text-xs text-gray-400">Enter the sets completed before retirement. Partial sets are not counted.</p>
+              )}
+
+              {anyTiebreak && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <div className="flex items-start gap-3">
+                    <span className="flex-1 text-xs text-gray-400 pt-1">Tiebreak</span>
+                    {sets.map((set, i) => (
+                      <div key={i} className="w-14">
+                        {isTiebreakSet(set) ? (
+                          <div className="space-y-1">
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={tiebreaks[i].my}
+                              onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
+                              className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
+                              placeholder="Me"
+                              maxLength={2}
+                            />
+                            <input
+                              type="text"
+                              inputMode="numeric"
+                              value={tiebreaks[i].their}
+                              onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
+                              className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
+                              placeholder="Opp"
+                              maxLength={2}
+                            />
+                          </div>
+                        ) : <div />}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {matchType === 'retirement' && (
+            <div>
+              <label htmlFor="retiredPlayer" className="block text-sm font-medium text-gray-700 mb-1">Who won?</label>
+              <select
+                id="retiredPlayer"
+                value={retiredPlayer}
+                onChange={(e) => setRetiredPlayer(e.target.value as 'me' | 'them')}
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="them">I won ({opponentName === 'Opponent' ? 'opponent' : opponentName} retired)</option>
+                <option value="me">{opponentName === 'Opponent' ? 'Opponent' : opponentName} won (I retired)</option>
+              </select>
+            </div>
+          )}
 
           <div>
             <label htmlFor="playedAt" className="block text-sm font-medium text-gray-700 mb-1">Date played</label>
