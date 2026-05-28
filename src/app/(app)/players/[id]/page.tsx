@@ -60,7 +60,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
     <div className="max-w-md mx-auto">
       <div className="mb-3">
         <h1 className="text-2xl font-bold text-gray-800">{name}</h1>
-        {id !== userId && <BackButton />}
+        <BackButton />
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">

@@ -24,18 +24,18 @@ export default function StandingsRow({ playerId, userId, name, isInjured, positi
 
   return (
     <tr
-      className={`border-t border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${rowClass}`}
+      className={`group border-t border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${rowClass}`}
       onClick={() => router.push(`/players/${playerId}`)}
     >
       <td className="px-4 py-3 text-gray-800">
         <span className="text-gray-400 mr-2">{position}</span>
         <Link
           href={`/players/${playerId}`}
-          className="relative group/name hover:underline hover:text-green-700 transition-colors"
+          className="relative group-hover:underline group-hover:text-green-700 transition-colors"
           onClick={(e) => e.stopPropagation()}
         >
           <span className={playerId === userId ? 'font-bold' : 'font-medium'}>{name}</span>
-          <span className="pointer-events-none absolute left-0 top-full mt-1.5 z-20 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover/name:opacity-100 transition-opacity">
+          <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 z-20 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
             View profile &amp; contact details
           </span>
         </Link>
