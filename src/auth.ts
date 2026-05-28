@@ -20,7 +20,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const rows = await sql`
           SELECT id, email, first_name, last_name, password_hash, role, email_verified
           FROM profiles
-          WHERE email = ${credentials.email as string}
+          WHERE LOWER(email) = ${(credentials.email as string).toLowerCase().trim()}
         `;
 
         const user = rows[0];
@@ -36,6 +36,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!user.email_verified) {
           throw new EmailNotVerifiedError();
         }
+
+        await sql`UPDATE profiles SET last_login_at = NOW() WHERE id = ${user.id as string}`;
 
         return {
           id: user.id as string,

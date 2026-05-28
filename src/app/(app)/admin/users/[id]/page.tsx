@@ -12,7 +12,7 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
     redirect('/dashboard');
   }
 
-  const users = await sql`SELECT id, first_name, last_name, email, role, phone, gender FROM profiles WHERE id = ${id}`;
+  const users = await sql`SELECT id, first_name, last_name, email, role, phone, gender, last_login_at FROM profiles WHERE id = ${id}`;
   const user = users[0];
   if (!user) notFound();
 
@@ -24,7 +24,12 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
     <div className="space-y-8 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{fullName}</h1>
-        <p className="text-sm text-gray-400 mb-2">Admin - Edit user</p>
+        <p className="text-sm text-gray-400 mb-1">Admin - Edit user</p>
+        <p className="text-xs text-gray-400 mb-2">
+          Last login: {user.last_login_at
+            ? new Date(user.last_login_at as string).toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+            : 'Never'}
+        </p>
         <Link href="/admin/users" className="text-sm text-green-700 hover:underline">
           &larr; Back to users
         </Link>

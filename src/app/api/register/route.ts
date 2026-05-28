@@ -5,7 +5,8 @@ import sql from '@/lib/db';
 import { sendVerificationEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
-  const { email, password, firstName, lastName, phone, gender } = await req.json();
+  const { email: rawEmail, password, firstName, lastName, phone, gender } = await req.json();
+  const email = rawEmail?.toLowerCase().trim();
 
   if (!email || !password || !firstName || !lastName || !phone || !gender) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -19,7 +20,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Password must be at least 8 characters' }, { status: 400 });
   }
 
-  const existing = await sql`SELECT id FROM profiles WHERE email = ${email}`;
+  const existing = await sql`SELECT id FROM profiles WHERE LOWER(email) = ${email}`;
   if (existing.length > 0) {
     return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
   }
