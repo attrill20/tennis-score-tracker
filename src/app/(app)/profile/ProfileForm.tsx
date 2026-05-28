@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import PasswordInput from '@/components/PasswordInput';
 
 const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 text-sm text-gray-900';
 
@@ -32,7 +33,11 @@ export default function ProfileForm({
   const [loading, setLoading] = useState(false);
 
   function toTitleCase(val: string) {
-    return val.toLowerCase().replace(/(?:^|\s|-)[a-z]/g, (c) => c.toUpperCase());
+    const trimmed = val.trim();
+    if (trimmed === trimmed.toUpperCase() || trimmed === trimmed.toLowerCase()) {
+      return trimmed.toLowerCase().replace(/(?:^|\s|-)[a-z]/g, (c) => c.toUpperCase());
+    }
+    return trimmed;
   }
 
   async function checkName(first: string, last: string) {
@@ -198,24 +203,22 @@ export default function ProfileForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
-        <input
-          type="password"
+        <PasswordInput
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           autoComplete="new-password"
-          className={inputClass}
+          inputClassName={inputClass}
           placeholder="Min. 8 characters"
         />
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
-        <input
-          type="password"
+        <PasswordInput
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           autoComplete="new-password"
-          className={inputClass}
+          inputClassName={inputClass}
           placeholder="Repeat new password"
         />
       </div>

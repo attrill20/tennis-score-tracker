@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import PasswordInput from '@/components/PasswordInput';
 
 const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500';
 
@@ -43,7 +44,11 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
 
   function toTitleCase(val: string) {
-    return val.toLowerCase().replace(/(?:^|\s|-)[a-z]/g, (c) => c.toUpperCase());
+    const trimmed = val.trim();
+    if (trimmed === trimmed.toUpperCase() || trimmed === trimmed.toLowerCase()) {
+      return trimmed.toLowerCase().replace(/(?:^|\s|-)[a-z]/g, (c) => c.toUpperCase());
+    }
+    return trimmed;
   }
 
   async function checkName(first: string, last: string) {
@@ -222,14 +227,13 @@ export default function RegisterPage() {
 
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
-          <input
+          <PasswordInput
             id="password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="new-password"
-            className={inputClass}
+            inputClassName={inputClass}
             placeholder="Min. 8 characters"
           />
           <PasswordStrength password={password} />
@@ -237,14 +241,13 @@ export default function RegisterPage() {
 
         <div>
           <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm password <span className="text-red-500">*</span></label>
-          <input
+          <PasswordInput
             id="confirm"
-            type="password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required
             autoComplete="new-password"
-            className={inputClass}
+            inputClassName={inputClass}
             placeholder="Re-enter password"
           />
           {confirm && !passwordsMatch && (
