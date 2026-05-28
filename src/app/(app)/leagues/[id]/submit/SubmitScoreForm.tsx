@@ -79,10 +79,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       setError('At least 2 sets must be entered.');
       return;
     }
-    if (mySetsWon === theirSetsWon) {
-      setError('Scores cannot be a draw - one player must win.');
-      return;
-    }
+
 
     const playedIndices = sets.reduce<number[]>((acc, s, i) => {
       if (s.my !== '' && s.their !== '') acc.push(i);

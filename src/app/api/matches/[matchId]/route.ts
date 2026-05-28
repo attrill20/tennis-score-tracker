@@ -45,10 +45,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
       else if (p2 > p1) p2Score++;
     }
 
-    if (p1Score === p2Score) {
-      return NextResponse.json({ error: 'Scores cannot be a draw' }, { status: 400 });
-    }
-
     await sql`
       UPDATE matches SET
         status = 'pending_edit',
@@ -136,10 +132,6 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
   for (const [p1, p2] of sets) {
     if (p1 > p2) myScore++;
     else if (p2 > p1) theirScore++;
-  }
-
-  if (myScore === theirScore) {
-    return NextResponse.json({ error: 'Scores cannot be a draw' }, { status: 400 });
   }
 
   const editTiebreaks = tiebreaks as ([number, number] | null)[] | null;

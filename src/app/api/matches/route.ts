@@ -18,10 +18,6 @@ export async function POST(req: NextRequest) {
     else if (p2 > p1) theirScore++;
   }
 
-  if (myScore === theirScore) {
-    return NextResponse.json({ error: 'Scores cannot be a draw' }, { status: 400 });
-  }
-
   // Verify both players are in the league
   const membership = await sql`
     SELECT player_id FROM league_players

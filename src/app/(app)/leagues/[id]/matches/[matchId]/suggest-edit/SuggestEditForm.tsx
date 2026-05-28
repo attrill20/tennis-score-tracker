@@ -103,11 +103,6 @@ export default function SuggestEditForm({
       setError('At least 2 sets must be entered.');
       return;
     }
-    if (mySetsWon === theirSetsWon) {
-      setError('Scores cannot be a draw - one player must win.');
-      return;
-    }
-
     setLoading(true);
     const res = await fetch(`/api/matches/${matchId}`, {
       method: 'PATCH',
