@@ -9,6 +9,8 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const role = session!.user.role as string;
   const isAdmin = role === 'admin' || role === 'super_admin';
 
+  let showContactDetails = isAdmin || id === userId;
+
   if (!isAdmin && id !== userId) {
     const shared = await sql`
       SELECT 1
@@ -17,7 +19,18 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       WHERE lp1.player_id = ${userId} AND lp2.player_id = ${id}
       LIMIT 1
     `;
-    if (shared.length === 0) notFound();
+    if (shared.length > 0) {
+      showContactDetails = true;
+    } else {
+      const inPublicLeague = await sql`
+        SELECT 1
+        FROM league_players lp
+        JOIN leagues l ON l.id = lp.league_id
+        WHERE lp.player_id = ${id} AND l.is_public = true
+        LIMIT 1
+      `;
+      if (inPublicLeague.length === 0) notFound();
+    }
   }
 
   const [rows, matches] = await Promise.all([
@@ -47,7 +60,6 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       <h1 className="text-2xl font-bold text-gray-800 mb-6">{name}</h1>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Info</h2>
         {player.is_injured && (
           <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">
             <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full shrink-0">
@@ -59,23 +71,32 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           </div>
         )}
 
-        <div>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
-          <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
-            {player.email as string}
-          </a>
-        </div>
+        {showContactDetails && (
+          <>
+            <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Info</h2>
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
+              <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
+                {player.email as string}
+              </a>
+            </div>
 
-        <div>
-          <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Phone</p>
-          {player.phone ? (
-            <a href={`tel:${player.phone as string}`} className="text-sm text-green-700 hover:underline">
-              {player.phone as string}
-            </a>
-          ) : (
-            <p className="text-sm text-gray-400">Not provided</p>
-          )}
-        </div>
+            <div>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Phone</p>
+              {player.phone ? (
+                <a href={`tel:${player.phone as string}`} className="text-sm text-green-700 hover:underline">
+                  {player.phone as string}
+                </a>
+              ) : (
+                <p className="text-sm text-gray-400">Not provided</p>
+              )}
+            </div>
+          </>
+        )}
+
+        {!showContactDetails && !player.is_injured && (
+          <p className="text-sm text-gray-400">Join a shared league to see contact details.</p>
+        )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4">

@@ -50,44 +50,51 @@ export default function Navbar({ isAdmin, isSuperAdmin, signOut }: NavbarProps) 
 
       {/* Mobile slide-down panel */}
       {open && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-green-900 border-t border-green-700 shadow-lg z-20">
-          <div className="max-w-4xl mx-auto py-2 flex flex-col items-end">
-            <Link href="/leagues" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-              Leagues
-            </Link>
-            <Link href="/profile" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-              Profile
-            </Link>
-            <Link href="/contact" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-              Contact
-            </Link>
-            {isAdmin && (
-              <>
-                <div className="w-full border-t border-green-700 my-1" />
-                <Link href="/admin/leagues" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-                  Admin - Leagues
-                </Link>
-                <Link href="/admin/disputes" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-                  Admin - Disputes
-                </Link>
-                {isSuperAdmin && (
-                  <Link href="/admin/users" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-                    Admin - Users
+        <>
+          <Backdrop onClose={() => setOpen(false)} />
+          <div className="md:hidden absolute top-full left-0 right-0 bg-green-900 border-t border-green-700 shadow-lg z-20">
+            <div className="max-w-4xl mx-auto py-2 flex flex-col items-end">
+              <Link href="/leagues" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                Leagues
+              </Link>
+              <Link href="/profile" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                Profile
+              </Link>
+              <Link href="/contact" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                Contact
+              </Link>
+              {isAdmin && (
+                <>
+                  <div className="w-full border-t border-green-700 my-1" />
+                  <Link href="/admin/leagues" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                    Admin - Leagues
                   </Link>
-                )}
-              </>
-            )}
-            <div className="w-full border-t border-green-700 my-1" />
-            <form action={signOut}>
-              <button type="submit" className="px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-                Sign out
-              </button>
-            </form>
+                  <Link href="/admin/disputes" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                    Admin - Disputes
+                  </Link>
+                  {isSuperAdmin && (
+                    <Link href="/admin/users" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                      Admin - Users
+                    </Link>
+                  )}
+                </>
+              )}
+              <div className="w-full border-t border-green-700 my-1" />
+              <form action={signOut}>
+                <button type="submit" className="px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                  Sign out
+                </button>
+              </form>
+            </div>
           </div>
-        </div>
+        </>
       )}
     </nav>
   );
+}
+
+function Backdrop({ onClose }: { onClose: () => void }) {
+  return <div className="fixed inset-0 z-10" onClick={onClose} aria-hidden="true" />;
 }
 
 function AdminDropdown({ isSuperAdmin }: { isSuperAdmin: boolean }) {
@@ -99,13 +106,16 @@ function AdminDropdown({ isSuperAdmin }: { isSuperAdmin: boolean }) {
         Admin ▾
       </button>
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-7 flex flex-col bg-green-900 border border-green-700 rounded-lg overflow-hidden min-w-36 z-10 shadow-lg">
-          <Link href="/admin/leagues" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Leagues</Link>
-          <Link href="/admin/disputes" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Disputes</Link>
-          {isSuperAdmin && (
-            <Link href="/admin/users" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Users</Link>
-          )}
-        </div>
+        <>
+          <Backdrop onClose={() => setOpen(false)} />
+          <div className="absolute left-1/2 -translate-x-1/2 top-7 flex flex-col bg-green-900 border border-green-700 rounded-lg overflow-hidden min-w-36 z-20 shadow-lg">
+            <Link href="/admin/leagues" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Leagues</Link>
+            <Link href="/admin/disputes" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Disputes</Link>
+            {isSuperAdmin && (
+              <Link href="/admin/users" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Users</Link>
+            )}
+          </div>
+        </>
       )}
     </div>
   );
