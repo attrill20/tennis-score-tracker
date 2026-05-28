@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import PendingEditReview from './PendingEditReview';
+import BackButton from '@/components/BackButton';
 
 export default async function MatchPage({
   params,
@@ -62,9 +63,10 @@ export default async function MatchPage({
   return (
     <div className="max-w-lg mx-auto">
       {/* Page header */}
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-start justify-between gap-4 mb-3">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Match result</h1>
+          <BackButton />
           {(matchType === 'walkover' || matchType === 'retirement' || isPendingEdit || match.status === 'disputed' || match.status === 'overridden') && (
             <div className="flex items-center gap-2 mt-1">
               {matchType === 'walkover' && (
@@ -86,7 +88,7 @@ export default async function MatchPage({
           )}
         </div>
         <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
-          &larr; {match.league_name as string}
+          {match.league_name as string}
         </Link>
       </div>
 

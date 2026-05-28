@@ -55,16 +55,20 @@ export default async function DashboardPage() {
     ` : Promise.resolve([]),
     sql`
       SELECT m.id, m.league_id, m.pending_score_player1, m.pending_score_player2, m.pending_set_scores,
+        l.name AS league_name,
         (p2.first_name || ' ' || p2.last_name) AS opponent_name
       FROM matches m
+      JOIN leagues l ON l.id = m.league_id
       JOIN profiles p2 ON p2.id = m.pending_edit_by
       WHERE m.submitted_by = ${userId} AND m.status = 'pending_edit'
     `,
     sql`
       SELECT m.id, m.league_id, m.score_player1, m.score_player2, m.player1_id, m.player2_id,
+        l.name AS league_name,
         (p1.first_name || ' ' || p1.last_name) AS player1_name,
         (p2.first_name || ' ' || p2.last_name) AS player2_name
       FROM matches m
+      JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
       JOIN profiles p2 ON p2.id = m.player2_id
       WHERE m.status = 'disputed'
@@ -188,8 +192,40 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {newMatchNotifications.length > 0 && (
+      {(newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0) && (
         <div className="mb-4 space-y-2">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Notifications</h2>
+
+          {pendingEdits.map((m) => (
+            <Link key={m.id as string} href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+              className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
+              <svg className="shrink-0 w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+              </svg>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-gray-800">{m.opponent_name as string} has suggested a correction</p>
+                <p className="text-xs text-gray-500 mt-0.5">{m.league_name as string}</p>
+              </div>
+              <span className="shrink-0 text-xs text-gray-600 font-medium">Review &rarr;</span>
+            </Link>
+          ))}
+
+          {disputedMatches.map((m) => {
+            const opponentName = m.player1_id === userId ? m.player2_name as string : m.player1_name as string;
+            return (
+              <Link key={m.id as string} href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+                className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
+                <svg className="shrink-0 w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-gray-800">Result disputed vs {opponentName}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{m.league_name as string} - awaiting admin review</p>
+                </div>
+              </Link>
+            );
+          })}
+
           {newMatchNotifications.map((m) => {
             const winnerId = m.winner_id as string | null;
             const iWon = winnerId ? winnerId !== m.player1_id : (m.score_player2 as number) > (m.score_player1 as number);

@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Link from 'next/link';
+import BackButton from '@/components/BackButton';
 import MatchScoreInputs, {
   MatchType,
   isTiebreakSet,
@@ -155,12 +156,15 @@ export default function EditMatchForm({
 
   return (
     <div className="max-w-lg mx-auto">
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">
-          {isSubmitter ? 'Edit result' : 'Suggest a correction'}
-        </h1>
+      <div className="flex items-start justify-between gap-4 mb-3">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">
+            {isSubmitter ? 'Edit result' : 'Suggest a correction'}
+          </h1>
+          <BackButton />
+        </div>
         <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
-          &larr; {leagueName}
+          {leagueName}
         </Link>
       </div>
 
@@ -302,9 +306,9 @@ export default function EditMatchForm({
       )}
 
       {isSubmitter && (
-        <div className="mt-6 pt-5 border-t border-gray-200">
+        <div className="mt-6 pt-5 border-t border-gray-200 px-6">
           {!deleteConfirm ? (
-            <button onClick={() => setDeleteConfirm(true)} className="text-sm text-red-500 hover:text-red-700 transition-colors">
+            <button onClick={() => setDeleteConfirm(true)} className="w-full text-sm border border-red-300 hover:border-red-500 text-red-500 hover:text-red-700 font-medium py-2.5 rounded-lg transition-colors">
               Delete this match
             </button>
           ) : (

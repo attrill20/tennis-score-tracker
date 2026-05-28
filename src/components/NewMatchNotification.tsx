@@ -57,17 +57,25 @@ export default function NewMatchNotification({
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
-      <span className={`shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full text-[11px] font-bold ${badgeClass}`}>
-        {outcome}
-      </span>
+      {/* Info icon */}
+      <svg className="shrink-0 w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
+      </svg>
 
-      <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="flex-1 min-w-0">
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-sm font-semibold text-blue-900">{scoreLabel}</span>
-          <span className="text-sm text-blue-600 truncate">{leagueName}</span>
+      <div className="flex-1 min-w-0">
+        <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="group block">
+          <p className="text-sm text-gray-800 group-hover:text-blue-600 group-hover:underline">{opponentName} has submitted a result with you</p>
+        </Link>
+        <div className="flex items-center gap-2 mt-1">
+          <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="group flex items-center gap-2">
+            <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold shrink-0 ${badgeClass}`}>
+              {outcome}
+            </span>
+            <span className="text-xs text-gray-700 group-hover:text-blue-600 group-hover:underline">{scoreLabel}</span>
+          </Link>
+          <Link href={`/leagues/${leagueId}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{leagueName}</Link>
         </div>
-        <p className="text-xs text-blue-500 mt-0.5">vs {opponentName}</p>
-      </Link>
+      </div>
 
       <div className="shrink-0 flex flex-col items-end gap-2">
         <button

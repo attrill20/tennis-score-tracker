@@ -209,7 +209,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                     </div>
                   </div>
                   </div>
-                  <div className="flex flex-col items-end justify-between self-stretch shrink-0 text-right">
+                  <div className="flex flex-col items-end gap-1 shrink-0 text-right">
                     <div className="flex items-center gap-2 relative z-10">
                       {matchType === 'walkover' && (
                         <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
@@ -223,15 +223,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
-                      {canSuggestEdit && (
-                        <Link href={`/leagues/${id}/matches/${match.id as string}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">Suggest edit</Link>
-                      )}
                       <span className="text-xs text-gray-400">
                         {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                       </span>
                     </div>
-                    {canEdit && (
-                      <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">Edit</Link>
+                    {(canEdit || canSuggestEdit) && (
+                      <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        {canEdit ? 'Edit' : 'Suggest edit'}
+                      </Link>
                     )}
                   </div>
                 </div>

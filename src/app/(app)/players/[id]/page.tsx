@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
+import BackButton from '@/components/BackButton';
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -57,7 +58,10 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
 
   return (
     <div className="max-w-md mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">{name}</h1>
+      <div className="mb-3">
+        <h1 className="text-2xl font-bold text-gray-800">{name}</h1>
+        {id !== userId && <BackButton />}
+      </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">
         {player.is_injured && (
