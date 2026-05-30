@@ -40,13 +40,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
       return NextResponse.json({ error: 'Date is required' }, { status: 400 });
     }
 
-    // Non-submitter is always player2, so sets arrive as [my(p2), their(p1)] — flip to [p1, p2]
+    // Sets arrive as [my, their] from the suggester's perspective.
+    // If the suggester is player1, [my, their] = [p1, p2] — no flip needed.
+    // If the suggester is player2, [my, their] = [p2, p1] — flip to [p1, p2].
+    const suggesterIsPlayer1 = match.player1_id === userId;
     const rawSets = (sets as [number, number][] | undefined) ?? [];
-    const pendingSets = matchType === 'walkover' ? null : rawSets.map(([my, their]) => [their, my]);
+    const pendingSets = matchType === 'walkover'
+      ? null
+      : suggesterIsPlayer1
+        ? rawSets
+        : rawSets.map(([my, their]) => [their, my] as [number, number]);
 
     const rawTiebreaks = tiebreaks as ([number, number] | null)[] | null;
     const pendingTiebreaks = rawTiebreaks
-      ? rawTiebreaks.map((tb) => tb ? [tb[1], tb[0]] as [number, number] : null)
+      ? rawTiebreaks.map((tb) => tb
+          ? (suggesterIsPlayer1 ? tb : [tb[1], tb[0]] as [number, number])
+          : null)
       : null;
     const hasPendingTiebreak = pendingTiebreaks?.some((t) => t !== null) ?? false;
 
@@ -59,12 +68,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
     }
 
     // Determine pending winner for walkover/retirement
-    // userId here is player2 (non-submitter), match.player1_id is the submitter
+    const opponentId = suggesterIsPlayer1 ? match.player2_id as string : match.player1_id as string;
     let pendingWinnerId: string | null = null;
     if (matchType === 'walkover') {
-      pendingWinnerId = walkoverId === 'them' ? userId : match.player1_id as string;
+      pendingWinnerId = walkoverId === 'them' ? userId : opponentId;
     } else if (matchType === 'retirement') {
-      pendingWinnerId = retiredPlayer === 'them' ? userId : match.player1_id as string;
+      pendingWinnerId = retiredPlayer === 'them' ? userId : opponentId;
     }
 
     await sql`
