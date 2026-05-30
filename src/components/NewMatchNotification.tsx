@@ -81,7 +81,7 @@ export default function NewMatchNotification({
         <button
           onClick={handleDismiss}
           disabled={loading}
-          className="text-xs bg-blue-200 hover:bg-blue-300 text-blue-900 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+          className="cursor-pointer text-xs bg-blue-200 hover:bg-blue-300 text-blue-900 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
         >
           {loading ? '...' : 'OK'}
         </button>

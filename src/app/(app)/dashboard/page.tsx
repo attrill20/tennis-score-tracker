@@ -4,6 +4,7 @@ import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
 import DisputeResolutionNotification from '@/components/DisputeResolutionNotification';
 import NewMatchNotification from '@/components/NewMatchNotification';
+import LeagueNotification from '@/components/LeagueNotification';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -12,6 +13,7 @@ export default async function DashboardPage() {
   const [leagues, profileRows] = await Promise.all([
     sql`
       SELECT l.id, l.name, l.status, l.season_start, l.season_end, lp.final_position,
+        lp.started_seen, lp.ended_seen,
         (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
       FROM leagues l
       JOIN league_players lp ON lp.league_id = l.id AND lp.player_id = ${userId}
@@ -115,12 +117,12 @@ export default async function DashboardPage() {
 
   const leagueStartedNotifications = leagues.filter((l) => {
     const start = new Date(l.season_start as string);
-    return l.status === 'active' && start >= sevenDaysAgo && start <= now;
+    return l.status === 'active' && start >= sevenDaysAgo && start <= now && !l.started_seen;
   });
 
   const leagueEndedNotifications = leagues.filter((l) => {
     const end = new Date(l.season_end as string);
-    return l.status === 'completed' && end >= sevenDaysAgo && end <= now;
+    return l.status === 'completed' && end >= sevenDaysAgo && end <= now && !l.ended_seen;
   });
 
   type LeagueStats = { position: number; played: number; total: number };
@@ -142,6 +144,7 @@ export default async function DashboardPage() {
     const total = players.length - 1;
     leagueStats[id] = { position, played, total };
   }
+
 
   return (
     <div>
@@ -166,8 +169,10 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {resolvedDisputes.length > 0 && (
+      {(newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0 || resolvedDisputes.length > 0 || leagueStartedNotifications.length > 0 || leagueEndedNotifications.length > 0) && (
         <div className="mb-4 space-y-2">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Notifications</h2>
+
           {resolvedDisputes.map((d) => {
             const isPlayer1 = d.player1_id === userId;
             const myScore = isPlayer1 ? d.score_player1 as number : d.score_player2 as number;
@@ -189,41 +194,49 @@ export default async function DashboardPage() {
               />
             );
           })}
-        </div>
-      )}
-
-      {(newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0 || leagueStartedNotifications.length > 0 || leagueEndedNotifications.length > 0) && (
-        <div className="mb-4 space-y-2">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Notifications</h2>
 
           {leagueStartedNotifications.map((l) => (
-            <Link key={`started-${l.id as string}`} href={`/leagues/${l.id as string}`}
-              className="bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
-              <svg className="shrink-0 w-5 h-5 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm text-gray-800">Your {l.name as string} league has started</p>
-                <p className="text-xs text-gray-500 mt-0.5">Good luck for your matches!</p>
-              </div>
-            </Link>
+            <LeagueNotification
+              key={`started-${l.id as string}`}
+              leagueId={l.id as string}
+              type="started"
+              leagueName={l.name as string}
+              line2="Good luck for your matches!"
+              bgClass="bg-teal-50"
+              borderClass="border-teal-200"
+              iconClass="text-teal-400"
+              icon={
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              }
+            />
           ))}
 
           {leagueEndedNotifications.map((l) => {
             const stats = leagueStats[l.id as string];
             const finalPos = l.final_position != null ? l.final_position as number : stats?.position;
             const ordinal = (n: number) => { const s = ['th','st','nd','rd']; const v = n % 100; return n + (s[(v-20)%10] ?? s[v] ?? s[0]); };
+            const medal = finalPos === 1 ? '🥇' : finalPos === 2 ? '🥈' : finalPos === 3 ? '🥉' : null;
+            const line2 = finalPos
+              ? `${medal ? medal + ' ' : ''}You finished ${ordinal(finalPos)}${medal ? ' - well done!' : ''}`
+              : 'Season complete';
             return (
-              <Link key={`ended-${l.id as string}`} href={`/leagues/${l.id as string}`}
-                className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
-                <svg className="shrink-0 w-5 h-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-gray-800">Your {l.name as string} league has finished</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{finalPos ? `You finished ${ordinal(finalPos)}` : 'Season complete'}</p>
-                </div>
-              </Link>
+              <LeagueNotification
+                key={`ended-${l.id as string}`}
+                leagueId={l.id as string}
+                type="ended"
+                leagueName={l.name as string}
+                line2={line2}
+                bgClass="bg-purple-50"
+                borderClass="border-purple-200"
+                iconClass="text-purple-400"
+                icon={
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                }
+              />
             );
           })}
 
@@ -256,6 +269,12 @@ export default async function DashboardPage() {
                     <Link href={`/leagues/${m.league_id as string}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{m.league_name as string}</Link>
                   </div>
                 </div>
+                <Link
+                  href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+                  className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 transition-colors"
+                >
+                  View edit
+                </Link>
               </div>
             );
           })}
@@ -263,16 +282,24 @@ export default async function DashboardPage() {
           {disputedMatches.map((m) => {
             const opponentName = m.player1_id === userId ? m.player2_name as string : m.player1_name as string;
             return (
-              <Link key={m.id as string} href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
-                className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3 block">
+              <div key={m.id as string} className="bg-red-50 border border-red-200 rounded-xl px-4 py-3 flex items-center gap-3">
                 <svg className="shrink-0 w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-800">Result disputed vs {opponentName}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{m.league_name as string} - awaiting admin review</p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    <Link href={`/leagues/${m.league_id as string}`} className="hover:text-blue-600 hover:underline">{m.league_name as string}</Link>
+                    {' - awaiting admin review'}
+                  </p>
                 </div>
-              </Link>
+                <Link
+                  href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+                  className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-red-200 hover:bg-red-300 text-red-900 transition-colors"
+                >
+                  View match
+                </Link>
+              </div>
             );
           })}
 
