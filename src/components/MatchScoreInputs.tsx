@@ -87,8 +87,8 @@ export default function MatchScoreInputs({
             onChange={(e) => setWalkoverId(e.target.value as 'me' | 'them')}
             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
-            <option value="them">I won ({opponentName} did not appear)</option>
-            <option value="me">{opponentName} won (I did not appear)</option>
+            <option value="them">{myName} won ({opponentName} did not appear)</option>
+            <option value="me">{opponentName} won ({myName} did not appear)</option>
           </select>
         </div>
       )}
@@ -181,8 +181,8 @@ export default function MatchScoreInputs({
             onChange={(e) => setRetiredPlayer(e.target.value as 'me' | 'them')}
             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
-            <option value="them">I won ({opponentName} retired)</option>
-            <option value="me">{opponentName} won (I retired)</option>
+            <option value="them">{myName} won ({opponentName} retired)</option>
+            <option value="me">{opponentName} won ({myName} retired)</option>
           </select>
         </div>
       )}

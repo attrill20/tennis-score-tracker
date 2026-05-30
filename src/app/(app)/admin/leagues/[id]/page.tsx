@@ -6,6 +6,7 @@ import { calculateStandings } from '@/lib/league';
 import PromotionForm from './PromotionForm';
 import EditLeagueForm from './EditLeagueForm';
 import DeleteLeagueButton from './DeleteLeagueButton';
+import AdminMatchesSection from './AdminMatchesSection';
 
 export default async function AdminLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -27,8 +28,16 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
   `;
 
   const matches = await sql`
-    SELECT player1_id, player2_id, score_player1, score_player2, status
-    FROM matches WHERE league_id = ${id}
+    SELECT
+      m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
+      m.set_scores, m.tiebreak_scores, m.played_at, m.match_type, m.winner_id, m.status,
+      (p1.first_name || ' ' || p1.last_name) AS player1_name,
+      (p2.first_name || ' ' || p2.last_name) AS player2_name
+    FROM matches m
+    JOIN profiles p1 ON p1.id = m.player1_id
+    JOIN profiles p2 ON p2.id = m.player2_id
+    WHERE m.league_id = ${id}
+    ORDER BY m.played_at DESC, m.submitted_at DESC
   `;
 
   const standings = calculateStandings(
@@ -56,6 +65,12 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentSeasonEnd={new Date(league.season_end as string).toISOString().split('T')[0]}
         currentIsPublic={league.is_public as boolean ?? true}
         currentTiebreaker={(league.tiebreaker as string) ?? 'head_to_head'}
+      />
+
+      <AdminMatchesSection
+        leagueId={id}
+        players={players as { id: string; full_name: string }[]}
+        matches={matches as never}
       />
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">

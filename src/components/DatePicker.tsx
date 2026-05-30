@@ -86,8 +86,16 @@ export default function DatePicker({
 
   return (
     <div ref={containerRef} className="relative">
-      {/* Hidden native input so required + form submission work */}
-      <input type="hidden" id={id} value={value} required={required} />
+      {/* Visually-hidden native date input: associates with the label, handles form required validation, and is testable */}
+      <input
+        type="date"
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required={required}
+        tabIndex={-1}
+        className="sr-only"
+      />
 
       <button
         type="button"

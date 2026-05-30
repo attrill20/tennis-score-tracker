@@ -23,7 +23,7 @@ describe('Login page', () => {
   it('renders email and password fields and a submit button', () => {
     render(<LoginPage />);
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
@@ -32,7 +32,7 @@ describe('Login page', () => {
     render(<LoginPage />);
 
     await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.type(screen.getByLabelText('Password'), 'password123');
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
@@ -49,7 +49,7 @@ describe('Login page', () => {
     render(<LoginPage />);
 
     await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.type(screen.getByLabelText('Password'), 'password123');
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
@@ -62,7 +62,7 @@ describe('Login page', () => {
     render(<LoginPage />);
 
     await userEvent.type(screen.getByLabelText(/email/i), 'wrong@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'wrongpassword');
+    await userEvent.type(screen.getByLabelText('Password'), 'wrongpassword');
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
@@ -75,7 +75,7 @@ describe('Login page', () => {
     render(<LoginPage />);
 
     await userEvent.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await userEvent.type(screen.getByLabelText(/password/i), 'password123');
+    await userEvent.type(screen.getByLabelText('Password'), 'password123');
     fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
