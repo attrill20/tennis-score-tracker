@@ -82,6 +82,17 @@ const statements = [
 
   // Add gender column if it doesn't exist
   `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS gender TEXT CHECK (gender IN ('mens', 'womens'))`,
+
+  // Add archived status to league_status enum
+  `DO $$ BEGIN
+    ALTER TYPE league_status ADD VALUE IF NOT EXISTS 'archived';
+  EXCEPTION WHEN others THEN NULL; END $$`,
+
+  // Per-user archive flag on league_players
+  `ALTER TABLE league_players ADD COLUMN IF NOT EXISTS user_archived BOOLEAN NOT NULL DEFAULT FALSE`,
+
+  // Join type: invite_only (admin assigns) or open_invite (members can self-join)
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS join_type TEXT NOT NULL DEFAULT 'invite_only' CHECK (join_type IN ('invite_only', 'open_invite'))`,
 ];
 
 async function migrate() {

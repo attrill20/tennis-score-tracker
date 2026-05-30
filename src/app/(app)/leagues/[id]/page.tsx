@@ -4,6 +4,8 @@ import { calculateStandings, type Tiebreaker } from '@/lib/league';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import StandingsRow from './StandingsRow';
+import ArchiveLeagueButton from '../ArchiveLeagueButton';
+import LeaveLeagueButton from '@/components/LeaveLeagueButton';
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -46,6 +48,11 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const isInLeague = players.some((p) => p.id === session?.user?.id);
   const userId = session?.user?.id;
 
+  const memberRow = userId && isInLeague ? await sql`
+    SELECT user_archived FROM league_players WHERE league_id = ${id} AND player_id = ${userId}
+  ` : [];
+  const userArchived = (memberRow[0]?.user_archived as boolean) ?? false;
+
   return (
     <div>
       <div className="flex items-center justify-between mb-1">
@@ -58,11 +65,21 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
         </span>
       </div>
-      <p className="text-sm text-gray-400 mb-2">
-        {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
-        {' - '}
-        {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
-      </p>
+      <div className="flex items-center justify-between mb-2">
+        <p className="text-sm text-gray-400">
+          {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
+          {' - '}
+          {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+        <div className="flex items-center gap-2">
+          {isInLeague && league.status === 'upcoming' && league.join_type === 'open_invite' && (
+            <LeaveLeagueButton leagueId={id} />
+          )}
+          {isInLeague && !userArchived && (league.status === 'completed' || league.status === 'archived') && (
+            <ArchiveLeagueButton leagueId={id} />
+          )}
+        </div>
+      </div>
       {league.description && (
         <p className="text-sm text-gray-600 mb-6">{league.description as string}</p>
       )}

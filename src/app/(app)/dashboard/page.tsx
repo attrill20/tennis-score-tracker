@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DisputeResolutionNotification from '@/components/DisputeResolutionNotification';
 import NewMatchNotification from '@/components/NewMatchNotification';
 import LeagueNotification from '@/components/LeagueNotification';
+import ArchiveLeagueButton from '@/app/(app)/leagues/ArchiveLeagueButton';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -18,6 +19,8 @@ export default async function DashboardPage() {
       FROM leagues l
       JOIN league_players lp ON lp.league_id = l.id AND lp.player_id = ${userId}
       WHERE lp.player_id = ${userId}
+        AND lp.user_archived = false
+        AND l.status != 'archived'
       ORDER BY
         CASE l.status WHEN 'active' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
         l.season_start DESC
@@ -358,6 +361,9 @@ export default async function DashboardPage() {
                       >
                         Submit a result
                       </Link>
+                    )}
+                    {league.status === 'completed' && (
+                      <ArchiveLeagueButton leagueId={id} />
                     )}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
                       league.status === 'active'

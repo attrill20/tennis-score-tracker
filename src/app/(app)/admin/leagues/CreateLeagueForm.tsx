@@ -16,6 +16,7 @@ export default function CreateLeagueForm() {
   const [numRelegated, setNumRelegated] = useState(2);
   const [tiebreaker, setTiebreaker] = useState('head_to_head');
   const [isPublic, setIsPublic] = useState(true);
+  const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
   const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -29,7 +30,7 @@ export default function CreateLeagueForm() {
     const res = await fetch('/api/admin/leagues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, description }),
+      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, joinType, description }),
     });
 
     const data = await res.json();
@@ -199,6 +200,22 @@ export default function CreateLeagueForm() {
           <option value="public">Public - visible to all members</option>
           <option value="private">Private - invited players and admins only</option>
         </select>
+      </div>
+
+      <div>
+        <label htmlFor="joinType" className="block text-sm font-medium text-gray-700 mb-1">Sign-up type</label>
+        <select
+          id="joinType"
+          value={joinType}
+          onChange={(e) => setJoinType(e.target.value as 'invite_only' | 'open_invite')}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="invite_only">Invite only - admin assigns all players</option>
+          <option value="open_invite">Open invite - members can sign up themselves</option>
+        </select>
+        {joinType === 'open_invite' && (
+          <p className="text-xs text-gray-400 mt-1">You can still pre-assign players via the assign players form. Others can join up to the max.</p>
+        )}
       </div>
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
