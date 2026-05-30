@@ -2,9 +2,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import CreateLeagueForm from '@/app/(app)/admin/leagues/CreateLeagueForm';
 
-const mockRefresh = jest.fn();
+const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
-  useRouter: () => ({ refresh: mockRefresh }),
+  useRouter: () => ({ push: mockPush }),
 }));
 
 describe('CreateLeagueForm', () => {
@@ -30,8 +30,8 @@ describe('CreateLeagueForm', () => {
     render(<CreateLeagueForm />);
     expect(screen.getByLabelText(/scoring method/i)).toHaveValue('best_of_3_tiebreak');
     expect(screen.getByLabelText(/number of players/i)).toHaveValue('8');
-    expect(screen.getByLabelText(/number promoted/i)).toHaveValue('2');
-    expect(screen.getByLabelText(/number relegated/i)).toHaveValue('2');
+    expect(screen.getByLabelText(/number promoted/i)).toHaveValue('0');
+    expect(screen.getByLabelText(/number relegated/i)).toHaveValue('0');
     expect(screen.getByLabelText(/status/i)).toHaveValue('upcoming');
   });
 
@@ -127,7 +127,7 @@ describe('CreateLeagueForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /create league/i }));
 
     await waitFor(() => {
-      expect(mockRefresh).toHaveBeenCalled();
+      expect(mockPush).toHaveBeenCalledWith('/admin/leagues');
     });
   });
 });

@@ -1,7 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect } from 'next/navigation';
-import CreateLeagueForm from './CreateLeagueForm';
+import Link from 'next/link';
 import AssignPlayersForm from './AssignPlayersForm';
 
 export default async function AdminLeaguesPage() {
@@ -29,14 +29,17 @@ export default async function AdminLeaguesPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Admin - Leagues</h1>
-        <p className="text-sm text-gray-400">Create leagues and manage players</p>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <h2 className="text-base font-semibold text-gray-700 mb-4">Create a new league</h2>
-        <CreateLeagueForm />
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-1">Admin - Leagues</h1>
+          <p className="text-sm text-gray-400">Create leagues and manage players</p>
+        </div>
+        <Link
+          href="/admin/leagues/new"
+          className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+        >
+          + Create league
+        </Link>
       </div>
 
       {leagues.length > 0 && (

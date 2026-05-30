@@ -12,8 +12,8 @@ export default function CreateLeagueForm() {
   const [status, setStatus] = useState<'upcoming' | 'active'>('upcoming');
   const [maxPlayers, setMaxPlayers] = useState(8);
   const [scoringMethod, setScoringMethod] = useState('best_of_3_tiebreak');
-  const [numPromoted, setNumPromoted] = useState(2);
-  const [numRelegated, setNumRelegated] = useState(2);
+  const [numPromoted, setNumPromoted] = useState(0);
+  const [numRelegated, setNumRelegated] = useState(0);
   const [tiebreaker, setTiebreaker] = useState('head_to_head');
   const [isPublic, setIsPublic] = useState(true);
   const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
@@ -41,11 +41,7 @@ export default function CreateLeagueForm() {
       return;
     }
 
-    setName('');
-    setStartDate('');
-    setEndDate('');
-    setCreated(true);
-    router.refresh();
+    router.push('/admin/leagues');
   }
 
   return (
