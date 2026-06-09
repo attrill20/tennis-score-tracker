@@ -13,6 +13,7 @@ type League = {
   season_end: string;
   is_public: boolean;
   join_type: string;
+  league_type: string;
   max_players: number;
   player_count: string;
   matches_played: string;
@@ -22,8 +23,12 @@ type League = {
 };
 
 function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: boolean; canArchive: boolean }) {
-  const totalPossible = Math.floor(Number(league.player_count) * (Number(league.player_count) - 1) / 2);
-  const spotsLeft = league.max_players - Number(league.player_count);
+  const isDoubles = league.league_type === 'doubles';
+  const playerCount = Number(league.player_count);
+  // For doubles: max_players = pair count; unitCount = current pairs
+  const unitCount = isDoubles ? Math.floor(playerCount / 2) : playerCount;
+  const totalPossible = Math.floor(unitCount * (unitCount - 1) / 2);
+  const spotsLeft = league.max_players - unitCount;
   return (
     <div className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
       <Link href={`/leagues/${league.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name} />
@@ -50,8 +55,12 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-gray-400">
             {league.status === 'upcoming'
-              ? <>Players: {league.player_count}/{league.max_players}{canJoin && spotsLeft > 0 ? ` (${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left)` : ''}</>
-              : <>Players: {league.player_count} | Games Played: {league.matches_played}/{totalPossible}</>
+              ? isDoubles
+                ? <>Pairs: {unitCount}/{league.max_players}{canJoin && spotsLeft > 0 ? ` (${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left)` : ''}</>
+                : <>Players: {playerCount}/{league.max_players}{canJoin && spotsLeft > 0 ? ` (${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''} left)` : ''}</>
+              : isDoubles
+              ? <>Pairs: {unitCount} | Games Played: {league.matches_played}/{totalPossible}</>
+              : <>Players: {playerCount} | Games Played: {league.matches_played}/{totalPossible}</>
             }
           </span>
           <p className="text-xs text-gray-400">
@@ -91,6 +100,7 @@ export default async function LeaguesPage() {
     SELECT
       l.id, l.name, l.status, l.season_start, l.season_end, l.is_public,
       COALESCE(l.join_type, 'invite_only') AS join_type,
+      COALESCE(l.league_type, 'singles') AS league_type,
       COALESCE(l.max_players, 8) AS max_players,
       (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count,
       (SELECT lp.final_position FROM league_players lp WHERE lp.league_id = l.id AND lp.player_id = ${userId}) AS my_final_position,
@@ -109,7 +119,11 @@ export default async function LeaguesPage() {
   // Leagues the current user can join: open_invite, not a member, not full, not completed
   const joinableIds = new Set(
     leagues
-      .filter((l) => l.join_type === 'open_invite' && !l.is_member && l.status !== 'completed' && Number(l.player_count) < l.max_players)
+      .filter((l) => {
+        const pc = Number(l.player_count);
+        const units = l.league_type === 'doubles' ? Math.floor(pc / 2) : pc;
+        return l.join_type === 'open_invite' && !l.is_member && l.status !== 'completed' && units < l.max_players;
+      })
       .map((l) => l.id)
   );
 

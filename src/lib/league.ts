@@ -13,6 +13,8 @@ export type PlayerStanding = {
 type Match = {
   player1_id: string;
   player2_id: string;
+  player3_id?: string | null;
+  player4_id?: string | null;
   score_player1: number;
   score_player2: number;
   status: string;
@@ -46,47 +48,39 @@ export function calculateStandings(
   const playedMatches = matches.filter((m) => m.status !== 'disputed');
 
   for (const match of playedMatches) {
-    const p1 = standings[match.player1_id];
-    const p2 = standings[match.player2_id];
-    if (!p1 || !p2) continue;
+    // Team 1 = player1 + optional player3; Team 2 = player2 + optional player4
+    const team1Ids = [match.player1_id, match.player3_id].filter((id): id is string => !!id);
+    const team2Ids = [match.player2_id, match.player4_id].filter((id): id is string => !!id);
 
-    p1.played++;
-    p2.played++;
+    const team1 = team1Ids.map((id) => standings[id]).filter(Boolean) as PlayerStanding[];
+    const team2 = team2Ids.map((id) => standings[id]).filter(Boolean) as PlayerStanding[];
+
+    if (!standings[match.player1_id] || !standings[match.player2_id]) continue;
+
+    [...team1, ...team2].forEach((p) => p.played++);
 
     if (match.winner_id) {
-      // Walkover or retirement: winner is explicit
-      const winnerIsP1 = match.winner_id === match.player1_id;
-      const winner = winnerIsP1 ? p1 : p2;
-      const loser = winnerIsP1 ? p2 : p1;
-      winner.won++;
-      winner.points += 3;
-      loser.lost++;
-      // For retirement, partial sets still count; for walkover they don't
+      const winnerIsTeam1 = match.winner_id === match.player1_id;
+      const winners = winnerIsTeam1 ? team1 : team2;
+      const losers = winnerIsTeam1 ? team2 : team1;
+      winners.forEach((p) => { p.won++; p.points += 3; });
+      losers.forEach((p) => p.lost++);
       if (match.match_type === 'retirement') {
-        p1.setsFor += match.score_player1;
-        p1.setsAgainst += match.score_player2;
-        p2.setsFor += match.score_player2;
-        p2.setsAgainst += match.score_player1;
+        team1.forEach((p) => { p.setsFor += match.score_player1; p.setsAgainst += match.score_player2; });
+        team2.forEach((p) => { p.setsFor += match.score_player2; p.setsAgainst += match.score_player1; });
       }
     } else {
-      p1.setsFor += match.score_player1;
-      p1.setsAgainst += match.score_player2;
-      p2.setsFor += match.score_player2;
-      p2.setsAgainst += match.score_player1;
+      team1.forEach((p) => { p.setsFor += match.score_player1; p.setsAgainst += match.score_player2; });
+      team2.forEach((p) => { p.setsFor += match.score_player2; p.setsAgainst += match.score_player1; });
 
       if (match.score_player1 > match.score_player2) {
-        p1.won++;
-        p1.points += 3;
-        p2.lost++;
+        team1.forEach((p) => { p.won++; p.points += 3; });
+        team2.forEach((p) => p.lost++);
       } else if (match.score_player2 > match.score_player1) {
-        p2.won++;
-        p2.points += 3;
-        p1.lost++;
+        team2.forEach((p) => { p.won++; p.points += 3; });
+        team1.forEach((p) => p.lost++);
       } else {
-        p1.drawn++;
-        p2.drawn++;
-        p1.points += 1;
-        p2.points += 1;
+        [...team1, ...team2].forEach((p) => { p.drawn++; p.points += 1; });
       }
     }
   }

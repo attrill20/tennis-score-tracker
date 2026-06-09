@@ -71,6 +71,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         leagueId={id}
         players={players as { id: string; full_name: string }[]}
         matches={matches as never}
+        leagueType={(league.league_type as string) ?? 'singles'}
       />
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">

@@ -6,7 +6,7 @@ export async function POST(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { leagueId, opponentId, sets, tiebreaks, playedAt, matchType = 'normal', retiredPlayer, walkoverId } = await req.json();
+  const { leagueId, opponentId, player3Id, player4Id, sets, tiebreaks, playedAt, matchType = 'normal', retiredPlayer, walkoverId } = await req.json();
 
   if (!leagueId || !opponentId || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -16,6 +16,15 @@ export async function POST(req: NextRequest) {
   }
   if (matchType === 'retirement' && !retiredPlayer) {
     return NextResponse.json({ error: 'Please specify who retired' }, { status: 400 });
+  }
+
+  const isDoubles = !!(player3Id && player4Id);
+
+  if (isDoubles) {
+    const allIds = [session.user.id, player3Id, opponentId, player4Id];
+    if (new Set(allIds).size < 4) {
+      return NextResponse.json({ error: 'All four players must be different' }, { status: 400 });
+    }
   }
 
   let myScore = 0, theirScore = 0;
@@ -34,15 +43,19 @@ export async function POST(req: NextRequest) {
     winnerIdToStore = retiredPlayer === 'me' ? opponentId : session.user.id;
   }
 
-  // Verify both players are in the league
+  // Verify all players are in the league
+  const playerIds = isDoubles
+    ? [session.user.id, opponentId, player3Id, player4Id]
+    : [session.user.id, opponentId];
+
   const membership = await sql`
     SELECT player_id FROM league_players
     WHERE league_id = ${leagueId}
-    AND player_id IN (${session.user.id}, ${opponentId})
+    AND player_id = ANY(${playerIds}::uuid[])
   `;
 
-  if (membership.length < 2) {
-    return NextResponse.json({ error: 'Both players must be in this league' }, { status: 400 });
+  if (membership.length < playerIds.length) {
+    return NextResponse.json({ error: isDoubles ? 'All four players must be in this league' : 'Both players must be in this league' }, { status: 400 });
   }
 
   // Check league is active and end date hasn't passed
@@ -58,10 +71,17 @@ export async function POST(req: NextRequest) {
   const hasTiebreak = Array.isArray(tiebreaks) && tiebreaks.some((t: unknown) => t !== null);
   const setsToStore = sets?.length ? JSON.stringify(sets) : null;
 
-  await sql`
-    INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id)
-    VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${session.user.id}, ${myScore}, ${theirScore}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerIdToStore})
-  `;
+  if (isDoubles) {
+    await sql`
+      INSERT INTO matches (league_id, player1_id, player2_id, player3_id, player4_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id)
+      VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${player3Id}, ${player4Id}, ${session.user.id}, ${myScore}, ${theirScore}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerIdToStore})
+    `;
+  } else {
+    await sql`
+      INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id)
+      VALUES (${leagueId}, ${session.user.id}, ${opponentId}, ${session.user.id}, ${myScore}, ${theirScore}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerIdToStore})
+    `;
+  }
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

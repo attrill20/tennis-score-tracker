@@ -106,57 +106,26 @@ describe('AssignPlayersForm', () => {
     expect(screen.getByText(/no players found/i)).toBeInTheDocument();
   });
 
-  it('save button is disabled when there are no changes', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      json: async () => ['player-1'],
-    });
-
-    render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
-
-    await waitFor(() => screen.getByRole('button', { name: /no changes/i }));
-    expect(screen.getByRole('button', { name: /no changes/i })).toBeDisabled();
-  });
-
-  it('save button becomes enabled after ticking a player', async () => {
-    (global.fetch as jest.Mock).mockResolvedValue({
-      ok: true,
-      json: async () => [],
-    });
-
-    render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
-
-    await waitFor(() => screen.getByText('Alice Smith'));
-    fireEvent.click(screen.getByText('Alice Smith').closest('label')!);
-
-    expect(screen.getByRole('button', { name: /save changes/i })).not.toBeDisabled();
-  });
-
-  it('saves added players via POST and shows success message', async () => {
+  it('immediately POSTs when a player is ticked', async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => [] }) // GET existing players
-      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) }); // POST new players
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) }); // POST
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
     fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByText('Alice Smith'));
     fireEvent.click(screen.getByText('Alice Smith').closest('label')!);
-    fireEvent.click(screen.getByText('Bob Jones').closest('label')!);
-    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
         '/api/admin/leagues/league-1/players',
         expect.objectContaining({ method: 'POST' })
       );
-      expect(screen.getByText(/players updated successfully/i)).toBeInTheDocument();
     });
   });
 
-  it('removes unchecked players via DELETE on save', async () => {
+  it('immediately DELETEs when a pre-ticked player is unticked', async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => ['player-1', 'player-2'] }) // GET existing
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) }); // DELETE
@@ -164,9 +133,8 @@ describe('AssignPlayersForm', () => {
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
     fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
 
-    await waitFor(() => screen.getByText('Alice Smith'));
-    fireEvent.click(screen.getByText('Bob Jones').closest('label')!); // untick Bob
-    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => screen.getByText('Bob Jones'));
+    fireEvent.click(screen.getByText('Bob Jones').closest('label')!);
 
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalledWith(
@@ -179,7 +147,7 @@ describe('AssignPlayersForm', () => {
     });
   });
 
-  it('shows an error message if saving fails', async () => {
+  it('shows an error and reverts the checkbox if the API call fails', async () => {
     (global.fetch as jest.Mock)
       .mockResolvedValueOnce({ ok: true, json: async () => [] }) // GET
       .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Server error' }) }); // POST fails
@@ -189,10 +157,13 @@ describe('AssignPlayersForm', () => {
 
     await waitFor(() => screen.getByText('Alice Smith'));
     fireEvent.click(screen.getByText('Alice Smith').closest('label')!);
-    fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/server error/i)).toBeInTheDocument();
+      // Checkbox should be reverted back to unchecked
+      const checkboxes = screen.getAllByRole('checkbox');
+      const alice = checkboxes.find((cb) => cb.closest('label')?.textContent?.includes('Alice Smith')) as HTMLInputElement;
+      expect(alice.checked).toBe(false);
     });
   });
 

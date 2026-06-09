@@ -7,12 +7,30 @@ import MatchScoreInputs, { MatchType, isTiebreakSet, TbEntry } from '@/component
 
 type Player = { id: string; full_name: string };
 
+function firstName(name: string) {
+  return name.split(' ')[0];
+}
+
 export default function SubmitScoreForm({ userName }: { userName: string }) {
   const { id: leagueId } = useParams<{ id: string }>();
   const router = useRouter();
 
   const [players, setPlayers] = useState<Player[]>([]);
+  const [leagueType, setLeagueType] = useState<'singles' | 'doubles'>('singles');
+
+  // Singles
   const [opponent, setOpponent] = useState('');
+
+  // Doubles — partner fixed from league, opponents selected as a pair
+  const [myPartnerId, setMyPartnerId] = useState('');
+  const [myPartnerName, setMyPartnerName] = useState('');
+  type OpponentPair = { p1Id: string; p2Id: string; label: string; fullLabel: string };
+  const [opponentPairs, setOpponentPairs] = useState<OpponentPair[]>([]);
+  const [selectedPairKey, setSelectedPairKey] = useState('');
+  // Keep opponent1/opponent2 derived from selectedPairKey
+  const [opponent1, setOpponent1] = useState('');
+  const [opponent2, setOpponent2] = useState('');
+
   const [matchType, setMatchType] = useState<MatchType>('normal');
   const [walkoverId, setWalkoverId] = useState<'me' | 'them'>('them');
   const [retiredPlayer, setRetiredPlayer] = useState<'me' | 'them'>('them');
@@ -38,7 +56,15 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       .then((r) => r.json())
       .then((data) => {
         if (data.error) setError(data.error);
-        else setPlayers(data.players ?? []);
+        else {
+          setPlayers(data.players ?? []);
+          setLeagueType(data.leagueType ?? 'singles');
+          if (data.leagueType === 'doubles') {
+            setMyPartnerId(data.myPartnerId ?? '');
+            setMyPartnerName(data.myPartnerName ?? '');
+            setOpponentPairs(data.opponentPairs ?? []);
+          }
+        }
       })
       .catch(() => setError('Failed to load players'));
   }, [leagueId]);
@@ -61,6 +87,13 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+
+    if (leagueType === 'doubles') {
+      if (!selectedPairKey || !opponent1 || !opponent2) {
+        setError('Please select the opposing pair.');
+        return;
+      }
+    }
 
     const playedIndices = sets.reduce<number[]>((acc, s, i) => {
       if (s.my !== '' && s.their !== '') acc.push(i);
@@ -106,7 +139,9 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         leagueId,
-        opponentId: opponent,
+        opponentId: leagueType === 'doubles' ? opponent1 : opponent,
+        player3Id: leagueType === 'doubles' ? myPartnerId : undefined,
+        player4Id: leagueType === 'doubles' ? opponent2 : undefined,
         sets: matchType === 'walkover' ? [] : playedSets,
         tiebreaks: matchType === 'walkover' ? [] : playedTiebreaks,
         playedAt,
@@ -136,7 +171,14 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
     }
   }
 
-  const opponentName = players.find((p) => p.id === opponent)?.full_name ?? 'Opponent';
+  const myDisplayName = leagueType === 'doubles' && myPartnerName
+    ? `${firstName(userName)} / ${firstName(myPartnerName)}`
+    : userName;
+
+  const selectedPair = opponentPairs.find((p) => `${p.p1Id}:${p.p2Id}` === selectedPairKey);
+  const opponentDisplayName = leagueType === 'doubles'
+    ? selectedPair ? selectedPair.label : 'Opponents'
+    : players.find((p) => p.id === opponent)?.full_name ?? 'Opponent';
 
   return (
     <>
@@ -151,27 +193,61 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
         <h1 className="text-2xl font-bold text-gray-800 mb-6">Submit a result</h1>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 sm:p-8 space-y-6">
-          <div>
-            <label htmlFor="opponent" className="block text-sm font-medium text-gray-700 mb-1">Opponent</label>
-            <select
-              id="opponent"
-              value={opponent}
-              onChange={(e) => setOpponent(e.target.value)}
-              required
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-            >
-              <option value="">
-                {players.length === 0 ? 'No remaining opponents' : 'Select opponent...'}
-              </option>
-              {players.map((p) => (
-                <option key={p.id} value={p.id}>{p.full_name}</option>
-              ))}
-            </select>
-          </div>
+          {leagueType === 'singles' ? (
+            <div>
+              <label htmlFor="opponent" className="block text-sm font-medium text-gray-700 mb-1">Opponent</label>
+              <select
+                id="opponent"
+                value={opponent}
+                onChange={(e) => setOpponent(e.target.value)}
+                required
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="">
+                  {players.length === 0 ? 'No remaining opponents' : 'Select opponent...'}
+                </option>
+                {players.map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name}</option>
+                ))}
+              </select>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <div>
+                <p className="block text-sm font-medium text-gray-700 mb-1">Your partner</p>
+                <div className="px-4 py-2.5 rounded-lg border border-gray-200 bg-gray-50 text-sm text-gray-700">
+                  {myPartnerName || <span className="text-gray-400">No partner assigned</span>}
+                </div>
+              </div>
+              <div>
+                <label htmlFor="opponentPair" className="block text-sm font-medium text-gray-700 mb-1">Opponents</label>
+                <select
+                  id="opponentPair"
+                  value={selectedPairKey}
+                  onChange={(e) => {
+                    const key = e.target.value;
+                    setSelectedPairKey(key);
+                    const pair = opponentPairs.find((p) => `${p.p1Id}:${p.p2Id}` === key);
+                    setOpponent1(pair?.p1Id ?? '');
+                    setOpponent2(pair?.p2Id ?? '');
+                  }}
+                  required
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                >
+                  <option value="">
+                    {opponentPairs.length === 0 ? 'No opponents available' : 'Select opponents...'}
+                  </option>
+                  {opponentPairs.map((p) => (
+                    <option key={`${p.p1Id}:${p.p2Id}`} value={`${p.p1Id}:${p.p2Id}`}>{p.fullLabel}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
 
           <MatchScoreInputs
-            myName={userName}
-            opponentName={opponentName}
+            myName={myDisplayName}
+            opponentName={opponentDisplayName}
             matchType={matchType}
             setMatchType={setMatchType}
             walkoverId={walkoverId}

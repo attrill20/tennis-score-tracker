@@ -10,7 +10,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const userId = session.user.id;
 
   const leagues = await sql`
-    SELECT id, join_type, max_players, status,
+    SELECT id, join_type, max_players, league_type, status,
       (SELECT COUNT(*) FROM league_players WHERE league_id = id) AS player_count
     FROM leagues WHERE id = ${leagueId}
   `;
@@ -32,7 +32,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'You are already in this league' }, { status: 400 });
   }
 
-  if (Number(league.player_count) >= Number(league.max_players)) {
+  const playerCount = Number(league.player_count);
+  const unitCount = league.league_type === 'doubles' ? Math.floor(playerCount / 2) : playerCount;
+  if (unitCount >= Number(league.max_players)) {
     return NextResponse.json({ error: 'This league is full' }, { status: 400 });
   }
 

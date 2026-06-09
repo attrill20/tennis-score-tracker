@@ -15,6 +15,7 @@ export default function CreateLeagueForm() {
   const [numPromoted, setNumPromoted] = useState(0);
   const [numRelegated, setNumRelegated] = useState(0);
   const [tiebreaker, setTiebreaker] = useState('head_to_head');
+  const [leagueType, setLeagueType] = useState<'singles' | 'doubles'>('singles');
   const [isPublic, setIsPublic] = useState(true);
   const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
   const [description, setDescription] = useState('');
@@ -30,7 +31,7 @@ export default function CreateLeagueForm() {
     const res = await fetch('/api/admin/leagues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, joinType, description }),
+      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, joinType, description, leagueType }),
     });
 
     const data = await res.json();
@@ -46,6 +47,26 @@ export default function CreateLeagueForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">League type</label>
+        <div className="grid grid-cols-2 gap-3">
+          {(['singles', 'doubles'] as const).map((val) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => { setLeagueType(val); setMaxPlayers(8); }}
+              className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
+                leagueType === val
+                  ? 'bg-green-900 border-green-900 text-white'
+                  : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
+              }`}
+            >
+              {val === 'singles' ? 'Singles' : 'Doubles'}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div>
         <label htmlFor="leagueName" className="block text-sm font-medium text-gray-700 mb-1">League name</label>
         <input
@@ -104,16 +125,22 @@ export default function CreateLeagueForm() {
       </div>
 
       <div>
-        <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">Number of players</label>
+        <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">
+          {leagueType === 'doubles' ? 'Number of pairs' : 'Number of players'}
+        </label>
         <select
           id="maxPlayers"
           value={maxPlayers}
           onChange={(e) => setMaxPlayers(Number(e.target.value))}
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
-          {Array.from({ length: 11 }, (_, i) => i + 2).map((n) => (
-            <option key={n} value={n}>{n}</option>
-          ))}
+          {leagueType === 'doubles'
+            ? Array.from({ length: 7 }, (_, i) => i + 2).map((n) => (
+                <option key={n} value={n}>{n} pairs ({n * 2} players)</option>
+              ))
+            : Array.from({ length: 11 }, (_, i) => i + 2).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
         </select>
       </div>
 

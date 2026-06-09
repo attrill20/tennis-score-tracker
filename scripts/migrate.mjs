@@ -93,6 +93,20 @@ const statements = [
 
   // Join type: invite_only (admin assigns) or open_invite (members can self-join)
   `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS join_type TEXT NOT NULL DEFAULT 'invite_only' CHECK (join_type IN ('invite_only', 'open_invite'))`,
+
+  // Partner tracking for doubles leagues — mutual reference between paired players
+  `ALTER TABLE league_players ADD COLUMN IF NOT EXISTS partner_id UUID REFERENCES profiles(id)`,
+
+  // Doubles support: league_type distinguishes singles vs doubles leagues
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS league_type TEXT NOT NULL DEFAULT 'singles' CHECK (league_type IN ('singles', 'doubles'))`,
+
+  // Doubles match partners: player3 partners player1 (same team), player4 partners player2
+  `ALTER TABLE matches ADD COLUMN IF NOT EXISTS player3_id UUID REFERENCES profiles(id)`,
+  `ALTER TABLE matches ADD COLUMN IF NOT EXISTS player4_id UUID REFERENCES profiles(id)`,
+
+  // Notification seen flags for doubles partners
+  `ALTER TABLE matches ADD COLUMN IF NOT EXISTS partner_seen BOOLEAN NOT NULL DEFAULT FALSE`,
+  `ALTER TABLE matches ADD COLUMN IF NOT EXISTS opponent2_seen BOOLEAN NOT NULL DEFAULT FALSE`,
 ];
 
 async function migrate() {

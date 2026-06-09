@@ -17,10 +17,63 @@ type Props = {
   setsAgainst: number;
   points: number;
   rowClass: string;
+  // Doubles pair
+  partnerId?: string;
+  partnerName?: string;
+  isPartnerInjured?: boolean;
 };
 
-export default function StandingsRow({ playerId, userId, name, isInjured, position, played, won, drawn, lost, setsFor, setsAgainst, points, rowClass }: Props) {
+export default function StandingsRow({
+  playerId, userId, name, isInjured, position, played, won, drawn, lost,
+  setsFor, setsAgainst, points, rowClass,
+  partnerId, partnerName, isPartnerInjured,
+}: Props) {
   const router = useRouter();
+  const isDoubles = !!partnerId;
+  const isMe = playerId === userId || partnerId === userId;
+
+  if (isDoubles) {
+    return (
+      <tr className={`border-t border-gray-100 ${rowClass}`}>
+        <td className="px-4 py-3 text-gray-800">
+          <span className="text-gray-400 mr-2">{position}</span>
+          <Link
+            href={`/players/${playerId}`}
+            className="hover:underline hover:text-green-700 transition-colors"
+          >
+            <span className={isMe && playerId === userId ? 'font-bold' : 'font-medium'}>{name}</span>
+          </Link>
+          {isInjured && (
+            <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full ml-1.5" title="Injured">
+              <svg className="w-2.5 h-2.5 text-red-500" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7 2h2v5h5v2h-5v5H7v-5H2V7h5z"/>
+              </svg>
+            </span>
+          )}
+          <span className="text-gray-400 mx-1.5">+</span>
+          <Link
+            href={`/players/${partnerId}`}
+            className="hover:underline hover:text-green-700 transition-colors"
+          >
+            <span className={isMe && partnerId === userId ? 'font-bold' : 'font-medium'}>{partnerName}</span>
+          </Link>
+          {isPartnerInjured && (
+            <span className="inline-flex items-center justify-center w-4 h-4 bg-white border border-red-300 rounded-full ml-1.5" title="Injured">
+              <svg className="w-2.5 h-2.5 text-red-500" viewBox="0 0 16 16" fill="currentColor">
+                <path d="M7 2h2v5h5v2h-5v5H7v-5H2V7h5z"/>
+              </svg>
+            </span>
+          )}
+        </td>
+        <td className="text-center px-2 py-3 text-gray-600">{played}</td>
+        <td className="text-center px-2 py-3 text-gray-600">{won}</td>
+        <td className="text-center px-2 py-3 text-gray-600">{drawn}</td>
+        <td className="text-center px-2 py-3 text-gray-600">{lost}</td>
+        <td className="text-center px-2 py-3 text-gray-600">{setsFor}-{setsAgainst}</td>
+        <td className="text-center px-2 py-3 font-semibold text-gray-800">{points}</td>
+      </tr>
+    );
+  }
 
   return (
     <tr

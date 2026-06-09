@@ -7,7 +7,9 @@ export default function NewMatchNotification({
   matchId,
   leagueId,
   leagueName,
-  opponentName,
+  submitterName,
+  partnerFirstName,
+  notificationRole,
   myScore,
   theirScore,
   setScores,
@@ -17,7 +19,9 @@ export default function NewMatchNotification({
   matchId: string;
   leagueId: string;
   leagueName: string;
-  opponentName: string;
+  submitterName: string;
+  partnerFirstName?: string | null;
+  notificationRole: 'opponent' | 'partner' | 'opponent2';
   myScore: number;
   theirScore: number;
   setScores: [number, number][] | null;
@@ -29,10 +33,14 @@ export default function NewMatchNotification({
 
   async function handleDismiss() {
     setLoading(true);
+    const action =
+      notificationRole === 'partner' ? 'seen-by-partner'
+      : notificationRole === 'opponent2' ? 'seen-by-opponent2'
+      : 'seen-by-opponent';
     await fetch(`/api/matches/${matchId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'seen-by-opponent' }),
+      body: JSON.stringify({ action }),
     });
     setLoading(false);
     setDismissed(true);
@@ -55,16 +63,25 @@ export default function NewMatchNotification({
     ? 'bg-gray-100 text-gray-500'
     : 'bg-red-100 text-red-600';
 
+  // Build headline based on role
+  const teamName = partnerFirstName
+    ? `${submitterName.split(' ')[0]} / ${partnerFirstName}`
+    : submitterName;
+
+  const headline =
+    notificationRole === 'partner'
+      ? `${submitterName} submitted a result you were part of`
+      : `${teamName} submitted a result against you`;
+
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 flex items-center gap-3">
-      {/* Info icon */}
       <svg className="shrink-0 w-5 h-5 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
       </svg>
 
       <div className="flex-1 min-w-0">
         <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="group block">
-          <p className="text-sm text-gray-800 group-hover:text-blue-600 group-hover:underline">{opponentName} has submitted a result with you</p>
+          <p className="text-sm text-gray-800 group-hover:text-blue-600 group-hover:underline">{headline}</p>
         </Link>
         <div className="flex items-center gap-2 mt-1">
           <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="group flex items-center gap-2">

@@ -7,6 +7,15 @@ export function isTiebreakSet(my: number, their: number): boolean {
   return (my === 7 && their === 6) || (my === 6 && their === 7);
 }
 
+function isSuspiciousScore(a: number, b: number): boolean {
+  const winner = Math.max(a, b);
+  const loser = Math.min(a, b);
+  if (winner === 6 && loser <= 4) return false;  // 6-0 to 6-4
+  if (winner === 7 && loser === 5) return false;  // 7-5
+  if (winner === 7 && loser === 6) return false;  // 7-6 tiebreak
+  return true;
+}
+
 export function toFormSets(setScores: [number, number][] | null): TbEntry[] {
   const base: TbEntry[] = [{ my: '', their: '' }, { my: '', their: '' }, { my: '', their: '' }];
   if (!setScores) return base;
@@ -132,6 +141,26 @@ export default function MatchScoreInputs({
           {matchType === 'retirement' && (
             <p className="mt-2 text-xs text-gray-400">Enter the sets completed before retirement. Partial sets are not counted.</p>
           )}
+          {(() => {
+            const suspicious = sets
+              .map((s, i) => ({ i, my: parseInt(s.my), their: parseInt(s.their) }))
+              .filter(({ my, their }) => !isNaN(my) && !isNaN(their) && isSuspiciousScore(my, their));
+            if (!suspicious.length) return null;
+            return (
+              <div className="mt-3 flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2.5">
+                <svg className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <div>
+                  <p className="text-xs font-medium text-amber-800">Double-check your scores</p>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Sets are normally played to 6 games (or 7-5 / 7-6).{' '}
+                    {suspicious.map(({ i, my, their }) => `Set ${i + 1}: ${my}-${their}`).join(', ')} {suspicious.length === 1 ? 'looks' : 'look'} unusual. If the match wasn&apos;t completed, use the <span className="font-medium">Retirement</span> match type instead.
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
           {anyTiebreak && (
             <div className="mt-3 pt-3 border-t border-gray-100">
               <div className="flex items-start gap-3">

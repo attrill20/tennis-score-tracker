@@ -17,31 +17,69 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const [players, matches] = await Promise.all([
     sql`
-      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured
+      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured,
+             lp.partner_id,
+             (pp.first_name || ' ' || pp.last_name) AS partner_full_name
       FROM profiles p
       JOIN league_players lp ON lp.player_id = p.id
+      LEFT JOIN profiles pp ON pp.id = lp.partner_id
       WHERE lp.league_id = ${id}
       ORDER BY p.last_name, p.first_name
     `,
     sql`
-      SELECT m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
+      SELECT m.id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
+             m.score_player1, m.score_player2,
              m.set_scores, m.tiebreak_scores, m.status, m.submitted_by, m.played_at,
              m.match_type, m.winner_id,
-             (p1.first_name || ' ' || p1.last_name) AS player1_name,
-             (p2.first_name || ' ' || p2.last_name) AS player2_name
+             p1.first_name AS player1_first, (p1.first_name || ' ' || p1.last_name) AS player1_name,
+             p2.first_name AS player2_first, (p2.first_name || ' ' || p2.last_name) AS player2_name,
+             p3.first_name AS player3_first, (p3.first_name || ' ' || p3.last_name) AS player3_name,
+             p4.first_name AS player4_first, (p4.first_name || ' ' || p4.last_name) AS player4_name
       FROM matches m
       JOIN profiles p1 ON p1.id = m.player1_id
       JOIN profiles p2 ON p2.id = m.player2_id
+      LEFT JOIN profiles p3 ON p3.id = m.player3_id
+      LEFT JOIN profiles p4 ON p4.id = m.player4_id
       WHERE m.league_id = ${id}
       ORDER BY m.played_at DESC, m.submitted_at DESC
     `,
   ]);
 
+  const isDoubles = league.league_type === 'doubles';
+
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
-    matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string; match_type?: string | null; winner_id?: string | null }[],
+    matches as { player1_id: string; player2_id: string; player3_id?: string | null; player4_id?: string | null; score_player1: number; score_player2: number; status: string; match_type?: string | null; winner_id?: string | null }[],
     ((league.tiebreaker as string) ?? 'head_to_head') as Tiebreaker
   );
+
+  // For doubles, collapse standings into one row per pair
+  type PairStanding = (typeof standings)[0] & { partnerId?: string; partnerName?: string; isPartnerInjured?: boolean };
+  let displayStandings: PairStanding[];
+
+  if (isDoubles) {
+    const partnerMap: Record<string, { id: string; name: string; isInjured: boolean }> = {};
+    for (const p of players) {
+      if (p.partner_id) {
+        partnerMap[p.id as string] = {
+          id: p.partner_id as string,
+          name: p.partner_full_name as string,
+          isInjured: !!(players.find((x) => x.id === p.partner_id)?.is_injured),
+        };
+      }
+    }
+    const seen = new Set<string>();
+    displayStandings = standings.reduce<PairStanding[]>((acc, s) => {
+      if (seen.has(s.id)) return acc;
+      seen.add(s.id);
+      const partner = partnerMap[s.id];
+      if (partner) seen.add(partner.id);
+      acc.push({ ...s, partnerId: partner?.id, partnerName: partner?.name, isPartnerInjured: partner?.isInjured });
+      return acc;
+    }, []);
+  } else {
+    displayStandings = standings;
+  }
 
   const injuredIds = new Set(players.filter((p) => p.is_injured).map((p) => p.id as string));
 
@@ -110,10 +148,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             </tr>
           </thead>
           <tbody>
-            {standings.map((s, i) => {
+            {displayStandings.map((s, i) => {
               const numPromoted = league.num_promoted as number ?? 0;
               const numRelegated = league.num_relegated as number ?? 0;
-              const total = standings.length;
+              const total = displayStandings.length;
               const isPromotion = numPromoted > 0 && i < numPromoted;
               const isRelegation = numRelegated > 0 && i >= total - numRelegated;
               const rowClass = isPromotion ? 'bg-green-50' : isRelegation ? 'bg-red-50' : '';
@@ -133,6 +171,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   setsAgainst={s.setsAgainst}
                   points={s.points}
                   rowClass={rowClass}
+                  partnerId={s.partnerId}
+                  partnerName={s.partnerName}
+                  isPartnerInjured={s.isPartnerInjured}
                 />
               );
             })}
@@ -151,7 +192,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         <div className="space-y-2">
           {matches.map((match) => {
             const isPlayer1 = match.player1_id === userId;
-            const isInvolved = match.player1_id === userId || match.player2_id === userId;
+            const isPlayer3 = match.player3_id === userId;
+            const isPlayer4 = match.player4_id === userId;
+            const isTeam1 = isPlayer1 || isPlayer3;
+            const isInvolved = match.player1_id === userId || match.player2_id === userId || match.player3_id === userId || match.player4_id === userId;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
             const canSuggestEdit = isInvolved && match.status === 'confirmed' && !submittedByMe;
@@ -160,11 +204,27 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             const matchType = match.match_type as string | null;
             const winnerId = match.winner_id as string | null;
 
+            const isDoubles = !!(match.player3_id || match.player4_id);
+
+            // Build display names — mobile: First / First, desktop: Full Name / Full Name
+            const p1First = match.player1_first as string;
+            const p2First = match.player2_first as string;
+            const p3First = match.player3_first as string | null;
+            const p4First = match.player4_first as string | null;
+            const p3FullName = match.player3_name as string | null;
+            const p4FullName = match.player4_name as string | null;
+            const team1Name = isDoubles && p3First ? `${p1First} / ${p3First}` : match.player1_name as string;
+            const team2Name = isDoubles && p4First ? `${p2First} / ${p4First}` : match.player2_name as string;
+            const team1NameDesktop = isDoubles && p3FullName ? `${match.player1_name as string} / ${p3FullName}` : match.player1_name as string;
+            const team2NameDesktop = isDoubles && p4FullName ? `${match.player2_name as string} / ${p4FullName}` : match.player2_name as string;
+
             // From current user's perspective if involved, otherwise winner first
             const p1Won = winnerId ? winnerId === match.player1_id : (match.score_player1 as number) > (match.score_player2 as number);
-            const topIsPlayer1 = isInvolved ? isPlayer1 : p1Won;
-            const topName = topIsPlayer1 ? match.player1_name as string : match.player2_name as string;
-            const bottomName = topIsPlayer1 ? match.player2_name as string : match.player1_name as string;
+            const topIsPlayer1 = isInvolved ? isTeam1 : p1Won;
+            const topName = topIsPlayer1 ? team1Name : team2Name;
+            const bottomName = topIsPlayer1 ? team2Name : team1Name;
+            const topNameDesktop = topIsPlayer1 ? team1NameDesktop : team2NameDesktop;
+            const bottomNameDesktop = topIsPlayer1 ? team2NameDesktop : team1NameDesktop;
             const topScore = topIsPlayer1 ? match.score_player1 as number : match.score_player2 as number;
             const bottomScore = topIsPlayer1 ? match.score_player2 as number : match.score_player1 as number;
             const topPlayerId = topIsPlayer1 ? match.player1_id as string : match.player2_id as string;
@@ -189,7 +249,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   </div>
                   <div className="flex-1 min-w-0 text-sm">
                     <div className="flex items-center">
-                      <span className={`font-medium w-24 shrink-0 truncate ${topWon ? 'text-gray-800' : 'text-gray-400'}`}>{topName}</span>
+                      <span className={`font-medium ${isDoubles ? 'w-24 sm:w-48' : 'w-24'} shrink-0 truncate ${topWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                        {isDoubles ? <><span className="sm:hidden">{topName}</span><span className="hidden sm:inline">{topNameDesktop}</span></> : topName}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         {matchType === 'walkover' ? (
                           <span className="text-xs text-gray-400 italic">no sets</span>
@@ -208,7 +270,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       </div>
                     </div>
                     <div className="flex items-center mt-0.5">
-                      <span className={`font-medium w-24 shrink-0 truncate ${!topWon ? 'text-gray-800' : 'text-gray-400'}`}>{bottomName}</span>
+                      <span className={`font-medium ${isDoubles ? 'w-24 sm:w-48' : 'w-24'} shrink-0 truncate ${!topWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                        {isDoubles ? <><span className="sm:hidden">{bottomName}</span><span className="hidden sm:inline">{bottomNameDesktop}</span></> : bottomName}
+                      </span>
                       <div className="flex items-center gap-1.5">
                         {matchType === 'walkover' ? null : setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const top = topIsPlayer1 ? p1 : p2;

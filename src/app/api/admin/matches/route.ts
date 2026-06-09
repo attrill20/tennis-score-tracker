@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 
-  const { leagueId, player1Id, player2Id, sets, tiebreaks, playedAt, matchType = 'normal', retiredPlayer, walkoverId } = await req.json();
+  const { leagueId, player1Id, player2Id, player3Id, player4Id, sets, tiebreaks, playedAt, matchType = 'normal', retiredPlayer, walkoverId } = await req.json();
 
   if (!leagueId || !player1Id || !player2Id || !playedAt) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
   if (player1Id === player2Id) {
     return NextResponse.json({ error: 'Players must be different' }, { status: 400 });
   }
+
+  const isDoubles = !!(player3Id && player4Id);
   if (matchType === 'normal' && !sets?.length) {
     return NextResponse.json({ error: 'Set scores are required' }, { status: 400 });
   }
@@ -33,13 +35,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  const requiredIds = isDoubles
+    ? [player1Id, player2Id, player3Id, player4Id]
+    : [player1Id, player2Id];
   const membership = await sql`
     SELECT player_id FROM league_players
     WHERE league_id = ${leagueId}
-    AND player_id IN (${player1Id}, ${player2Id})
+    AND player_id = ANY(${requiredIds}::uuid[])
   `;
-  if (membership.length < 2) {
-    return NextResponse.json({ error: 'Both players must be in this league' }, { status: 400 });
+  if (membership.length < requiredIds.length) {
+    return NextResponse.json({ error: isDoubles ? 'All four players must be in this league' : 'Both players must be in this league' }, { status: 400 });
   }
 
   let score1 = 0, score2 = 0;
@@ -62,10 +67,17 @@ export async function POST(req: NextRequest) {
   const hasTiebreak = Array.isArray(tiebreaks) && tiebreaks.some((t: unknown) => t !== null);
   const setsToStore = sets?.length ? JSON.stringify(sets) : null;
 
-  await sql`
-    INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id, status)
-    VALUES (${leagueId}, ${player1Id}, ${player2Id}, ${session.user.id}, ${score1}, ${score2}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerId}, 'confirmed')
-  `;
+  if (isDoubles) {
+    await sql`
+      INSERT INTO matches (league_id, player1_id, player2_id, player3_id, player4_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id, status)
+      VALUES (${leagueId}, ${player1Id}, ${player2Id}, ${player3Id}, ${player4Id}, ${session.user.id}, ${score1}, ${score2}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerId}, 'confirmed')
+    `;
+  } else {
+    await sql`
+      INSERT INTO matches (league_id, player1_id, player2_id, submitted_by, score_player1, score_player2, set_scores, tiebreak_scores, played_at, match_type, winner_id, status)
+      VALUES (${leagueId}, ${player1Id}, ${player2Id}, ${session.user.id}, ${score1}, ${score2}, ${setsToStore}, ${hasTiebreak ? JSON.stringify(tiebreaks) : null}, ${playedAt}, ${matchType}, ${winnerId}, 'confirmed')
+    `;
+  }
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

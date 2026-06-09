@@ -5,6 +5,7 @@ import Link from 'next/link';
 import DisputeResolutionNotification from '@/components/DisputeResolutionNotification';
 import NewMatchNotification from '@/components/NewMatchNotification';
 import LeagueNotification from '@/components/LeagueNotification';
+import WelcomeNotification from '@/components/WelcomeNotification';
 import ArchiveLeagueButton from '@/app/(app)/leagues/ArchiveLeagueButton';
 
 export default async function DashboardPage() {
@@ -13,7 +14,7 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end, lp.final_position,
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, lp.final_position,
         lp.started_seen, lp.ended_seen,
         (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
       FROM leagues l
@@ -25,9 +26,10 @@ export default async function DashboardPage() {
         CASE l.status WHEN 'active' THEN 0 WHEN 'upcoming' THEN 1 ELSE 2 END,
         l.season_start DESC
     `,
-    sql`SELECT is_injured FROM profiles WHERE id = ${userId}`,
+    sql`SELECT is_injured, welcome_seen FROM profiles WHERE id = ${userId}`,
   ]);
   const isInjured = (profileRows[0]?.is_injured as boolean) ?? false;
+  const showWelcome = !(profileRows[0]?.welcome_seen as boolean);
 
   const leagueIds = leagues.map((l) => l.id as string);
 
@@ -48,7 +50,7 @@ export default async function DashboardPage() {
       LIMIT 3
     `,
     leagueIds.length > 0 ? sql`
-      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, lp.league_id
+      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, lp.league_id, lp.partner_id
       FROM profiles p
       JOIN league_players lp ON lp.player_id = p.id
       WHERE lp.league_id = ANY(${leagueIds}::uuid[])
@@ -101,16 +103,20 @@ export default async function DashboardPage() {
     `,
     sql`
       SELECT m.id, m.league_id, m.score_player1, m.score_player2, m.set_scores,
-             m.match_type, m.winner_id, m.player1_id,
+             m.match_type, m.winner_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
              l.name AS league_name,
-             (p1.first_name || ' ' || p1.last_name) AS submitter_name
+             (p1.first_name || ' ' || p1.last_name) AS submitter_name,
+             CASE WHEN m.player3_id IS NOT NULL THEN p3.first_name ELSE NULL END AS partner_first_name
       FROM matches m
       JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
-      WHERE m.player2_id = ${userId}
-        AND m.submitted_by != ${userId}
-        AND m.opponent_seen = false
-        AND m.submitted_at > NOW() - INTERVAL '30 days'
+      LEFT JOIN profiles p3 ON p3.id = m.player3_id
+      WHERE m.submitted_at > NOW() - INTERVAL '30 days'
+        AND (
+          (m.player2_id = ${userId} AND m.opponent_seen = false)
+          OR (m.player3_id = ${userId} AND m.partner_seen = false)
+          OR (m.player4_id = ${userId} AND m.opponent2_seen = false)
+        )
       ORDER BY m.submitted_at DESC
     `,
   ]);
@@ -133,7 +139,8 @@ export default async function DashboardPage() {
   const leagueStats: Record<string, LeagueStats> = {};
   for (const league of leagues) {
     const id = league.id as string;
-    const players = allPlayers.filter((p) => p.league_id === id) as { id: string; full_name: string }[];
+    const isDoubles = league.league_type === 'doubles';
+    const players = allPlayers.filter((p) => p.league_id === id) as { id: string; full_name: string; partner_id?: string | null }[];
     const matches = allMatches.filter((m) => m.league_id === id) as {
       player1_id: string;
       player2_id: string;
@@ -142,9 +149,39 @@ export default async function DashboardPage() {
       status: string;
     }[];
     const standings = calculateStandings(players, matches);
-    const position = standings.findIndex((s) => s.id === userId) + 1;
     const played = standings.find((s) => s.id === userId)?.played ?? 0;
-    const total = players.length - 1;
+
+    let position: number;
+    let total: number;
+
+    if (isDoubles) {
+      const pairCount = Math.floor(players.length / 2);
+      total = pairCount - 1;
+      // Build partner map to deduplicate standings into pair order
+      const partnerMap: Record<string, string> = {};
+      for (const p of players) {
+        if (p.partner_id) partnerMap[p.id] = p.partner_id;
+      }
+      const seen = new Set<string>();
+      let pairPosition = 0;
+      let rank = 0;
+      for (const s of standings) {
+        if (seen.has(s.id)) continue;
+        rank++;
+        seen.add(s.id);
+        const partnerId = partnerMap[s.id];
+        if (partnerId) seen.add(partnerId);
+        if (s.id === userId || partnerId === userId) {
+          pairPosition = rank;
+          break;
+        }
+      }
+      position = pairPosition;
+    } else {
+      position = standings.findIndex((s) => s.id === userId) + 1;
+      total = players.length - 1;
+    }
+
     leagueStats[id] = { position, played, total };
   }
 
@@ -172,9 +209,11 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {(newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0 || resolvedDisputes.length > 0 || leagueStartedNotifications.length > 0 || leagueEndedNotifications.length > 0) && (
+      {(showWelcome || newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0 || resolvedDisputes.length > 0 || leagueStartedNotifications.length > 0 || leagueEndedNotifications.length > 0) && (
         <div className="mb-4 space-y-2">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Notifications</h2>
+
+          {showWelcome && <WelcomeNotification />}
 
           {resolvedDisputes.map((d) => {
             const isPlayer1 = d.player1_id === userId;
@@ -308,18 +347,35 @@ export default async function DashboardPage() {
 
           {newMatchNotifications.map((m) => {
             const winnerId = m.winner_id as string | null;
-            const iWon = winnerId ? winnerId !== m.player1_id : (m.score_player2 as number) > (m.score_player1 as number);
+            const notificationRole = m.player3_id === userId ? 'partner' : m.player4_id === userId ? 'opponent2' : 'opponent';
+            const partnerFirstName = m.partner_first_name as string | null;
+
+            // iWon from this user's perspective:
+            // - opponent / opponent2: user is on team2, team2 wins if score_player2 > score_player1
+            // - partner: user is on team1 (same as submitter), team1 wins if score_player1 > score_player2
+            const isTeam1 = notificationRole === 'partner';
+            const team1Won = winnerId ? winnerId === m.player1_id : (m.score_player1 as number) > (m.score_player2 as number);
+            const iWon = isTeam1 ? team1Won : !team1Won;
+
             const setScores = (m.set_scores ?? null) as [number, number][] | null;
-            const mySetScores = setScores ? setScores.map(([p1, p2]) => [p2, p1] as [number, number]) : null;
+            // Flip set scores so they're from "my team" perspective
+            const mySetScores = isTeam1
+              ? setScores
+              : setScores ? setScores.map(([p1, p2]) => [p2, p1] as [number, number]) : null;
+            const myScore = isTeam1 ? m.score_player1 as number : m.score_player2 as number;
+            const theirScore = isTeam1 ? m.score_player2 as number : m.score_player1 as number;
+
             return (
               <NewMatchNotification
-                key={m.id as string}
+                key={`${m.id as string}-${notificationRole}`}
                 matchId={m.id as string}
                 leagueId={m.league_id as string}
                 leagueName={m.league_name as string}
-                opponentName={m.submitter_name as string}
-                myScore={m.score_player2 as number}
-                theirScore={m.score_player1 as number}
+                submitterName={m.submitter_name as string}
+                partnerFirstName={partnerFirstName}
+                notificationRole={notificationRole}
+                myScore={myScore}
+                theirScore={theirScore}
                 setScores={mySetScores}
                 matchType={m.match_type as string | null}
                 iWon={iWon}

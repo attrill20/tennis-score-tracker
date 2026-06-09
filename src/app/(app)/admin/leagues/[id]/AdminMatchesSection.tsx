@@ -42,6 +42,7 @@ function formatMatchScore(match: AdminMatchRow): string {
 function MatchForm({
   leagueId,
   players,
+  leagueType = 'singles',
   matchId,
   initialPlayer1Id = '',
   initialPlayer2Id = '',
@@ -56,6 +57,7 @@ function MatchForm({
 }: {
   leagueId: string;
   players: Player[];
+  leagueType?: string;
   matchId?: string;
   initialPlayer1Id?: string;
   initialPlayer2Id?: string;
@@ -68,9 +70,12 @@ function MatchForm({
   onSuccess: () => void;
   onCancel: () => void;
 }) {
+  const isDoubles = leagueType === 'doubles';
   const isEdit = !!matchId;
   const [player1Id, setPlayer1Id] = useState(initialPlayer1Id);
   const [player2Id, setPlayer2Id] = useState(initialPlayer2Id);
+  const [player3Id, setPlayer3Id] = useState('');
+  const [player4Id, setPlayer4Id] = useState('');
   const [matchType, setMatchType] = useState<MatchType>(initialMatchType);
   const [walkoverId, setWalkoverId] = useState<'me' | 'them'>(initialWalkoverId);
   const [retiredPlayer, setRetiredPlayer] = useState<'me' | 'them'>(initialRetiredPlayer);
@@ -101,6 +106,11 @@ function MatchForm({
 
     if (!isEdit && (!player1Id || !player2Id)) {
       setError('Please select both players.');
+      return;
+    }
+
+    if (!isEdit && isDoubles && (!player3Id || !player4Id)) {
+      setError('Please select all four players for a doubles match.');
       return;
     }
 
@@ -137,7 +147,10 @@ function MatchForm({
     const url = isEdit ? `/api/admin/matches/${matchId}` : '/api/admin/matches';
     const method = isEdit ? 'PATCH' : 'POST';
     const body = {
-      ...(isEdit ? {} : { leagueId, player1Id, player2Id }),
+      ...(isEdit ? {} : {
+        leagueId, player1Id, player2Id,
+        ...(isDoubles && !isEdit ? { player3Id, player4Id } : {}),
+      }),
       sets: matchType === 'walkover' ? [] : playedSets,
       tiebreaks: matchType === 'walkover' ? [] : playedTiebreaks,
       playedAt,
@@ -162,12 +175,16 @@ function MatchForm({
     onSuccess();
   }
 
-  const player1Name = players.find((p) => p.id === player1Id)?.full_name ?? 'Player 1';
-  const player2Name = players.find((p) => p.id === player2Id)?.full_name ?? 'Player 2';
+  const player1First = players.find((p) => p.id === player1Id)?.full_name?.split(' ')[0] ?? 'Player 1';
+  const player2First = players.find((p) => p.id === player2Id)?.full_name?.split(' ')[0] ?? 'Player 2';
+  const player3First = players.find((p) => p.id === player3Id)?.full_name?.split(' ')[0];
+  const player4First = players.find((p) => p.id === player4Id)?.full_name?.split(' ')[0];
+  const myName = isDoubles && player3First ? `${player1First} / ${player3First}` : player1First;
+  const theirName = isDoubles && player4First ? `${player2First} / ${player4First}` : player2First;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4 pt-4 border-t border-gray-100 mt-2">
-      {!isEdit && (
+      {!isEdit && !isDoubles && (
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="admin-player1" className="block text-sm font-medium text-gray-700 mb-1">Player 1</label>
@@ -202,9 +219,80 @@ function MatchForm({
         </div>
       )}
 
+      {!isEdit && isDoubles && (
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Team 1</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="admin-player1" className="block text-sm font-medium text-gray-700 mb-1">Player 1</label>
+              <select
+                id="admin-player1"
+                value={player1Id}
+                onChange={(e) => setPlayer1Id(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="">Select...</option>
+                {players.filter((p) => p.id !== player2Id && p.id !== player3Id && p.id !== player4Id).map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="admin-player3" className="block text-sm font-medium text-gray-700 mb-1">Player 1's partner</label>
+              <select
+                id="admin-player3"
+                value={player3Id}
+                onChange={(e) => setPlayer3Id(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="">Select...</option>
+                {players.filter((p) => p.id !== player1Id && p.id !== player2Id && p.id !== player4Id).map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide pt-1">Team 2</p>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="admin-player2" className="block text-sm font-medium text-gray-700 mb-1">Player 2</label>
+              <select
+                id="admin-player2"
+                value={player2Id}
+                onChange={(e) => setPlayer2Id(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="">Select...</option>
+                {players.filter((p) => p.id !== player1Id && p.id !== player3Id && p.id !== player4Id).map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label htmlFor="admin-player4" className="block text-sm font-medium text-gray-700 mb-1">Player 2's partner</label>
+              <select
+                id="admin-player4"
+                value={player4Id}
+                onChange={(e) => setPlayer4Id(e.target.value)}
+                required
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              >
+                <option value="">Select...</option>
+                {players.filter((p) => p.id !== player1Id && p.id !== player2Id && p.id !== player3Id).map((p) => (
+                  <option key={p.id} value={p.id}>{p.full_name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </div>
+      )}
+
       <MatchScoreInputs
-        myName={player1Name}
-        opponentName={player2Name}
+        myName={myName}
+        opponentName={theirName}
         matchType={matchType}
         setMatchType={setMatchType}
         walkoverId={walkoverId}
@@ -245,10 +333,12 @@ export default function AdminMatchesSection({
   leagueId,
   players,
   matches,
+  leagueType = 'singles',
 }: {
   leagueId: string;
   players: Player[];
   matches: AdminMatchRow[];
+  leagueType?: string;
 }) {
   const router = useRouter();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -276,6 +366,7 @@ export default function AdminMatchesSection({
         <MatchForm
           leagueId={leagueId}
           players={players}
+          leagueType={leagueType}
           onSuccess={onSuccess}
           onCancel={() => setShowAddForm(false)}
         />

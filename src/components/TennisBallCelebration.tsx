@@ -18,8 +18,8 @@ const CONFETTI_COLORS = [
   '#f59e0b', '#ef4444', '#3b82f6', '#8b5cf6',
   '#ec4899', '#10b981', '#f97316', '#ffffff', '#fbbf24',
 ];
-const GRAVITY = 1800; // px/s^2
-const DURATION = 2000; // ms
+const GRAVITY = 2000; // px/s^2
+const DURATION = 2200; // ms
 
 function rand(min: number, max: number) {
   return min + Math.random() * (max - min);
@@ -96,13 +96,13 @@ export default function TennisBallCelebration({
 
     const particles: Particle[] = [];
 
-    // Random spread tennis balls
+    // Tightly-spread tennis balls — mostly vertical, slight lateral spread so they fan out as they fall
     for (let i = 0; i < 25; i++) {
       particles.push({
         x: origin.x,
         y: origin.y,
-        vx: rand(-520, 520),
-        vy: rand(-1300, -350),
+        vx: rand(-160, 160),
+        vy: rand(-1500, -800),
         type: 'ball',
         size: rand(18, 38),
         color: '#c8e64c',
@@ -111,18 +111,16 @@ export default function TennisBallCelebration({
       });
     }
 
-    // Directed tennis balls at 60 degrees left and right of straight up.
-    // 60 deg from vertical: vx = ±sin(60°)*speed, vy = -cos(60°)*speed
-    const SIN75 = Math.sin(Math.PI * 75 / 180);
-    const COS75 = Math.cos(Math.PI * 75 / 180);
+    // Directed tennis balls at ±25° from vertical — shoot up then arc outward under gravity
+    const SIN25 = Math.sin(Math.PI * 25 / 180);
+    const COS25 = Math.cos(Math.PI * 25 / 180);
     for (let i = 0; i < 8; i++) {
-      const speed = rand(900, 1500);
-      // Left burst
+      const speed = rand(1000, 1600);
       particles.push({
         x: origin.x,
         y: origin.y,
-        vx: -SIN75 * speed,
-        vy: -COS75 * speed,
+        vx: -SIN25 * speed,
+        vy: -COS25 * speed,
         type: 'ball',
         size: rand(22, 42),
         color: '#c8e64c',
@@ -131,13 +129,12 @@ export default function TennisBallCelebration({
       });
     }
     for (let i = 0; i < 8; i++) {
-      const speed = rand(900, 1500);
-      // Right burst
+      const speed = rand(1000, 1600);
       particles.push({
         x: origin.x,
         y: origin.y,
-        vx: SIN75 * speed,
-        vy: -COS75 * speed,
+        vx: SIN25 * speed,
+        vy: -COS25 * speed,
         type: 'ball',
         size: rand(22, 42),
         color: '#c8e64c',
@@ -146,13 +143,13 @@ export default function TennisBallCelebration({
       });
     }
 
-    // Confetti strips
+    // Confetti — narrow horizontal launch so they rise together then cascade outward
     for (let i = 0; i < 60; i++) {
       particles.push({
         x: origin.x,
         y: origin.y,
-        vx: rand(-600, 600),
-        vy: rand(-1400, -200),
+        vx: rand(-220, 220),
+        vy: rand(-1600, -600),
         type: 'confetti',
         size: rand(5, 13),
         color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],

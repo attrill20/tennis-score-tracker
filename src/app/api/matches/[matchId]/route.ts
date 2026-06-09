@@ -19,10 +19,22 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
   const { action } = body;
 
-  // Opponent dismisses the "new match" notification
+  // Notification dismissals
   if (action === 'seen-by-opponent') {
     if (match.player2_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     await sql`UPDATE matches SET opponent_seen = true WHERE id = ${matchId}`;
+    return NextResponse.json({ success: true });
+  }
+
+  if (action === 'seen-by-partner') {
+    if (match.player3_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    await sql`UPDATE matches SET partner_seen = true WHERE id = ${matchId}`;
+    return NextResponse.json({ success: true });
+  }
+
+  if (action === 'seen-by-opponent2') {
+    if (match.player4_id !== userId) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+    await sql`UPDATE matches SET opponent2_seen = true WHERE id = ${matchId}`;
     return NextResponse.json({ success: true });
   }
 
