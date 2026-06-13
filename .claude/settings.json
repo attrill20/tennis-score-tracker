@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test)",
+      "Bash(npm run lint)",
+      "Bash(npm run build)",
+      "Bash(find \"/Users/jamesattrill/Documents/CodingFiles/side_projects/tennis_app\"*)"
+    ]
+  }
+}

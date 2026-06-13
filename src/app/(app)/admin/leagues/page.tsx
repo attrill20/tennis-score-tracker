@@ -2,30 +2,23 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import AssignPlayersForm from './AssignPlayersForm';
-
 export default async function AdminLeaguesPage() {
   const session = await auth();
   if (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin') {
     redirect('/dashboard');
   }
 
-  const [leagues, members] = await Promise.all([
-    sql`
-      SELECT
-        l.id, l.name, l.status, l.max_players, l.league_type,
-        COUNT(DISTINCT lp.player_id) AS player_count,
-        COUNT(DISTINCT m.id) AS matches_played
-      FROM leagues l
-      LEFT JOIN league_players lp ON lp.league_id = l.id
-      LEFT JOIN matches m ON m.league_id = l.id
-      GROUP BY l.id, l.name, l.status, l.max_players, l.league_type
-      ORDER BY l.created_at DESC
-    `,
-    sql`
-      SELECT id, (first_name || ' ' || last_name) AS full_name FROM profiles WHERE role != 'unverified' ORDER BY first_name, last_name
-    `,
-  ]);
+  const leagues = await sql`
+    SELECT
+      l.id, l.name, l.status, l.max_players, l.league_type,
+      COUNT(DISTINCT lp.player_id) AS player_count,
+      COUNT(DISTINCT m.id) AS matches_played
+    FROM leagues l
+    LEFT JOIN league_players lp ON lp.league_id = l.id
+    LEFT JOIN matches m ON m.league_id = l.id
+    GROUP BY l.id, l.name, l.status, l.max_players, l.league_type
+    ORDER BY l.created_at DESC
+  `;
 
   return (
     <div className="space-y-8">
@@ -41,16 +34,6 @@ export default async function AdminLeaguesPage() {
           + Create league
         </Link>
       </div>
-
-      {leagues.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h2 className="text-base font-semibold text-gray-700 mb-4">Assign players to a league</h2>
-          <AssignPlayersForm
-            leagues={leagues as { id: string; name: string; status: string }[]}
-            members={members as { id: string; full_name: string }[]}
-          />
-        </div>
-      )}
 
       {leagues.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-6">

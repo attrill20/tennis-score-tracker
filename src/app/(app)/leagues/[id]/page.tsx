@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { leagueBorderColor } from '@/lib/leagueColor';
 import sql from '@/lib/db';
 import { calculateStandings, type Tiebreaker } from '@/lib/league';
 import Link from 'next/link';
@@ -124,7 +125,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
       {/* League Table */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Table</h2>
+        <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
         {isInLeague && league.status === 'active' && (
           <Link
             href={`/leagues/${id}/submit`}
@@ -134,7 +135,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           </Link>
         )}
       </div>
-      <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto mb-6">
+      <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} overflow-x-auto mb-6`}>
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-50 text-gray-500 text-xs">
@@ -183,7 +184,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
       {/* Submit Score */}
       {/* Recent Results */}
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Results</h2>
+      <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">Results</h2>
       {matches.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-400 text-sm">
           No results yet.
@@ -232,13 +233,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
             const result = isInvolved ? (topWon ? 'W' : (winnerId || topScore < bottomScore) ? 'L' : 'D') : null;
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
+            const matchBorderColor = result === 'W' ? 'border-l-green-300' : result === 'L' ? 'border-l-red-300' : result === 'D' ? 'border-l-yellow-300' : 'border-l-gray-200';
 
             const href = canEdit
               ? `/leagues/${id}/matches/${match.id as string}/edit`
               : `/leagues/${id}/matches/${match.id as string}`;
 
             return (
-              <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
+              <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
                 <Link href={href} className="absolute inset-0 rounded-xl z-10" />
                 <div className="relative flex items-start gap-3">
                   <div className="flex flex-1 min-w-0 items-center gap-3">

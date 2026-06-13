@@ -9,7 +9,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker } = await req.json();
+  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType } = await req.json();
 
   if (name !== undefined) {
     if (!name.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -44,6 +44,38 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const valid = ['head_to_head', 'most_sets_won', 'set_difference'];
     if (!valid.includes(tiebreaker)) return NextResponse.json({ error: 'Invalid tiebreaker' }, { status: 400 });
     await sql`UPDATE leagues SET tiebreaker = ${tiebreaker} WHERE id = ${id}`;
+  }
+
+  if (color !== undefined) {
+    const valid = ['blue', 'purple', 'orange', 'pink', 'teal', 'indigo', 'cyan', 'rose', 'yellow', 'green', 'lime', 'violet', 'amber', 'sky'];
+    if (!valid.includes(color)) return NextResponse.json({ error: 'Invalid color' }, { status: 400 });
+    await sql`UPDATE leagues SET color = ${color} WHERE id = ${id}`;
+  }
+
+  if (scoringMethod !== undefined) {
+    const valid = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
+    if (!valid.includes(scoringMethod)) return NextResponse.json({ error: 'Invalid scoring method' }, { status: 400 });
+    await sql`UPDATE leagues SET scoring_method = ${scoringMethod} WHERE id = ${id}`;
+  }
+
+  if (maxPlayers !== undefined) {
+    const n = Number(maxPlayers);
+    if (!Number.isInteger(n) || n < 2 || n > 12) return NextResponse.json({ error: 'Max players must be between 2 and 12' }, { status: 400 });
+    await sql`UPDATE leagues SET max_players = ${n} WHERE id = ${id}`;
+  }
+
+  if (numPromoted !== undefined) {
+    await sql`UPDATE leagues SET num_promoted = ${Number(numPromoted)} WHERE id = ${id}`;
+  }
+
+  if (numRelegated !== undefined) {
+    await sql`UPDATE leagues SET num_relegated = ${Number(numRelegated)} WHERE id = ${id}`;
+  }
+
+  if (joinType !== undefined) {
+    const valid = ['invite_only', 'open_invite'];
+    if (!valid.includes(joinType)) return NextResponse.json({ error: 'Invalid join type' }, { status: 400 });
+    await sql`UPDATE leagues SET join_type = ${joinType} WHERE id = ${id}`;
   }
 
   return NextResponse.json({ ok: true });

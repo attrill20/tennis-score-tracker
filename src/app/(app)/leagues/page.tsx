@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { leagueBorderColor } from '@/lib/leagueColor';
 import sql from '@/lib/db';
 import Link from 'next/link';
 import JoinLeagueButton from '@/components/JoinLeagueButton';
@@ -20,6 +21,7 @@ type League = {
   my_final_position: number | null;
   is_member: boolean;
   user_archived: boolean;
+  color: string | null;
 };
 
 function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: boolean; canArchive: boolean }) {
@@ -30,7 +32,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
   const totalPossible = Math.floor(unitCount * (unitCount - 1) / 2);
   const spotsLeft = league.max_players - unitCount;
   return (
-    <div className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
+    <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(league.id, league.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
       <Link href={`/leagues/${league.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name} />
       <div className="relative">
         <div className="flex items-start justify-between gap-2">
@@ -77,10 +79,10 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
 function Section({ title, leagues, joinableIds, archivableIds }: { title: string; leagues: League[]; joinableIds: Set<string>; archivableIds: Set<string> }) {
   return (
     <div className="mb-8">
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">{title}</h2>
+      <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">{title}</h2>
       {leagues.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-400 text-sm">
-          None yet.
+          No leagues to display here currently
         </div>
       ) : (
         <div className="space-y-3">
@@ -98,7 +100,7 @@ export default async function LeaguesPage() {
 
   const rows = await sql`
     SELECT
-      l.id, l.name, l.status, l.season_start, l.season_end, l.is_public,
+      l.id, l.name, l.status, l.season_start, l.season_end, l.is_public, l.color,
       COALESCE(l.join_type, 'invite_only') AS join_type,
       COALESCE(l.league_type, 'singles') AS league_type,
       COALESCE(l.max_players, 8) AS max_players,

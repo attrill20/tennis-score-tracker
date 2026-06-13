@@ -7,6 +7,7 @@ import PromotionForm from './PromotionForm';
 import EditLeagueForm from './EditLeagueForm';
 import DeleteLeagueButton from './DeleteLeagueButton';
 import AdminMatchesSection from './AdminMatchesSection';
+import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 
 export default async function AdminLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,32 +20,41 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
   const league = leagues[0];
   if (!league) notFound();
 
-  const players = await sql`
-    SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, lp.final_position
-    FROM profiles p
-    JOIN league_players lp ON lp.player_id = p.id
-    WHERE lp.league_id = ${id}
-    ORDER BY p.last_name, p.first_name
-  `;
-
-  const matches = await sql`
-    SELECT
-      m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
-      m.set_scores, m.tiebreak_scores, m.played_at, m.match_type, m.winner_id, m.status,
-      (p1.first_name || ' ' || p1.last_name) AS player1_name,
-      (p2.first_name || ' ' || p2.last_name) AS player2_name
-    FROM matches m
-    JOIN profiles p1 ON p1.id = m.player1_id
-    JOIN profiles p2 ON p2.id = m.player2_id
-    WHERE m.league_id = ${id}
-    ORDER BY m.played_at DESC, m.submitted_at DESC
-  `;
+  const [players, matches, members] = await Promise.all([
+    sql`
+      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, lp.final_position
+      FROM profiles p
+      JOIN league_players lp ON lp.player_id = p.id
+      WHERE lp.league_id = ${id}
+      ORDER BY p.last_name, p.first_name
+    `,
+    sql`
+      SELECT
+        m.id, m.player1_id, m.player2_id, m.score_player1, m.score_player2,
+        m.set_scores, m.tiebreak_scores, m.played_at, m.match_type, m.winner_id, m.status,
+        (p1.first_name || ' ' || p1.last_name) AS player1_name,
+        (p2.first_name || ' ' || p2.last_name) AS player2_name
+      FROM matches m
+      JOIN profiles p1 ON p1.id = m.player1_id
+      JOIN profiles p2 ON p2.id = m.player2_id
+      WHERE m.league_id = ${id}
+      ORDER BY m.played_at DESC, m.submitted_at DESC
+    `,
+    sql`
+      SELECT id, (first_name || ' ' || last_name) AS full_name
+      FROM profiles
+      WHERE role != 'unverified'
+      ORDER BY first_name, last_name
+    `,
+  ]);
 
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
     matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string }[],
     (league.tiebreaker as string ?? 'head_to_head') as import('@/lib/league').Tiebreaker
   );
+
+  const leagueType = (league.league_type as string) ?? 'singles';
 
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
@@ -63,15 +73,34 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentStatus={league.status as string}
         currentSeasonStart={new Date(league.season_start as string).toISOString().split('T')[0]}
         currentSeasonEnd={new Date(league.season_end as string).toISOString().split('T')[0]}
-        currentIsPublic={league.is_public as boolean ?? true}
+        currentIsPublic={(league.is_public as boolean) ?? true}
         currentTiebreaker={(league.tiebreaker as string) ?? 'head_to_head'}
+        currentColor={(league.color as string) ?? null}
+        currentScoringMethod={(league.scoring_method as string) ?? 'best_of_3_tiebreak'}
+        currentMaxPlayers={Number(league.max_players ?? 8)}
+        currentNumPromoted={Number(league.num_promoted ?? 0)}
+        currentNumRelegated={Number(league.num_relegated ?? 0)}
+        currentJoinType={(league.join_type as string) ?? 'invite_only'}
+        leagueType={leagueType}
       />
+
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <h2 className="text-base font-semibold text-gray-700 mb-4">
+          {leagueType === 'doubles' ? 'Assign pairs' : 'Assign players'}
+        </h2>
+        <AssignPlayersPanel
+          leagueId={id}
+          leagueType={leagueType}
+          members={members as { id: string; full_name: string }[]}
+          maxPlayers={Number(league.max_players ?? 8)}
+        />
+      </div>
 
       <AdminMatchesSection
         leagueId={id}
         players={players as { id: string; full_name: string }[]}
         matches={matches as never}
-        leagueType={(league.league_type as string) ?? 'singles'}
+        leagueType={leagueType}
       />
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">

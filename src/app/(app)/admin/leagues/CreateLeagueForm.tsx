@@ -1,11 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import DatePicker from '@/components/DatePicker';
+import LeagueColorPicker from '@/components/LeagueColorPicker';
+import AssignPlayersPanel from '@/components/AssignPlayersPanel';
+import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 
-export default function CreateLeagueForm() {
-  const router = useRouter();
+type Member = { id: string; full_name: string };
+
+export default function CreateLeagueForm({ members }: { members: Member[] }) {
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -19,9 +23,13 @@ export default function CreateLeagueForm() {
   const [isPublic, setIsPublic] = useState(true);
   const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
   const [description, setDescription] = useState('');
+  const [color, setColor] = useState<LeagueColorKey>(LEAGUE_COLOR_KEYS[0]);
+  useEffect(() => {
+    setColor(LEAGUE_COLOR_KEYS[Math.floor(Math.random() * LEAGUE_COLOR_KEYS.length)]);
+  }, []);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [created, setCreated] = useState(false);
+  const [createdLeagueId, setCreatedLeagueId] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -31,7 +39,7 @@ export default function CreateLeagueForm() {
     const res = await fetch('/api/admin/leagues', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, joinType, description, leagueType }),
+      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, joinType, description, leagueType, color }),
     });
 
     const data = await res.json();
@@ -42,7 +50,42 @@ export default function CreateLeagueForm() {
       return;
     }
 
-    router.push('/admin/leagues');
+    setCreatedLeagueId(data.id);
+  }
+
+  if (createdLeagueId) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          <svg className="w-5 h-5 text-green-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+          </svg>
+          <div>
+            <p className="text-sm font-medium text-green-800">{name} created!</p>
+            <p className="text-xs text-green-600 mt-0.5">Now assign players to the league below.</p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-gray-700 mb-3">
+            {leagueType === 'doubles' ? 'Assign pairs' : 'Assign players'}
+          </h3>
+          <AssignPlayersPanel leagueId={createdLeagueId} leagueType={leagueType} members={members} maxPlayers={maxPlayers} />
+        </div>
+
+        <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
+          <Link
+            href={`/admin/leagues/${createdLeagueId}`}
+            className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+          >
+            Go to league settings
+          </Link>
+          <Link href="/admin/leagues" className="text-sm text-gray-500 hover:underline">
+            Back to all leagues
+          </Link>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -241,9 +284,11 @@ export default function CreateLeagueForm() {
         )}
       </div>
 
+      <LeagueColorPicker value={color} onChange={setColor} />
+
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
-      <div className="flex items-center gap-3">
+      <div>
         <button
           type="submit"
           disabled={loading}
@@ -251,7 +296,6 @@ export default function CreateLeagueForm() {
         >
           {loading ? 'Creating...' : 'Create league'}
         </button>
-        {created && <span className="text-sm text-green-700 font-medium">League created!</span>}
       </div>
     </form>
   );

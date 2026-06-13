@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import { leagueBorderColor, leagueRightBorderColor } from '@/lib/leagueColor';
 import sql from '@/lib/db';
 import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
@@ -14,7 +15,7 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, lp.final_position,
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, lp.final_position,
         lp.started_seen, lp.ended_seen,
         (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
       FROM leagues l
@@ -37,15 +38,18 @@ export default async function DashboardPage() {
     sql`
       SELECT
         m.id, m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at,
-        m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id,
+        m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
         l.name AS league_name,
-        (p1.first_name || ' ' || p1.last_name) AS player1_name,
-        (p2.first_name || ' ' || p2.last_name) AS player2_name
+        p1.first_name AS player1_first, p2.first_name AS player2_first,
+        p3.first_name AS player3_first, p4.first_name AS player4_first
       FROM matches m
       JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
       JOIN profiles p2 ON p2.id = m.player2_id
+      LEFT JOIN profiles p3 ON p3.id = m.player3_id
+      LEFT JOIN profiles p4 ON p4.id = m.player4_id
       WHERE m.player1_id = ${userId} OR m.player2_id = ${userId}
+        OR m.player3_id = ${userId} OR m.player4_id = ${userId}
       ORDER BY m.played_at DESC, m.submitted_at DESC
       LIMIT 3
     `,
@@ -186,6 +190,11 @@ export default async function DashboardPage() {
   }
 
 
+  const leagueColorMap: Record<string, string | null> = {};
+  for (const league of leagues) {
+    leagueColorMap[league.id as string] = (league.color as string | null) ?? null;
+  }
+
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-800 mb-1">
@@ -211,7 +220,7 @@ export default async function DashboardPage() {
 
       {(showWelcome || newMatchNotifications.length > 0 || pendingEdits.length > 0 || disputedMatches.length > 0 || resolvedDisputes.length > 0 || leagueStartedNotifications.length > 0 || leagueEndedNotifications.length > 0) && (
         <div className="mb-4 space-y-2">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Notifications</h2>
+          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">My Notifications</h2>
 
           {showWelcome && <WelcomeNotification />}
 
@@ -385,7 +394,7 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Leagues</h2>
+      <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">My Leagues</h2>
 
       {leagues.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
@@ -403,8 +412,17 @@ export default async function DashboardPage() {
               return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
             };
             const medal = (n: number) => n === 1 ? ' 🥇' : n === 2 ? ' 🥈' : n === 3 ? ' 🥉' : '';
+            const totalUnits = stats ? stats.total + 1 : 1;
+            const positionRatio = stats && totalUnits > 1 ? stats.position / totalUnits : 0;
+            const leagueHasMatches = (allMatches as { league_id: string }[]).some((m) => m.league_id === id);
+            const positionPillBg = !leagueHasMatches ? null
+              : positionRatio >= 1 ? 'bg-red-100'
+              : positionRatio <= 0.25 ? 'bg-green-100'
+              : positionRatio <= 0.5 ? 'bg-yellow-100'
+              : positionRatio <= 0.75 ? 'bg-amber-100'
+              : 'bg-orange-100';
             return (
-            <div key={id} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
+            <div key={id} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
               <Link href={`/leagues/${id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name as string} />
               <div className="relative">
                 <div className="flex items-center justify-between">
@@ -439,7 +457,7 @@ export default async function DashboardPage() {
                     <span className="text-xs text-gray-400">
                       {league.status === 'completed'
                         ? <>Finished: {ordinal(league.final_position != null ? league.final_position as number : stats.position)}{medal(league.final_position != null ? league.final_position as number : stats.position)} &nbsp; Games Played: {stats.played}/{stats.total}</>
-                        : <>Position: {ordinal(stats.position)} &nbsp; Games played: {stats.played}/{stats.total}</>
+                        : <>Position: {positionPillBg ? <span className={`inline-flex items-center ${positionPillBg} text-gray-800 rounded-full px-1.5 py-0.5 font-semibold`}>{ordinal(stats.position)}</span> : <span>N/A</span>} &nbsp; Games played: {stats.played}/{stats.total}</>
                       }
                     </span>
                   ) : <span />}
@@ -465,7 +483,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3 mt-8">My Recent Matches</h2>
+      <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3 mt-8">My Recent Matches</h2>
 
       {recentMatches.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
@@ -475,20 +493,31 @@ export default async function DashboardPage() {
         <div className="space-y-2">
           {recentMatches.map((match) => {
             const isPlayer1 = match.player1_id === userId;
-            const myScore = isPlayer1 ? match.score_player1 as number : match.score_player2 as number;
-            const theirScore = isPlayer1 ? match.score_player2 as number : match.score_player1 as number;
-            const opponentName = isPlayer1 ? match.player2_name as string : match.player1_name as string;
+            const isPlayer3 = match.player3_id === userId;
+            const isTeam1 = isPlayer1 || isPlayer3;
+            const isDoubles = !!(match.player3_id);
+            const myScore = isTeam1 ? match.score_player1 as number : match.score_player2 as number;
+            const theirScore = isTeam1 ? match.score_player2 as number : match.score_player1 as number;
+            const p1First = match.player1_first as string;
+            const p2First = match.player2_first as string;
+            const p3First = match.player3_first as string | null;
+            const p4First = match.player4_first as string | null;
+            const opponentName = isDoubles
+              ? isTeam1 ? `${p2First} / ${p4First}` : `${p1First} / ${p3First}`
+              : isTeam1 ? p2First : p1First;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
             const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&
-              (match.player1_id === userId || match.player2_id === userId);
+              (match.player1_id === userId || match.player2_id === userId ||
+               match.player3_id === userId || match.player4_id === userId);
             const setScores = match.set_scores as [number, number][] | null;
             const tiebreakScores = match.tiebreak_scores as ([number, number] | null)[] | null;
             const result = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
+            const matchBorderColor = result === 'W' ? 'border-l-green-300' : result === 'L' ? 'border-l-red-300' : 'border-l-yellow-300';
 
             return (
-              <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
+              <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
                 <Link href={canEdit ? `/leagues/${match.league_id as string}/matches/${match.id as string}/edit` : `/leagues/${match.league_id as string}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl z-10" />
                 <div className="relative flex items-center gap-3">
                   {/* W/L badge */}
@@ -502,10 +531,10 @@ export default async function DashboardPage() {
                       </span>
                       <div className="flex items-center gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
-                          const my = isPlayer1 ? p1 : p2;
-                          const their = isPlayer1 ? p2 : p1;
+                          const my = isTeam1 ? p1 : p2;
+                          const their = isTeam1 ? p2 : p1;
                           const tb = tiebreakScores?.[i] ?? null;
-                          const myTb = tb ? (isPlayer1 ? tb[0] : tb[1]) : null;
+                          const myTb = tb ? (isTeam1 ? tb[0] : tb[1]) : null;
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>
                               {my}
@@ -521,10 +550,10 @@ export default async function DashboardPage() {
                       </span>
                       <div className="flex items-center gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
-                          const my = isPlayer1 ? p1 : p2;
-                          const their = isPlayer1 ? p2 : p1;
+                          const my = isTeam1 ? p1 : p2;
+                          const their = isTeam1 ? p2 : p1;
                           const tb = tiebreakScores?.[i] ?? null;
-                          const theirTb = tb ? (isPlayer1 ? tb[1] : tb[0]) : null;
+                          const theirTb = tb ? (isTeam1 ? tb[1] : tb[0]) : null;
                           return (
                             <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>
                               {their}
@@ -537,7 +566,7 @@ export default async function DashboardPage() {
                   </div>
 
                   {/* Right side: league name, date, action link */}
-                  <div className="flex flex-col items-end gap-1 w-24 shrink-0 text-right">
+                  <div className={`flex flex-col items-end gap-1 w-24 shrink-0 text-right border-r-2 ${leagueRightBorderColor(match.league_id as string, leagueColorMap[match.league_id as string])} pr-2`}>
                     <div className="flex flex-col items-end gap-0.5">
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
@@ -545,7 +574,7 @@ export default async function DashboardPage() {
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
-                      <span className="text-xs text-gray-400 truncate w-full">{match.league_name as string}</span>
+                      <span className="text-xs text-gray-400 truncate">{match.league_name as string}</span>
                     </div>
                     <span className="text-xs text-gray-400">
                       {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}

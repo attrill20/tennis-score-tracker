@@ -1,7 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import LeagueColorPicker from '@/components/LeagueColorPicker';
+import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 
 export default function EditLeagueForm({
   leagueId,
@@ -12,6 +14,13 @@ export default function EditLeagueForm({
   currentSeasonEnd,
   currentIsPublic,
   currentTiebreaker,
+  currentColor,
+  currentScoringMethod,
+  currentMaxPlayers,
+  currentNumPromoted,
+  currentNumRelegated,
+  currentJoinType,
+  leagueType,
 }: {
   leagueId: string;
   currentName: string;
@@ -21,6 +30,13 @@ export default function EditLeagueForm({
   currentSeasonEnd: string;
   currentIsPublic: boolean;
   currentTiebreaker: string;
+  currentColor: string | null;
+  currentScoringMethod: string;
+  currentMaxPlayers: number;
+  currentNumPromoted: number;
+  currentNumRelegated: number;
+  currentJoinType: string;
+  leagueType: string;
 }) {
   const router = useRouter();
   const [name, setName] = useState(currentName);
@@ -30,9 +46,23 @@ export default function EditLeagueForm({
   const [seasonEnd, setSeasonEnd] = useState(currentSeasonEnd);
   const [isPublic, setIsPublic] = useState(currentIsPublic);
   const [tiebreaker, setTiebreaker] = useState(currentTiebreaker);
+  const [scoringMethod, setScoringMethod] = useState(currentScoringMethod);
+  const [maxPlayers, setMaxPlayers] = useState(currentMaxPlayers);
+  const [numPromoted, setNumPromoted] = useState(currentNumPromoted);
+  const [numRelegated, setNumRelegated] = useState(currentNumRelegated);
+  const [joinType, setJoinType] = useState(currentJoinType);
+  const hasStoredColor = currentColor && LEAGUE_COLOR_KEYS.includes(currentColor as LeagueColorKey);
+  const [color, setColor] = useState<LeagueColorKey>(hasStoredColor ? currentColor as LeagueColorKey : LEAGUE_COLOR_KEYS[0]);
+  useEffect(() => {
+    if (!hasStoredColor) setColor(LEAGUE_COLOR_KEYS[Math.floor(Math.random() * LEAGUE_COLOR_KEYS.length)]);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  const isDoubles = leagueType === 'doubles';
+
+  function mark() { setSaved(false); }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -43,7 +73,7 @@ export default function EditLeagueForm({
     const res = await fetch(`/api/leagues/${leagueId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker }),
+      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType }),
     });
 
     const data = await res.json();
@@ -82,7 +112,7 @@ export default function EditLeagueForm({
           id="leagueName"
           type="text"
           value={name}
-          onChange={(e) => { setName(e.target.value); setSaved(false); }}
+          onChange={(e) => { setName(e.target.value); mark(); }}
           required
           className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         />
@@ -93,7 +123,7 @@ export default function EditLeagueForm({
         <textarea
           id="leagueDescription"
           value={description}
-          onChange={(e) => { setDescription(e.target.value); setSaved(false); }}
+          onChange={(e) => { setDescription(e.target.value); mark(); }}
           rows={3}
           className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
           placeholder="e.g. Summer singles league for intermediate players..."
@@ -107,7 +137,7 @@ export default function EditLeagueForm({
             id="seasonStart"
             type="date"
             value={seasonStart}
-            onChange={(e) => { setSeasonStart(e.target.value); setSaved(false); }}
+            onChange={(e) => { setSeasonStart(e.target.value); mark(); }}
             required
             className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
@@ -118,10 +148,72 @@ export default function EditLeagueForm({
             id="seasonEnd"
             type="date"
             value={seasonEnd}
-            onChange={(e) => { setSeasonEnd(e.target.value); setSaved(false); }}
+            onChange={(e) => { setSeasonEnd(e.target.value); mark(); }}
             required
             className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
+        </div>
+      </div>
+
+      <div>
+        <label htmlFor="scoringMethod" className="block text-sm font-medium text-gray-700 mb-1">Scoring method</label>
+        <select
+          id="scoringMethod"
+          value={scoringMethod}
+          onChange={(e) => { setScoringMethod(e.target.value); mark(); }}
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
+          <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
+          <option value="best_of_3_tiebreak">Best of 3 sets (allow tiebreaker)</option>
+          <option value="best_of_3_no_tiebreak">Best of 3 sets (no tiebreaker)</option>
+          <option value="best_of_5_tiebreak">Best of 5 sets (allow tiebreaker)</option>
+          <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">
+          {isDoubles ? 'Number of pairs' : 'Number of players'}
+        </label>
+        <select
+          id="maxPlayers"
+          value={maxPlayers}
+          onChange={(e) => { setMaxPlayers(Number(e.target.value)); mark(); }}
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          {isDoubles
+            ? Array.from({ length: 7 }, (_, i) => i + 2).map((n) => (
+                <option key={n} value={n}>{n} pairs ({n * 2} players)</option>
+              ))
+            : Array.from({ length: 11 }, (_, i) => i + 2).map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+        </select>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="numPromoted" className="block text-sm font-medium text-gray-700 mb-1">Number promoted</label>
+          <select
+            id="numPromoted"
+            value={numPromoted}
+            onChange={(e) => { setNumPromoted(Number(e.target.value)); mark(); }}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="numRelegated" className="block text-sm font-medium text-gray-700 mb-1">Number relegated</label>
+          <select
+            id="numRelegated"
+            value={numRelegated}
+            onChange={(e) => { setNumRelegated(Number(e.target.value)); mark(); }}
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
+          </select>
         </div>
       </div>
 
@@ -130,7 +222,7 @@ export default function EditLeagueForm({
         <select
           id="leagueTiebreaker"
           value={tiebreaker}
-          onChange={(e) => { setTiebreaker(e.target.value); setSaved(false); }}
+          onChange={(e) => { setTiebreaker(e.target.value); mark(); }}
           className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="head_to_head">Head-to-head result</option>
@@ -145,7 +237,7 @@ export default function EditLeagueForm({
           <select
             id="leagueStatus"
             value={status}
-            onChange={(e) => { setStatus(e.target.value); setSaved(false); }}
+            onChange={(e) => { setStatus(e.target.value); mark(); }}
             className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="upcoming">Upcoming</option>
@@ -158,7 +250,7 @@ export default function EditLeagueForm({
           <select
             id="leagueVisibility"
             value={isPublic ? 'public' : 'private'}
-            onChange={(e) => { setIsPublic(e.target.value === 'public'); setSaved(false); }}
+            onChange={(e) => { setIsPublic(e.target.value === 'public'); mark(); }}
             className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="public">Public</option>
@@ -166,6 +258,28 @@ export default function EditLeagueForm({
           </select>
         </div>
       </div>
+
+      <div>
+        <label htmlFor="joinType" className="block text-sm font-medium text-gray-700 mb-1">Sign-up type</label>
+        <select
+          id="joinType"
+          value={joinType}
+          onChange={(e) => { setJoinType(e.target.value); mark(); }}
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="invite_only">Invite only - admin assigns all players</option>
+          <option value="open_invite">Open invite - members can sign up themselves</option>
+        </select>
+      </div>
+
+      <div>
+        <p className="text-sm font-medium text-gray-700 mb-1">League type</p>
+        <p className="text-sm text-gray-500 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+          {isDoubles ? 'Doubles' : 'Singles'} <span className="text-gray-400 text-xs ml-1">(cannot be changed after creation)</span>
+        </p>
+      </div>
+
+      <LeagueColorPicker value={color} onChange={(k) => { setColor(k); mark(); }} />
     </form>
   );
 }

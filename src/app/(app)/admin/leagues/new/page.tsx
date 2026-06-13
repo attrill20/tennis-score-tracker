@@ -1,4 +1,5 @@
 import { auth } from '@/auth';
+import sql from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import CreateLeagueForm from '../CreateLeagueForm';
@@ -8,6 +9,13 @@ export default async function NewLeaguePage() {
   if (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin') {
     redirect('/dashboard');
   }
+
+  const members = await sql`
+    SELECT id, (first_name || ' ' || last_name) AS full_name
+    FROM profiles
+    WHERE role != 'unverified'
+    ORDER BY first_name, last_name
+  `;
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -19,7 +27,7 @@ export default async function NewLeaguePage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <CreateLeagueForm />
+        <CreateLeagueForm members={members as { id: string; full_name: string }[]} />
       </div>
     </div>
   );
