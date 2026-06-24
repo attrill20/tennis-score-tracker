@@ -17,7 +17,9 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
       SELECT 1
       FROM league_players lp1
       JOIN league_players lp2 ON lp1.league_id = lp2.league_id
+      JOIN leagues l ON l.id = lp1.league_id
       WHERE lp1.player_id = ${userId} AND lp2.player_id = ${id}
+        AND l.status = 'active'
       LIMIT 1
     `;
     if (shared.length > 0) {
