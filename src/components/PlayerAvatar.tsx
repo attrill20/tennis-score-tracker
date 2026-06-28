@@ -39,7 +39,7 @@ export default function PlayerAvatar({ name, avatarUrl, size = 'sm', className =
       <img
         src={avatarUrl}
         alt={name}
-        className={`${sizeClass} rounded-full object-cover shrink-0 ${className}`}
+        className={`${sizeClass} rounded-full object-cover shrink-0 border border-black/40 ${className}`}
       />
     );
   }

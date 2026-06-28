@@ -64,36 +64,34 @@ export default function AvatarUpload({ name, initialAvatarUrl }: { name: string;
     <div className="bg-white rounded-xl border border-gray-200 p-5">
       <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Profile Photo</h2>
       <div className="flex items-center justify-between gap-4">
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-center gap-2">
+        <div className="flex flex-col flex-1">
+          <button
+            type="button"
+            onClick={handleUploadClick}
+            disabled={loading || removing}
+            className="text-sm bg-white border border-gray-300 hover:border-green-700 text-gray-700 hover:text-green-700 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50 w-full mb-1"
+          >
+            {loading ? 'Uploading...' : avatarUrl ? 'Change photo' : 'Upload photo'}
+          </button>
+          <p className="text-xs text-gray-400 mb-2">JPEG or PNG file, max 5MB</p>
+          {avatarUrl && (
             <button
               type="button"
-              onClick={handleUploadClick}
+              onClick={handleRemove}
               disabled={loading || removing}
-              className="text-sm bg-white border border-gray-300 hover:border-green-700 text-gray-700 hover:text-green-700 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+              className="text-sm text-red-500 hover:text-red-700 font-medium transition-colors disabled:opacity-50 text-left"
             >
-              {loading ? 'Uploading...' : avatarUrl ? 'Change photo' : 'Upload photo'}
+              {removing ? 'Deleting...' : 'Delete photo'}
             </button>
-            {avatarUrl && (
-              <button
-                type="button"
-                onClick={handleRemove}
-                disabled={loading || removing}
-                className="text-sm text-red-500 hover:text-red-700 font-medium px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {removing ? 'Deleting...' : 'Delete photo'}
-              </button>
-            )}
-          </div>
-          <p className="text-xs text-gray-400">JPEG, PNG or WebP, max 5MB</p>
-          {error && <p className="text-xs text-red-600">{error}</p>}
+          )}
+          {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
         </div>
         {avatarUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={avatarUrl}
             alt={name}
-            className="w-16 h-16 rounded-full object-cover shrink-0"
+            className="w-16 h-16 rounded-full object-cover shrink-0 border border-black/40"
           />
         ) : (
           <span
