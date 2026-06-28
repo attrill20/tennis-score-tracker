@@ -23,6 +23,7 @@ const SIZE_CLASSES = {
   xl: 'w-20 h-20 text-2xl',
 };
 
+
 type Props = {
   name: string;
   avatarUrl?: string | null;
@@ -35,12 +36,18 @@ export default function PlayerAvatar({ name, avatarUrl, size = 'sm', className =
 
   if (avatarUrl) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={avatarUrl}
-        alt={name}
-        className={`${sizeClass} rounded-full object-cover shrink-0 border border-black/40 ${className}`}
-      />
+      <span
+        className={`${sizeClass} rounded-full flex items-center justify-center text-white font-semibold shrink-0 ${className}`}
+        style={{
+          backgroundImage: `url(${avatarUrl})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          boxShadow: '0 0 0 1px rgba(0,0,0,0.3)',
+        }}
+        aria-label={name}
+      >
+        {'​'}
+      </span>
     );
   }
 

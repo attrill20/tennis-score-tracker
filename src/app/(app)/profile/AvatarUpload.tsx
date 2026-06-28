@@ -87,12 +87,10 @@ export default function AvatarUpload({ name, initialAvatarUrl }: { name: string;
           {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
         </div>
         {avatarUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={avatarUrl}
-            alt={name}
-            className="w-16 h-16 rounded-full object-cover shrink-0 border border-black/40"
-          />
+          <span className="w-16 h-16 rounded-full overflow-hidden shrink-0 inline-block ring-1 ring-black/30">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+          </span>
         ) : (
           <span
             className="w-16 h-16 rounded-full flex items-center justify-center text-white text-xl font-semibold shrink-0"
