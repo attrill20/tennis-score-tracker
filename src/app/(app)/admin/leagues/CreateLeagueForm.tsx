@@ -9,7 +9,7 @@ import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 
 type Member = { id: string; full_name: string };
 
-export default function CreateLeagueForm({ members }: { members: Member[] }) {
+export default function CreateLeagueForm({ members = [] }: { members?: Member[] }) {
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');

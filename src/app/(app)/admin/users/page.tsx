@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import RoleForm from './RoleForm';
 import SearchInput from './SearchInput';
+import PlayerAvatar from '@/components/PlayerAvatar';
 
 type SortCol = 'name' | 'email' | 'role' | 'created_at';
 
@@ -29,6 +30,7 @@ type User = {
   created_at: Date | null;
   member_number: number | null;
   deleted_at: Date | null;
+  avatar_url: string | null;
 };
 
 export default async function AdminUsersPage({
@@ -49,7 +51,7 @@ export default async function AdminUsersPage({
   const search = rawSearch?.trim() ?? '';
 
   const users = await sql`
-    SELECT id, title, first_name, last_name, email, role, created_at, member_number, deleted_at
+    SELECT id, title, first_name, last_name, email, role, created_at, member_number, deleted_at, avatar_url
     FROM profiles
   `;
 
@@ -144,10 +146,17 @@ export default async function AdminUsersPage({
               <tr key={user.id} className="border-t border-gray-100">
                 <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
                 <td className="px-4 py-3 text-gray-800">
-                  {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
-                  {user.id === session.user.id && (
-                    <span className="ml-2 text-xs text-green-600 font-medium">(you)</span>
-                  )}
+                  <span className="inline-flex items-center gap-2">
+                    <PlayerAvatar
+                      name={`${user.first_name} ${user.last_name}`}
+                      avatarUrl={user.avatar_url}
+                      size="sm"
+                    />
+                    {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
+                    {user.id === session.user.id && (
+                      <span className="text-xs text-green-600 font-medium">(you)</span>
+                    )}
+                  </span>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{user.email}</td>
                 <td className="px-4 py-3">
@@ -198,7 +207,14 @@ export default async function AdminUsersPage({
                   <tr key={user.id} className="border-t border-gray-100">
                     <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
                     <td className="px-4 py-3 text-gray-500">
-                      {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
+                      <span className="inline-flex items-center gap-2">
+                        <PlayerAvatar
+                          name={`${user.first_name} ${user.last_name}`}
+                          avatarUrl={user.avatar_url}
+                          size="sm"
+                        />
+                        {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
+                      </span>
                     </td>
                     <td className="px-4 py-3 text-gray-400">{user.email}</td>
                     <td className="px-4 py-3">

@@ -3,13 +3,14 @@ import sql from '@/lib/db';
 import Link from 'next/link';
 import InjuryToggle from './InjuryToggle';
 import ProfileForm from './ProfileForm';
+import AvatarUpload from './AvatarUpload';
 
 export default async function ProfilePage() {
   const session = await auth();
   const userId = session!.user.id;
 
   const [rows, matches] = await Promise.all([
-    sql`SELECT first_name, last_name, email, phone, is_injured, gender FROM profiles WHERE id = ${userId}`,
+    sql`SELECT first_name, last_name, email, phone, is_injured, gender, avatar_url FROM profiles WHERE id = ${userId}`,
     sql`
       SELECT player1_id, player2_id, player3_id, player4_id,
              score_player1, score_player2, match_type, winner_id
@@ -63,6 +64,10 @@ export default async function ProfilePage() {
         </div>
 
         <div className="w-full sm:w-80 space-y-4 shrink-0">
+          <AvatarUpload
+            name={`${(profile.first_name as string) ?? ''} ${(profile.last_name as string) ?? ''}`.trim()}
+            initialAvatarUrl={(profile.avatar_url as string) ?? null}
+          />
           <InjuryToggle initialIsInjured={(profile.is_injured as boolean) ?? false} />
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">My Overall Stats</h2>

@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 import BackButton from '@/components/BackButton';
+import PlayerAvatar from '@/components/PlayerAvatar';
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -37,7 +38,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   }
 
   const [rows, matches] = await Promise.all([
-    sql`SELECT first_name, last_name, title, email, phone, is_injured FROM profiles WHERE id = ${id}`,
+    sql`SELECT first_name, last_name, title, email, phone, is_injured, avatar_url FROM profiles WHERE id = ${id}`,
     sql`
       SELECT player1_id, player2_id, player3_id, player4_id,
              score_player1, score_player2, match_type, winner_id
@@ -85,8 +86,17 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   return (
     <div className="max-w-md mx-auto">
       <div className="mb-3">
-        <h1 className="text-2xl font-bold text-gray-800">{name}</h1>
-        <BackButton />
+        <div className="flex items-center justify-between mb-1">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">{name}</h1>
+            <BackButton />
+          </div>
+          <PlayerAvatar
+            name={name}
+            avatarUrl={(player.avatar_url as string) ?? null}
+            size="lg"
+          />
+        </div>
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-4">

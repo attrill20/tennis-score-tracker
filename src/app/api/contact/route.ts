@@ -25,18 +25,23 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  await transporter.sendMail({
-    from: `"QPTC Score Tracker" <${process.env.CONTACT_EMAIL}>`,
-    to: process.env.CONTACT_EMAIL,
-    replyTo: fromEmail,
-    subject: `[QPTC] ${subject}`,
-    html: `
-      <p><strong>From:</strong> ${fromName} (${fromEmail})</p>
-      <p><strong>Subject:</strong> ${subject}</p>
-      <hr />
-      <p>${message.replace(/\n/g, '<br />')}</p>
-    `,
-  });
+  try {
+    await transporter.sendMail({
+      from: `"QPTC Score Tracker" <${process.env.CONTACT_EMAIL}>`,
+      to: process.env.CONTACT_EMAIL,
+      replyTo: fromEmail,
+      subject: `[QPTC] ${subject}`,
+      html: `
+        <p><strong>From:</strong> ${fromName} (${fromEmail})</p>
+        <p><strong>Subject:</strong> ${subject}</p>
+        <hr />
+        <p>${message.replace(/\n/g, '<br />')}</p>
+      `,
+    });
+  } catch (err) {
+    console.error('Failed to send contact email:', err);
+    return NextResponse.json({ error: 'Failed to send message. Please try again later.' }, { status: 500 });
+  }
 
   return NextResponse.json({ success: true });
 }

@@ -113,10 +113,10 @@ describe('CreateLeagueForm', () => {
     });
   });
 
-  it('refreshes the page after successful creation', async () => {
+  it('shows success state with assign-players panel after creation', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ success: true }),
+      json: async () => ({ id: 'abc-123' }),
     });
 
     render(<CreateLeagueForm />);
@@ -127,7 +127,8 @@ describe('CreateLeagueForm', () => {
     fireEvent.click(screen.getByRole('button', { name: /create league/i }));
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith('/admin/leagues');
+      expect(screen.getByText(/new league created/i)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /back to all leagues/i })).toBeInTheDocument();
     });
   });
 });

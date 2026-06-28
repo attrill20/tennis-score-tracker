@@ -18,9 +18,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const [players, matches] = await Promise.all([
     sql`
-      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured,
+      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured, p.avatar_url,
              lp.partner_id,
-             (pp.first_name || ' ' || pp.last_name) AS partner_full_name
+             (pp.first_name || ' ' || pp.last_name) AS partner_full_name,
+             pp.avatar_url AS partner_avatar_url
       FROM profiles p
       JOIN league_players lp ON lp.player_id = p.id
       LEFT JOIN profiles pp ON pp.id = lp.partner_id
@@ -55,17 +56,25 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   );
 
   // For doubles, collapse standings into one row per pair
-  type PairStanding = (typeof standings)[0] & { partnerId?: string; partnerName?: string; isPartnerInjured?: boolean };
+  type PairStanding = (typeof standings)[0] & {
+    avatarUrl?: string | null;
+    partnerId?: string;
+    partnerName?: string;
+    isPartnerInjured?: boolean;
+    partnerAvatarUrl?: string | null;
+  };
   let displayStandings: PairStanding[];
 
   if (isDoubles) {
-    const partnerMap: Record<string, { id: string; name: string; isInjured: boolean }> = {};
+    const partnerMap: Record<string, { id: string; name: string; isInjured: boolean; avatarUrl: string | null }> = {};
     for (const p of players) {
       if (p.partner_id) {
+        const partnerRow = players.find((x) => x.id === p.partner_id);
         partnerMap[p.id as string] = {
           id: p.partner_id as string,
           name: p.partner_full_name as string,
-          isInjured: !!(players.find((x) => x.id === p.partner_id)?.is_injured),
+          isInjured: !!(partnerRow?.is_injured),
+          avatarUrl: (p.partner_avatar_url as string | null) ?? null,
         };
       }
     }
@@ -75,11 +84,22 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       seen.add(s.id);
       const partner = partnerMap[s.id];
       if (partner) seen.add(partner.id);
-      acc.push({ ...s, partnerId: partner?.id, partnerName: partner?.name, isPartnerInjured: partner?.isInjured });
+      const playerRow = players.find((x) => x.id === s.id);
+      acc.push({
+        ...s,
+        avatarUrl: (playerRow?.avatar_url as string | null) ?? null,
+        partnerId: partner?.id,
+        partnerName: partner?.name,
+        isPartnerInjured: partner?.isInjured,
+        partnerAvatarUrl: partner?.avatarUrl ?? null,
+      });
       return acc;
     }, []);
   } else {
-    displayStandings = standings;
+    displayStandings = standings.map((s) => {
+      const playerRow = players.find((x) => x.id === s.id);
+      return { ...s, avatarUrl: (playerRow?.avatar_url as string | null) ?? null };
+    });
   }
 
   const injuredIds = new Set(players.filter((p) => p.is_injured).map((p) => p.id as string));
@@ -162,6 +182,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   playerId={s.id}
                   userId={userId}
                   name={s.name}
+                  avatarUrl={s.avatarUrl}
                   isInjured={injuredIds.has(s.id)}
                   position={i + 1}
                   played={s.played}
@@ -175,6 +196,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   partnerId={s.partnerId}
                   partnerName={s.partnerName}
                   isPartnerInjured={s.isPartnerInjured}
+                  partnerAvatarUrl={s.partnerAvatarUrl}
                 />
               );
             })}
