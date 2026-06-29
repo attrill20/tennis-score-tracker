@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CreateLeagueForm from '@/app/(app)/admin/leagues/CreateLeagueForm';
+import CreateLeagueForm from '@/app/(app)/admin/tournaments/CreateLeagueForm';
 
 const mockPush = jest.fn();
 jest.mock('next/navigation', () => ({
@@ -15,7 +15,7 @@ describe('CreateLeagueForm', () => {
 
   it('renders all form fields', () => {
     render(<CreateLeagueForm />);
-    expect(screen.getByLabelText(/league name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/tournament name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/start date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/end date/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/scoring method/i)).toBeInTheDocument();
@@ -23,7 +23,7 @@ describe('CreateLeagueForm', () => {
     expect(screen.getByLabelText(/number promoted/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/number relegated/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/status/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /create league/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /create tournament/i })).toBeInTheDocument();
   });
 
   it('has correct default values', () => {
@@ -73,17 +73,17 @@ describe('CreateLeagueForm', () => {
 
     render(<CreateLeagueForm />);
 
-    await userEvent.type(screen.getByLabelText(/league name/i), 'Division 1 Spring 2026');
+    await userEvent.type(screen.getByLabelText(/tournament name/i), 'Division 1 Spring 2026');
     fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: '2026-05-01' } });
     fireEvent.change(screen.getByLabelText(/end date/i), { target: { value: '2026-07-01' } });
     fireEvent.change(screen.getByLabelText(/scoring method/i), { target: { value: 'best_of_5_tiebreak' } });
     fireEvent.change(screen.getByLabelText(/number of players/i), { target: { value: '6' } });
     fireEvent.change(screen.getByLabelText(/number promoted/i), { target: { value: '1' } });
     fireEvent.change(screen.getByLabelText(/number relegated/i), { target: { value: '1' } });
-    fireEvent.click(screen.getByRole('button', { name: /create league/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create tournament/i }));
 
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith('/api/admin/leagues', expect.objectContaining({
+      expect(global.fetch).toHaveBeenCalledWith('/api/admin/tournaments', expect.objectContaining({
         method: 'POST',
         body: expect.stringContaining('Division 1 Spring 2026'),
       }));
@@ -103,10 +103,10 @@ describe('CreateLeagueForm', () => {
 
     render(<CreateLeagueForm />);
 
-    await userEvent.type(screen.getByLabelText(/league name/i), 'Test League');
+    await userEvent.type(screen.getByLabelText(/tournament name/i), 'Test League');
     fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: '2026-05-01' } });
     fireEvent.change(screen.getByLabelText(/end date/i), { target: { value: '2026-07-01' } });
-    fireEvent.click(screen.getByRole('button', { name: /create league/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create tournament/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/unauthorised/i)).toBeInTheDocument();
@@ -116,19 +116,19 @@ describe('CreateLeagueForm', () => {
   it('shows success state with assign-players panel after creation', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ id: 'abc-123' }),
+      json: async () => ({ tournamentId: 't-1', format: 'single', divisions: [{ id: 'abc-123', name: 'New League', order: 1 }] }),
     });
 
     render(<CreateLeagueForm />);
 
-    await userEvent.type(screen.getByLabelText(/league name/i), 'New League');
+    await userEvent.type(screen.getByLabelText(/tournament name/i), 'New League');
     fireEvent.change(screen.getByLabelText(/start date/i), { target: { value: '2026-05-01' } });
     fireEvent.change(screen.getByLabelText(/end date/i), { target: { value: '2026-07-01' } });
-    fireEvent.click(screen.getByRole('button', { name: /create league/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create tournament/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/new league created/i)).toBeInTheDocument();
-      expect(screen.getByRole('link', { name: /back to all leagues/i })).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /back to all tournaments/i })).toBeInTheDocument();
     });
   });
 });

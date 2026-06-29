@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import AssignPlayersForm from '@/app/(app)/admin/leagues/AssignPlayersForm';
+import AssignPlayersForm from '@/app/(app)/admin/tournaments/AssignPlayersForm';
 
 const mockRefresh = jest.fn();
 jest.mock('next/navigation', () => ({
@@ -26,7 +26,7 @@ describe('AssignPlayersForm', () => {
 
   it('renders league dropdown with all leagues', () => {
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    expect(screen.getByLabelText(/league/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/tournament/i)).toBeInTheDocument();
     expect(screen.getByText('Division 1')).toBeInTheDocument();
     expect(screen.getByText('Division 2')).toBeInTheDocument();
   });
@@ -44,7 +44,7 @@ describe('AssignPlayersForm', () => {
     });
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => {
       expect(screen.getByPlaceholderText(/search players/i)).toBeInTheDocument();
@@ -61,7 +61,7 @@ describe('AssignPlayersForm', () => {
     });
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => {
       const checkboxes = screen.getAllByRole('checkbox');
@@ -81,7 +81,7 @@ describe('AssignPlayersForm', () => {
     });
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByPlaceholderText(/search players/i));
     await userEvent.type(screen.getByPlaceholderText(/search players/i), 'alice');
@@ -98,7 +98,7 @@ describe('AssignPlayersForm', () => {
     });
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByPlaceholderText(/search players/i));
     await userEvent.type(screen.getByPlaceholderText(/search players/i), 'zzz');
@@ -112,7 +112,7 @@ describe('AssignPlayersForm', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) }); // POST
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByText('Alice Smith'));
     fireEvent.click(screen.getByText('Alice Smith').closest('label')!);
@@ -131,7 +131,7 @@ describe('AssignPlayersForm', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) }); // DELETE
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByText('Bob Jones'));
     fireEvent.click(screen.getByText('Bob Jones').closest('label')!);
@@ -153,7 +153,7 @@ describe('AssignPlayersForm', () => {
       .mockResolvedValueOnce({ ok: false, json: async () => ({ error: 'Server error' }) }); // POST fails
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByText('Alice Smith'));
     fireEvent.click(screen.getByText('Alice Smith').closest('label')!);
@@ -173,11 +173,11 @@ describe('AssignPlayersForm', () => {
       .mockResolvedValueOnce({ ok: true, json: async () => [] });
 
     render(<AssignPlayersForm leagues={mockLeagues} members={mockMembers} />);
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-1' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-1' } });
 
     await waitFor(() => screen.getByText('Alice Smith'));
 
-    fireEvent.change(screen.getByLabelText(/league/i), { target: { value: 'league-2' } });
+    fireEvent.change(screen.getByLabelText(/tournament/i), { target: { value: 'league-2' } });
 
     await waitFor(() => {
       const checkboxes = screen.getAllByRole('checkbox');

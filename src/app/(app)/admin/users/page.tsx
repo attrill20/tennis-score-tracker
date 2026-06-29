@@ -98,6 +98,7 @@ export default async function AdminUsersPage({
   const tableHeaders = (
     <tr className="bg-gray-50 text-xs text-gray-500 border-b border-gray-200">
       <th className="text-left px-4 py-3 font-medium">#</th>
+      <th className="px-4 py-3"></th>
       <th className="text-left px-4 py-3 font-medium">
         <Link href={sortHref('name', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
           Member<SortIcon col="name" currentSort={sortCol} currentOrder={sortOrder} />
@@ -137,7 +138,7 @@ export default async function AdminUsersPage({
           <tbody>
             {sortedActive.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-8 text-center text-gray-400">
+                <td colSpan={7} className="px-4 py-8 text-center text-gray-400">
                   No users found.
                 </td>
               </tr>
@@ -145,13 +146,15 @@ export default async function AdminUsersPage({
             {sortedActive.map((user) => (
               <tr key={user.id} className="border-t border-gray-100">
                 <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
+                <td className="pl-2 pr-2 py-3">
+                  <PlayerAvatar
+                    name={`${user.first_name} ${user.last_name}`}
+                    avatarUrl={user.avatar_url}
+                    size="sm"
+                  />
+                </td>
                 <td className="px-4 py-3 text-gray-800">
                   <span className="inline-flex items-center gap-2">
-                    <PlayerAvatar
-                      name={`${user.first_name} ${user.last_name}`}
-                      avatarUrl={user.avatar_url}
-                      size="sm"
-                    />
                     {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
                     {user.id === session.user.id && (
                       <span className="text-xs text-green-600 font-medium">(you)</span>
@@ -206,15 +209,15 @@ export default async function AdminUsersPage({
                 {sortedArchived.map((user) => (
                   <tr key={user.id} className="border-t border-gray-100">
                     <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
+                    <td className="pl-2 pr-2 py-3">
+                      <PlayerAvatar
+                        name={`${user.first_name} ${user.last_name}`}
+                        avatarUrl={user.avatar_url}
+                        size="sm"
+                      />
+                    </td>
                     <td className="px-4 py-3 text-gray-500">
-                      <span className="inline-flex items-center gap-2">
-                        <PlayerAvatar
-                          name={`${user.first_name} ${user.last_name}`}
-                          avatarUrl={user.avatar_url}
-                          size="sm"
-                        />
-                        {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
-                      </span>
+                      {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
                     </td>
                     <td className="px-4 py-3 text-gray-400">{user.email}</td>
                     <td className="px-4 py-3">

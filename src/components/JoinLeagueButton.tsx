@@ -34,7 +34,7 @@ export default function JoinLeagueButton({ leagueId }: { leagueId: string }) {
         disabled={loading}
         className="cursor-pointer text-xs bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white font-medium px-3 py-1.5 rounded-full transition-colors"
       >
-        {loading ? '...' : 'Join league'}
+        {loading ? '...' : 'Join tournament'}
       </button>
     </div>
   );

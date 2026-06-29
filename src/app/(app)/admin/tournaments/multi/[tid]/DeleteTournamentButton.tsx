@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-export default function DeleteLeagueButton({ leagueId, leagueName }: { leagueId: string; leagueName: string }) {
+export default function DeleteTournamentButton({ tid, tournamentName }: { tid: string; tournamentName: string }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -13,7 +13,7 @@ export default function DeleteLeagueButton({ leagueId, leagueName }: { leagueId:
     setLoading(true);
     setError('');
 
-    const res = await fetch(`/api/leagues/${leagueId}`, { method: 'DELETE' });
+    const res = await fetch(`/api/admin/tournaments/multi/${tid}`, { method: 'DELETE' });
     const data = await res.json();
     setLoading(false);
 
@@ -32,7 +32,7 @@ export default function DeleteLeagueButton({ leagueId, leagueName }: { leagueId:
         onClick={() => setConfirming(true)}
         className="text-sm text-red-600 hover:text-red-700 font-medium border border-red-200 hover:border-red-400 px-4 py-2 rounded-lg transition-colors"
       >
-        Delete league
+        Delete tournament
       </button>
     );
   }
@@ -40,7 +40,7 @@ export default function DeleteLeagueButton({ leagueId, leagueName }: { leagueId:
   return (
     <div className="space-y-3">
       <p className="text-sm text-gray-700">
-        Are you sure you want to delete <span className="font-semibold">{leagueName}</span>? This will permanently remove all matches, players and disputes associated with this league.
+        Are you sure you want to delete <span className="font-semibold">{tournamentName}</span>? This permanently removes every division, all rounds, and all matches, players and disputes across the whole tournament.
       </p>
       {error && <p className="text-sm text-red-600">{error}</p>}
       <div className="flex gap-3">
@@ -55,7 +55,7 @@ export default function DeleteLeagueButton({ leagueId, leagueName }: { leagueId:
           disabled={loading}
           className="text-sm bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg transition-colors"
         >
-          {loading ? 'Deleting...' : 'Yes, delete tournament'}
+          {loading ? 'Deleting...' : 'Yes, delete entire tournament'}
         </button>
       </div>
     </div>

@@ -71,7 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       <p>Hi ${recipientName},</p>
       <p>${outcomeText}</p>
       <p>
-        <strong>League:</strong> ${leagueName}<br/>
+        <strong>Tournament:</strong> ${leagueName}<br/>
         <strong>Final score:</strong> ${recipientName} ${myScore} - ${theirScore} ${opponentName}<br/>
         <strong>Outcome:</strong> ${winner} wins
       </p>

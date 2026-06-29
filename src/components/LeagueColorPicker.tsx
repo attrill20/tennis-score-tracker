@@ -11,7 +11,7 @@ export default function LeagueColorPicker({
 }) {
   return (
     <div>
-      <label className="block text-sm font-medium text-gray-700 mb-2">League colour</label>
+      <label className="block text-sm font-medium text-gray-700 mb-2">Tournament colour</label>
       <div className="flex flex-wrap gap-2.5">
         {LEAGUE_COLOR_SWATCHES.map((swatch) => (
           <button

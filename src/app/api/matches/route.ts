@@ -58,11 +58,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: isDoubles ? 'All four players must be in this league' : 'Both players must be in this league' }, { status: 400 });
   }
 
-  // Check league is active and end date hasn't passed
-  const leagues = await sql`SELECT status, season_end FROM leagues WHERE id = ${leagueId}`;
+  // Check the division is active (or its parent tournament is) and the end date hasn't passed.
+  const leagues = await sql`
+    SELECT l.status, l.season_end, t.status AS tournament_status
+    FROM leagues l LEFT JOIN tournaments t ON t.id = l.tournament_id
+    WHERE l.id = ${leagueId}
+  `;
   const league = leagues[0];
-  if (!league || league.status !== 'active') {
-    return NextResponse.json({ error: 'League is not active' }, { status: 400 });
+  const divisionActive = !!league && (league.status === 'active' || (league.status === 'upcoming' && league.tournament_status === 'active'));
+  if (!divisionActive) {
+    return NextResponse.json({ error: 'Tournament is not active' }, { status: 400 });
   }
   if (new Date(league.season_end as string) < new Date(new Date().toDateString())) {
     return NextResponse.json({ error: 'The league season has ended - no more scores can be submitted' }, { status: 400 });

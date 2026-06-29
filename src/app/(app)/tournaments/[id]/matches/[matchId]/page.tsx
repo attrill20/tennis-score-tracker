@@ -104,7 +104,7 @@ export default async function MatchPage({
             </div>
           )}
         </div>
-        <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
+        <Link href={`/tournaments/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
           {match.league_name as string}
         </Link>
       </div>
@@ -187,7 +187,7 @@ export default async function MatchPage({
 
         {(canEdit || canSuggestEdit) && (
           <Link
-            href={`/leagues/${leagueId}/matches/${matchId}/edit`}
+            href={`/tournaments/${leagueId}/matches/${matchId}/edit`}
             className="mt-6 w-full block text-center text-sm border border-gray-300 hover:border-red-400 hover:text-red-600 text-gray-600 font-medium py-2.5 rounded-lg transition-colors"
           >
             {canEdit ? 'Edit result' : 'Suggest edit'}

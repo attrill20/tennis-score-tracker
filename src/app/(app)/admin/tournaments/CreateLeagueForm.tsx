@@ -8,8 +8,11 @@ import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 
 type Member = { id: string; full_name: string };
+type Division = { id: string; name: string; order: number };
+type Created = { tournamentId: string; format: 'single' | 'multi'; divisions: Division[] };
 
 export default function CreateLeagueForm({ members = [] }: { members?: Member[] }) {
+  const [format, setFormat] = useState<'single' | 'multi'>('single');
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -24,22 +27,75 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState<LeagueColorKey>(LEAGUE_COLOR_KEYS[0]);
+
+  // Multi-league fields
+  const [numDivisions, setNumDivisions] = useState(3);
+  const [roundDates, setRoundDates] = useState<string[]>(['']);
+  const [finalEnd, setFinalEnd] = useState('');
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setColor(LEAGUE_COLOR_KEYS[Math.floor(Math.random() * LEAGUE_COLOR_KEYS.length)]);
   }, []);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [createdLeagueId, setCreatedLeagueId] = useState<string | null>(null);
+  const [created, setCreated] = useState<Created | null>(null);
+
+  function setRoundDate(i: number, val: string) {
+    setRoundDates((prev) => prev.map((d, idx) => (idx === i ? val : d)));
+  }
+  function addRound() {
+    setRoundDates((prev) => [...prev, '']);
+  }
+  function removeRound(i: number) {
+    setRoundDates((prev) => prev.filter((_, idx) => idx !== i));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
     setLoading(true);
 
-    const res = await fetch('/api/admin/leagues', {
+    const payload =
+      format === 'multi'
+        ? {
+            format,
+            name,
+            scoringMethod,
+            tiebreaker,
+            leagueType,
+            isPublic,
+            description,
+            color,
+            maxPlayers,
+            numPromoted,
+            numRelegated,
+            numDivisions,
+            roundDates: roundDates.filter(Boolean),
+            finalEnd,
+          }
+        : {
+            format,
+            name,
+            startDate,
+            endDate,
+            status,
+            scoringMethod,
+            tiebreaker,
+            leagueType,
+            isPublic,
+            joinType,
+            description,
+            color,
+            maxPlayers,
+            numPromoted,
+            numRelegated,
+          };
+
+    const res = await fetch('/api/admin/tournaments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, startDate, endDate, status, maxPlayers, scoringMethod, numPromoted, numRelegated, tiebreaker, isPublic, joinType, description, leagueType, color }),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -50,10 +106,10 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
       return;
     }
 
-    setCreatedLeagueId(data.id);
+    setCreated(data as Created);
   }
 
-  if (createdLeagueId) {
+  if (created) {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
@@ -62,26 +118,43 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           </svg>
           <div>
             <p className="text-sm font-medium text-green-800">{name} created!</p>
-            <p className="text-xs text-green-600 mt-0.5">Now assign players to the league below.</p>
+            <p className="text-xs text-green-600 mt-0.5">
+              {created.format === 'multi'
+                ? 'Now assign players to each division for round 1 below.'
+                : 'Now assign players to the tournament below.'}
+            </p>
           </div>
         </div>
 
-        <div>
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            {leagueType === 'doubles' ? 'Assign pairs' : 'Assign players'}
-          </h3>
-          <AssignPlayersPanel leagueId={createdLeagueId} leagueType={leagueType} members={members} maxPlayers={maxPlayers} />
-        </div>
+        {created.divisions.map((div) => (
+          <div key={div.id}>
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+              {created.format === 'multi'
+                ? div.name
+                : leagueType === 'doubles' ? 'Assign pairs' : 'Assign players'}
+            </h3>
+            <AssignPlayersPanel leagueId={div.id} leagueType={leagueType} members={members} maxPlayers={maxPlayers} />
+          </div>
+        ))}
 
         <div className="flex items-center gap-3 pt-2 border-t border-gray-100">
-          <Link
-            href={`/admin/leagues/${createdLeagueId}`}
-            className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-4 py-2 rounded-lg transition-colors"
-          >
-            Go to league settings
-          </Link>
-          <Link href="/admin/leagues" className="text-sm text-gray-500 hover:underline">
-            Back to all leagues
+          {created.format === 'multi' ? (
+            <Link
+              href={`/tournaments/multi/${created.tournamentId}`}
+              className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              View tournament
+            </Link>
+          ) : (
+            <Link
+              href={`/admin/tournaments/${created.divisions[0].id}`}
+              className="text-sm bg-green-700 hover:bg-green-800 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              Go to tournament settings
+            </Link>
+          )}
+          <Link href="/admin/tournaments" className="text-sm text-gray-500 hover:underline">
+            Back to all tournaments
           </Link>
         </div>
       </div>
@@ -91,7 +164,31 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">League type</label>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Tournament format</label>
+        <div className="grid grid-cols-2 gap-3">
+          {([
+            ['single', 'Single', 'One division'],
+            ['multi', 'Multi-league', 'Divisions with promotion/relegation'],
+          ] as const).map(([val, label, hint]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setFormat(val)}
+              className={`py-2.5 px-3 rounded-lg border text-sm font-medium transition-colors text-left ${
+                format === val
+                  ? 'bg-green-900 border-green-900 text-white'
+                  : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
+              }`}
+            >
+              <span className="block">{label}</span>
+              <span className={`block text-xs font-normal mt-0.5 ${format === val ? 'text-green-100' : 'text-gray-400'}`}>{hint}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Match type</label>
         <div className="grid grid-cols-2 gap-3">
           {(['singles', 'doubles'] as const).map((val) => (
             <button
@@ -111,7 +208,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
       </div>
 
       <div>
-        <label htmlFor="leagueName" className="block text-sm font-medium text-gray-700 mb-1">League name</label>
+        <label htmlFor="leagueName" className="block text-sm font-medium text-gray-700 mb-1">Tournament name</label>
         <input
           id="leagueName"
           type="text"
@@ -119,36 +216,77 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           onChange={(e) => setName(e.target.value)}
           required
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-          placeholder="e.g. Division 1 - Spring 2026"
+          placeholder={format === 'multi' ? 'e.g. Summer 2026 Championship' : 'e.g. Division 1 - Spring 2026'}
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
-          <DatePicker
-            id="startDate"
-            value={startDate}
-            onChange={(val) => {
-              setStartDate(val);
-              if (val) {
-                const today = new Date().toISOString().split('T')[0];
-                setStatus(val > today ? 'upcoming' : 'active');
-              }
-            }}
-            required
-          />
+      {format === 'single' ? (
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">Start date</label>
+            <DatePicker
+              id="startDate"
+              value={startDate}
+              onChange={(val) => {
+                setStartDate(val);
+                if (val) {
+                  const today = new Date().toISOString().split('T')[0];
+                  setStatus(val > today ? 'upcoming' : 'active');
+                }
+              }}
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End date</label>
+            <DatePicker id="endDate" value={endDate} onChange={setEndDate} required />
+          </div>
         </div>
-        <div>
-          <label htmlFor="endDate" className="block text-sm font-medium text-gray-700 mb-1">End date</label>
-          <DatePicker
-            id="endDate"
-            value={endDate}
-            onChange={setEndDate}
-            required
-          />
+      ) : (
+        <div className="space-y-4 bg-green-50/50 border border-green-100 rounded-xl p-4">
+          <div>
+            <label htmlFor="numDivisions" className="block text-sm font-medium text-gray-700 mb-1">Number of divisions</label>
+            <select
+              id="numDivisions"
+              value={numDivisions}
+              onChange={(e) => setNumDivisions(Number(e.target.value))}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            >
+              {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+                <option key={n} value={n}>{n} divisions</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Round start dates</label>
+            <p className="text-xs text-gray-400 mb-2">Each date starts a fresh round. After each round, players are promoted/relegated between divisions.</p>
+            <div className="space-y-2">
+              {roundDates.map((d, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 w-16 shrink-0">Round {i + 1}</span>
+                  <div className="flex-1">
+                    <DatePicker id={`round-${i}`} value={d} onChange={(val) => setRoundDate(i, val)} required />
+                  </div>
+                  {roundDates.length > 1 && (
+                    <button type="button" onClick={() => removeRound(i)} className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0">
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addRound} className="mt-2 text-xs text-green-700 hover:underline font-medium">
+              + Add another round
+            </button>
+          </div>
+
+          <div>
+            <label htmlFor="finalEnd" className="block text-sm font-medium text-gray-700 mb-1">Final finishing date</label>
+            <DatePicker id="finalEnd" value={finalEnd} onChange={setFinalEnd} required />
+          </div>
         </div>
-      </div>
+      )}
 
       <div>
         <label htmlFor="scoringMethod" className="block text-sm font-medium text-gray-700 mb-1">Scoring method</label>
@@ -169,7 +307,9 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
 
       <div>
         <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">
-          {leagueType === 'doubles' ? 'Number of pairs' : 'Number of players'}
+          {leagueType === 'doubles'
+            ? (format === 'multi' ? 'Pairs per division' : 'Number of pairs')
+            : (format === 'multi' ? 'Players per division' : 'Number of players')}
         </label>
         <select
           id="maxPlayers"
@@ -216,18 +356,20 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
         </div>
       </div>
 
-      <div>
-        <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-        <select
-          id="status"
-          value={status}
-          onChange={(e) => setStatus(e.target.value as 'upcoming' | 'active')}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-        >
-          <option value="upcoming">Upcoming</option>
-          <option value="active">Active</option>
-        </select>
-      </div>
+      {format === 'single' && (
+        <div>
+          <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+          <select
+            id="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value as 'upcoming' | 'active')}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            <option value="upcoming">Upcoming</option>
+            <option value="active">Active</option>
+          </select>
+        </div>
+      )}
 
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
@@ -237,7 +379,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
-          placeholder="e.g. Summer singles league for intermediate players..."
+          placeholder="e.g. Summer singles tournament for intermediate players..."
         />
       </div>
 
@@ -268,21 +410,23 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
         </select>
       </div>
 
-      <div>
-        <label htmlFor="joinType" className="block text-sm font-medium text-gray-700 mb-1">Sign-up type</label>
-        <select
-          id="joinType"
-          value={joinType}
-          onChange={(e) => setJoinType(e.target.value as 'invite_only' | 'open_invite')}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-        >
-          <option value="invite_only">Invite only - admin assigns all players</option>
-          <option value="open_invite">Open invite - members can sign up themselves</option>
-        </select>
-        {joinType === 'open_invite' && (
-          <p className="text-xs text-gray-400 mt-1">You can still pre-assign players via the assign players form. Others can join up to the max.</p>
-        )}
-      </div>
+      {format === 'single' && (
+        <div>
+          <label htmlFor="joinType" className="block text-sm font-medium text-gray-700 mb-1">Sign-up type</label>
+          <select
+            id="joinType"
+            value={joinType}
+            onChange={(e) => setJoinType(e.target.value as 'invite_only' | 'open_invite')}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            <option value="invite_only">Invite only - admin assigns all players</option>
+            <option value="open_invite">Open invite - members can sign up themselves</option>
+          </select>
+          {joinType === 'open_invite' && (
+            <p className="text-xs text-gray-400 mt-1">You can still pre-assign players via the assign players form. Others can join up to the max.</p>
+          )}
+        </div>
+      )}
 
       <LeagueColorPicker value={color} onChange={setColor} />
 
@@ -294,7 +438,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           disabled={loading}
           className="bg-green-700 hover:bg-green-800 disabled:opacity-50 text-white text-sm font-medium px-5 py-2.5 rounded-lg transition-colors"
         >
-          {loading ? 'Creating...' : 'Create league'}
+          {loading ? 'Creating...' : 'Create tournament'}
         </button>
       </div>
     </form>

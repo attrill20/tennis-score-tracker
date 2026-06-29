@@ -7,7 +7,7 @@ import DisputeResolutionNotification from '@/components/DisputeResolutionNotific
 import NewMatchNotification from '@/components/NewMatchNotification';
 import LeagueNotification from '@/components/LeagueNotification';
 import WelcomeNotification from '@/components/WelcomeNotification';
-import ArchiveLeagueButton from '@/app/(app)/leagues/ArchiveLeagueButton';
+import ArchiveLeagueButton from '@/app/(app)/tournaments/ArchiveLeagueButton';
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -15,11 +15,13 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, lp.final_position,
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, l.max_players, lp.final_position,
         lp.started_seen, lp.ended_seen,
+        t.name AS tournament_name, t.format AS tournament_format, t.status AS tournament_status,
         (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
       FROM leagues l
       JOIN league_players lp ON lp.league_id = l.id AND lp.player_id = ${userId}
+      LEFT JOIN tournaments t ON t.id = l.tournament_id
       WHERE lp.player_id = ${userId}
         AND lp.user_archived = false
         AND l.status != 'archived'
@@ -251,7 +253,7 @@ export default async function DashboardPage() {
               key={`started-${l.id as string}`}
               leagueId={l.id as string}
               type="started"
-              leagueName={l.name as string}
+              leagueName={(l.tournament_format === 'multi' ? l.tournament_name : l.name) as string}
               line2="Good luck for your matches!"
               bgClass="bg-teal-50"
               borderClass="border-teal-200"
@@ -277,7 +279,7 @@ export default async function DashboardPage() {
                 key={`ended-${l.id as string}`}
                 leagueId={l.id as string}
                 type="ended"
-                leagueName={l.name as string}
+                leagueName={(l.tournament_format === 'multi' ? l.tournament_name : l.name) as string}
                 line2={line2}
                 bgClass="bg-purple-50"
                 borderClass="border-purple-200"
@@ -309,19 +311,19 @@ export default async function DashboardPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M12 2a10 10 0 100 20A10 10 0 0012 2z" />
                 </svg>
                 <div className="flex-1 min-w-0">
-                  <Link href={`/leagues/${m.league_id as string}/matches/${m.id as string}`} className="group block">
+                  <Link href={`/tournaments/${m.league_id as string}/matches/${m.id as string}`} className="group block">
                     <p className="text-sm text-gray-800 group-hover:text-blue-600 group-hover:underline">{m.opponent_name as string} has suggested a correction</p>
                   </Link>
                   <div className="flex items-center gap-2 mt-1">
-                    <Link href={`/leagues/${m.league_id as string}/matches/${m.id as string}`} className="group flex items-center gap-2">
+                    <Link href={`/tournaments/${m.league_id as string}/matches/${m.id as string}`} className="group flex items-center gap-2">
                       <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold shrink-0 ${badgeClass}`}>{outcome}</span>
                       <span className="text-xs text-gray-700 group-hover:text-blue-600 group-hover:underline">{scoreLabel}</span>
                     </Link>
-                    <Link href={`/leagues/${m.league_id as string}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{m.league_name as string}</Link>
+                    <Link href={`/tournaments/${m.league_id as string}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{m.league_name as string}</Link>
                   </div>
                 </div>
                 <Link
-                  href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+                  href={`/tournaments/${m.league_id as string}/matches/${m.id as string}`}
                   className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-amber-200 hover:bg-amber-300 text-amber-900 transition-colors"
                 >
                   View edit
@@ -340,12 +342,12 @@ export default async function DashboardPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-800">Result disputed vs {opponentName}</p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    <Link href={`/leagues/${m.league_id as string}`} className="hover:text-blue-600 hover:underline">{m.league_name as string}</Link>
+                    <Link href={`/tournaments/${m.league_id as string}`} className="hover:text-blue-600 hover:underline">{m.league_name as string}</Link>
                     {' - awaiting admin review'}
                   </p>
                 </div>
                 <Link
-                  href={`/leagues/${m.league_id as string}/matches/${m.id as string}`}
+                  href={`/tournaments/${m.league_id as string}/matches/${m.id as string}`}
                   className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-red-200 hover:bg-red-300 text-red-900 transition-colors"
                 >
                   View match
@@ -394,11 +396,11 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">My Leagues</h2>
+      <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">My Tournaments</h2>
 
       {leagues.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          <p>You haven't been added to any leagues yet.</p>
+          <p>You haven't been added to any tournaments yet.</p>
           <p className="text-sm mt-1">Contact an admin to get assigned.</p>
         </div>
       ) : (
@@ -412,6 +414,14 @@ export default async function DashboardPage() {
               return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
             };
             const medal = (n: number) => n === 1 ? ' 🥇' : n === 2 ? ' 🥈' : n === 3 ? ' 🥉' : '';
+            const isMultiDivision = league.tournament_format === 'multi';
+            // Outside the tournament view, show which tournament a division belongs to.
+            const displayName = isMultiDivision
+              ? `${league.tournament_name as string}: ${league.name as string}`
+              : (league.name as string);
+            // A current-round (upcoming) division counts as active whenever its tournament is active.
+            const effectiveActive = league.status === 'active' || (isMultiDivision && league.tournament_status === 'active' && league.status === 'upcoming');
+            const effStatus = effectiveActive ? 'active' : (league.status as string);
             const totalUnits = stats ? stats.total + 1 : 1;
             const positionRatio = stats && totalUnits > 1 ? stats.position / totalUnits : 0;
             const leagueHasMatches = (allMatches as { league_id: string }[]).some((m) => m.league_id === id);
@@ -423,14 +433,14 @@ export default async function DashboardPage() {
               : 'bg-orange-100';
             return (
             <div key={id} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-              <Link href={`/leagues/${id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name as string} />
+              <Link href={`/tournaments/${id}`} className="absolute inset-0 rounded-xl z-10" aria-label={displayName} />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-800">{league.name as string}</span>
+                  <span className="font-medium text-gray-800">{displayName}</span>
                   <div className="flex items-center gap-2">
-                    {league.status === 'active' && (
+                    {effectiveActive && (
                       <Link
-                        href={`/leagues/${id}/submit`}
+                        href={`/tournaments/${id}/submit`}
                         className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
                       >
                         Submit a result
@@ -440,20 +450,20 @@ export default async function DashboardPage() {
                       <ArchiveLeagueButton leagueId={id} />
                     )}
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      league.status === 'active'
+                      effStatus === 'active'
                         ? 'bg-green-100 text-green-700'
-                        : league.status === 'upcoming'
+                        : effStatus === 'upcoming'
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-slate-100 text-slate-600'
                     }`}>
-                      {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
+                      {effStatus.charAt(0).toUpperCase() + effStatus.slice(1)}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
-                  {league.status === 'upcoming' ? (
-                    <span className="text-xs text-gray-400">Players Registered: {league.player_count as string}</span>
-                  ) : stats && (league.status === 'active' || league.status === 'completed') ? (
+                  {effStatus === 'upcoming' ? (
+                    <span className="text-xs text-gray-400">Players Registered: {league.player_count as string}/{league.max_players as number}</span>
+                  ) : stats && (effStatus === 'active' || effStatus === 'completed') ? (
                     <span className="text-xs text-gray-400">
                       {league.status === 'completed'
                         ? <>Finished: {ordinal(league.final_position != null ? league.final_position as number : stats.position)}{medal(league.final_position != null ? league.final_position as number : stats.position)} &nbsp; Games Played: {stats.played}/{stats.total}</>
@@ -476,10 +486,10 @@ export default async function DashboardPage() {
 
       <div className="mt-3">
         <Link
-          href="/leagues"
+          href="/tournaments"
           className="text-sm text-green-700 font-medium hover:underline"
         >
-          View all leagues →
+          View all tournaments →
         </Link>
       </div>
 
@@ -518,7 +528,7 @@ export default async function DashboardPage() {
 
             return (
               <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-                <Link href={canEdit ? `/leagues/${match.league_id as string}/matches/${match.id as string}/edit` : `/leagues/${match.league_id as string}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl z-10" />
+                <Link href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl z-10" />
                 <div className="relative flex items-center gap-3">
                   {/* W/L badge */}
                   <span className={`text-xs font-bold px-1.5 py-1 rounded shrink-0 self-center ${badgeClass}`}>{result}</span>
@@ -580,12 +590,12 @@ export default async function DashboardPage() {
                       {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                     </span>
                     {canEdit && (
-                      <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                      <Link href={`/tournaments/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                         Edit
                       </Link>
                     )}
                     {canSuggestEdit && (
-                      <Link href={`/leagues/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                      <Link href={`/tournaments/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                         Suggest edit
                       </Link>
                     )}

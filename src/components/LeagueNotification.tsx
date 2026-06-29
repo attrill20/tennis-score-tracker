@@ -44,9 +44,9 @@ export default function LeagueNotification({
       <div className="flex-1 min-w-0">
         <p className="text-sm text-gray-800">
           {type === 'started' ? (
-            <>Your league &apos;<Link href={`/leagues/${leagueId}`} className="hover:underline hover:text-blue-600">{leagueName}</Link>&apos; has started</>
+            <>Your tournament &apos;<Link href={`/tournaments/${leagueId}`} className="hover:underline hover:text-blue-600">{leagueName}</Link>&apos; has started</>
           ) : (
-            <>Your league &apos;<Link href={`/leagues/${leagueId}`} className="hover:underline hover:text-blue-600">{leagueName}</Link>&apos; has finished</>
+            <>Your tournament &apos;<Link href={`/tournaments/${leagueId}`} className="hover:underline hover:text-blue-600">{leagueName}</Link>&apos; has finished</>
           )}
         </p>
         <p className="text-xs text-gray-500 mt-0.5">{line2}</p>

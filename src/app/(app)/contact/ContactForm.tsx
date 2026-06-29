@@ -91,7 +91,7 @@ export default function ContactForm({ isLoggedIn }: { isLoggedIn: boolean }) {
             onChange={(e) => setSubject(e.target.value)}
             required
             className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-            placeholder="e.g. Query about my league"
+            placeholder="e.g. Query about my tournament"
           />
         </div>
 

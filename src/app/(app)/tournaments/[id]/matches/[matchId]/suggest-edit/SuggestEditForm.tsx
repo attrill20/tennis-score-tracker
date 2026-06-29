@@ -117,7 +117,7 @@ export default function SuggestEditForm({
       return;
     }
 
-    router.push(`/leagues/${leagueId}/matches/${matchId}`);
+    router.push(`/tournaments/${leagueId}/matches/${matchId}`);
   }
 
   const myWon = currentMyScore > currentTheirScore;

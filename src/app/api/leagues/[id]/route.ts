@@ -88,10 +88,21 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   }
 
   const { id } = await params;
+  const [row] = await sql`SELECT tournament_id FROM leagues WHERE id = ${id}`;
+
   await sql`DELETE FROM disputes WHERE match_id IN (SELECT id FROM matches WHERE league_id = ${id})`;
   await sql`DELETE FROM matches WHERE league_id = ${id}`;
   await sql`DELETE FROM league_players WHERE league_id = ${id}`;
   await sql`DELETE FROM leagues WHERE id = ${id}`;
+
+  // Remove the parent tournament once it has no divisions left, so it doesn't linger in the admin list.
+  if (row?.tournament_id) {
+    await sql`
+      DELETE FROM tournaments t
+      WHERE t.id = ${row.tournament_id}
+        AND NOT EXISTS (SELECT 1 FROM leagues WHERE tournament_id = t.id)
+    `;
+  }
 
   return NextResponse.json({ ok: true });
 }

@@ -27,7 +27,7 @@ export default function Navbar({ isAdmin, isSuperAdmin, signOut }: NavbarProps) 
 
         {/* Desktop links */}
         <div className="hidden md:flex items-center gap-4 text-sm">
-          <Link href="/leagues" className="hover:text-green-300 transition-colors">Leagues</Link>
+          <Link href="/tournaments" className="hover:text-green-300 transition-colors">Tournaments</Link>
           <Link href="/profile" className="hover:text-green-300 transition-colors">Profile</Link>
           <Link href="/contact" className="hover:text-green-300 transition-colors">Contact</Link>
           {isAdmin && <AdminDropdown isSuperAdmin={isSuperAdmin} />}
@@ -54,8 +54,8 @@ export default function Navbar({ isAdmin, isSuperAdmin, signOut }: NavbarProps) 
           <Backdrop onClose={() => setOpen(false)} />
           <div className="md:hidden absolute top-full left-0 right-0 bg-green-900 border-t border-green-700 shadow-lg z-20">
             <div className="max-w-4xl mx-auto py-2 flex flex-col items-end">
-              <Link href="/leagues" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-                Leagues
+              <Link href="/tournaments" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                Tournaments
               </Link>
               <Link href="/profile" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
                 Profile
@@ -66,8 +66,8 @@ export default function Navbar({ isAdmin, isSuperAdmin, signOut }: NavbarProps) 
               {isAdmin && (
                 <>
                   <div className="w-full border-t border-green-700 my-1" />
-                  <Link href="/admin/leagues" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
-                    Admin - Leagues
+                  <Link href="/admin/tournaments" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
+                    Admin - Tournaments
                   </Link>
                   <Link href="/admin/disputes" onClick={() => setOpen(false)} className="block px-4 py-3 text-sm hover:bg-green-800 transition-colors">
                     Admin - Disputes
@@ -108,8 +108,8 @@ function AdminDropdown({ isSuperAdmin }: { isSuperAdmin: boolean }) {
       {open && (
         <>
           <Backdrop onClose={() => setOpen(false)} />
-          <div className="absolute left-1/2 -translate-x-1/2 top-7 flex flex-col bg-green-900 border border-green-700 rounded-lg overflow-hidden min-w-36 z-20 shadow-lg">
-            <Link href="/admin/leagues" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Leagues</Link>
+          <div className="absolute left-1/2 -translate-x-1/2 top-10 flex flex-col bg-green-900 border border-green-700 rounded-lg overflow-hidden min-w-36 z-20 shadow-lg">
+            <Link href="/admin/tournaments" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Tournaments</Link>
             <Link href="/admin/disputes" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Disputes</Link>
             {isSuperAdmin && (
               <Link href="/admin/users" onClick={() => setOpen(false)} className="px-4 py-2.5 text-sm hover:bg-green-800 transition-colors">Users</Link>

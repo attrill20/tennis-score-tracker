@@ -144,14 +144,14 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
   return (
     <div className="space-y-4">
       <div>
-        <label htmlFor="assignLeague" className="block text-sm font-medium text-gray-700 mb-1">League</label>
+        <label htmlFor="assignLeague" className="block text-sm font-medium text-gray-700 mb-1">Tournament</label>
         <select
           id="assignLeague"
           value={leagueId}
           onChange={(e) => handleLeagueChange(e.target.value)}
           className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
-          <option value="">Select a league...</option>
+          <option value="">Select a tournament...</option>
           {leagues.map((l) => (
             <option key={l.id} value={l.id}>{l.name}</option>
           ))}

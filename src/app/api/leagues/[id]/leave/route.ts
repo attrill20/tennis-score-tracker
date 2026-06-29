@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const leagues = await sql`SELECT join_type, status FROM leagues WHERE id = ${leagueId}`;
   const league = leagues[0];
-  if (!league) return NextResponse.json({ error: 'League not found' }, { status: 404 });
+  if (!league) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
 
   if (league.join_type !== 'open_invite') {
     return NextResponse.json({ error: 'You cannot leave an invite-only league' }, { status: 403 });

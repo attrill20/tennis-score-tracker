@@ -155,7 +155,7 @@ export default async function MatchesPage() {
             return (
               <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
                 <Link
-                  href={canEdit ? `/leagues/${match.league_id as string}/matches/${match.id as string}/edit` : `/leagues/${match.league_id as string}/matches/${match.id as string}`}
+                  href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`}
                   className="absolute inset-0 rounded-xl z-10"
                 />
                 <div className="relative flex items-center gap-3">
@@ -215,12 +215,12 @@ export default async function MatchesPage() {
                       )}
                       <span className="text-xs text-gray-400">{match.league_name as string}</span>
                       {canEdit && (
-                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        <Link href={`/tournaments/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                           Edit
                         </Link>
                       )}
                       {canSuggestEdit && (
-                        <Link href={`/leagues/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        <Link href={`/tournaments/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                           Suggest edit
                         </Link>
                       )}

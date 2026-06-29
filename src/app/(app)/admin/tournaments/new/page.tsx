@@ -14,14 +14,15 @@ export default async function NewLeaguePage() {
     SELECT id, (first_name || ' ' || last_name) AS full_name
     FROM profiles
     WHERE role != 'unverified'
+      AND email != 'qptcscoreadmin@gmail.com'
     ORDER BY first_name, last_name
   `;
 
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800 mb-1">Create a new league</h1>
-        <Link href="/admin/leagues" className="text-sm text-green-700 hover:underline">
+        <h1 className="text-2xl font-bold text-gray-800 mb-1">Create a new tournament</h1>
+        <Link href="/admin/tournaments" className="text-sm text-green-700 hover:underline">
           ← Back to leagues
         </Link>
       </div>

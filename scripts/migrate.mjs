@@ -107,6 +107,49 @@ const statements = [
   // Notification seen flags for doubles partners
   `ALTER TABLE matches ADD COLUMN IF NOT EXISTS partner_seen BOOLEAN NOT NULL DEFAULT FALSE`,
   `ALTER TABLE matches ADD COLUMN IF NOT EXISTS opponent2_seen BOOLEAN NOT NULL DEFAULT FALSE`,
+
+  // ── Tournaments ──────────────────────────────────────────────────────────
+  // A tournament is the top-level competition (the thing users see). A "single"
+  // tournament holds one division; a "multi" tournament runs in successive rounds,
+  // each with several parallel divisions, with promotion/relegation between them.
+  // A division is stored in the existing `leagues` table (structurally identical).
+  `CREATE TABLE IF NOT EXISTS tournaments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name TEXT NOT NULL,
+    format TEXT NOT NULL DEFAULT 'single' CHECK (format IN ('single', 'multi')),
+    status TEXT NOT NULL DEFAULT 'upcoming' CHECK (status IN ('upcoming', 'active', 'completed', 'archived')),
+    num_divisions INT NOT NULL DEFAULT 1,
+    num_promoted INT NOT NULL DEFAULT 2,
+    num_relegated INT NOT NULL DEFAULT 2,
+    num_rounds INT NOT NULL DEFAULT 1,
+    final_end DATE,
+    is_public BOOLEAN NOT NULL DEFAULT TRUE,
+    color TEXT,
+    description TEXT,
+    created_by UUID REFERENCES profiles(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`,
+
+  // A league row now represents a division belonging to a tournament.
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS tournament_id UUID REFERENCES tournaments(id) ON DELETE CASCADE`,
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS round_number INT NOT NULL DEFAULT 1`,
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS division_order INT NOT NULL DEFAULT 1`,
+  `CREATE INDEX IF NOT EXISTS leagues_tournament_idx ON leagues (tournament_id, round_number, division_order)`,
+
+  // Backfill: wrap every existing standalone league in its own single-division tournament.
+  `DO $$
+  DECLARE r RECORD; new_id UUID;
+  BEGIN
+    FOR r IN SELECT * FROM leagues WHERE tournament_id IS NULL LOOP
+      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, is_public, color, description, created_by, created_at)
+      VALUES (r.name, 'single', r.status::text, 1, r.num_promoted, r.num_relegated, 1, r.season_end, r.is_public, r.color, r.description, r.created_by, r.created_at)
+      RETURNING id INTO new_id;
+      UPDATE leagues SET tournament_id = new_id, round_number = 1, division_order = 1 WHERE id = r.id;
+    END LOOP;
+  END $$`,
+
+  // Multi-league round schedule: the start date of each round, in order.
+  `ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS round_dates DATE[]`,
 ];
 
 async function migrate() {

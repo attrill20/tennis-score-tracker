@@ -42,7 +42,7 @@ export default function PromotionForm({ leagueId, standings }: { leagueId: strin
   }
 
   if (standings.length === 0) {
-    return <p className="text-sm text-gray-400">No players in this league yet.</p>;
+    return <p className="text-sm text-gray-400">No players in this tournament yet.</p>;
   }
 
   return (

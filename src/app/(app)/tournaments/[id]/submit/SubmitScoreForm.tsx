@@ -164,10 +164,10 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
         const rect = btn.getBoundingClientRect();
         setCelebrationOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
       } else {
-        router.push(`/leagues/${leagueId}`);
+        router.push(`/tournaments/${leagueId}`);
       }
     } else {
-      router.push(`/leagues/${leagueId}`);
+      router.push(`/tournaments/${leagueId}`);
     }
   }
 
@@ -185,7 +185,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       {celebrationOrigin && (
         <TennisBallCelebration
           origin={celebrationOrigin}
-          onDone={() => router.push(`/leagues/${leagueId}`)}
+          onDone={() => router.push(`/tournaments/${leagueId}`)}
         />
       )}
 

@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "QPTC Score Tracker",
-  description: "Queen's Park Tennis Club league score tracker",
+  description: "Queen's Park Tennis Club tournament score tracker",
   icons: {
     icon: '/favicon-circle.png',
   },

@@ -31,7 +31,7 @@ export default function DeleteUserButton({ userId, userName }: { userId: string;
     return (
       <div className="space-y-3">
         <p className="text-sm text-red-700">
-          Are you sure you want to delete <strong>{userName}</strong>? This will remove them from all leagues and cannot be undone.
+          Are you sure you want to delete <strong>{userName}</strong>? This will remove them from all tournaments and cannot be undone.
         </p>
         <div className="flex gap-3">
           <button

@@ -135,7 +135,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         )}
 
         {!showContactDetails && !player.is_injured && (
-          <p className="text-sm text-gray-400">Join a shared league to see contact details.</p>
+          <p className="text-sm text-gray-400">Join a shared tournament to see contact details.</p>
         )}
       </div>
 

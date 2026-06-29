@@ -170,7 +170,7 @@ export default function ProfileForm({
           onChange={(e) => { setPhone(e.target.value); setPhoneWarning(''); }}
           onBlur={handlePhoneBlur}
           autoComplete="tel"
-          placeholder="Optional - visible to your league members"
+          placeholder="Optional - visible to your tournament members"
           className={inputClass}
         />
         {phoneWarning && (

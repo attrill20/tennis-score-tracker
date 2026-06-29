@@ -16,6 +16,20 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const league = leagues[0];
   if (!league) notFound();
 
+  const tRows = league.tournament_id
+    ? await sql`SELECT id, name, format, description, status FROM tournaments WHERE id = ${league.tournament_id}`
+    : [];
+  const tournament = tRows[0];
+  const isMultiDivision = tournament?.format === 'multi';
+  // A current-round division counts as active whenever its parent tournament is active.
+  // (A completed round - e.g. an earlier round after promotion - stays completed.)
+  const divisionActive = league.status === 'active' || (isMultiDivision && tournament?.status === 'active' && league.status === 'upcoming');
+  const displayStatus = divisionActive ? 'active' : (league.status as string);
+  const description = (tournament?.description as string | null) ?? (league.description as string | null);
+  const displayName = isMultiDivision
+    ? `${tournament.name as string}: ${league.name as string}`
+    : (league.name as string);
+
   const [players, matches] = await Promise.all([
     sql`
       SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured, p.avatar_url,
@@ -114,14 +128,21 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-1">
-        <h1 className="text-2xl font-bold text-gray-800">{league.name as string}</h1>
+      {isMultiDivision ? (
+        <Link href={`/tournaments/multi/${tournament.id}`} className="text-sm text-green-700 hover:underline">
+          &larr; {tournament.name as string}
+        </Link>
+      ) : (
+        <Link href="/tournaments" className="text-sm text-green-700 hover:underline">&larr; All tournaments</Link>
+      )}
+      <div className="flex items-center justify-between mb-1 mt-2">
+        <h1 className="text-2xl font-bold text-gray-800">{displayName}</h1>
         <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-          league.status === 'active' ? 'bg-green-100 text-green-700'
-          : league.status === 'upcoming' ? 'bg-blue-100 text-blue-700'
+          displayStatus === 'active' ? 'bg-green-100 text-green-700'
+          : displayStatus === 'upcoming' ? 'bg-blue-100 text-blue-700'
           : 'bg-slate-100 text-slate-600'
         }`}>
-          {(league.status as string).charAt(0).toUpperCase() + (league.status as string).slice(1)}
+          {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
         </span>
       </div>
       <div className="flex items-center justify-between mb-2">
@@ -139,16 +160,16 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           )}
         </div>
       </div>
-      {league.description && (
-        <p className="text-sm text-gray-600 mb-6">{league.description as string}</p>
+      {description && (
+        <p className="text-sm text-gray-600 mb-6">{description}</p>
       )}
 
-      {/* League Table */}
+      {/* Tournament Table */}
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
-        {isInLeague && league.status === 'active' && (
+        {isInLeague && divisionActive && (
           <Link
-            href={`/leagues/${id}/submit`}
+            href={`/tournaments/${id}/submit`}
             className="text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
           >
             Submit a result
@@ -258,8 +279,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             const matchBorderColor = result === 'W' ? 'border-l-green-300' : result === 'L' ? 'border-l-red-300' : result === 'D' ? 'border-l-yellow-300' : 'border-l-gray-200';
 
             const href = canEdit
-              ? `/leagues/${id}/matches/${match.id as string}/edit`
-              : `/leagues/${id}/matches/${match.id as string}`;
+              ? `/tournaments/${id}/matches/${match.id as string}/edit`
+              : `/tournaments/${id}/matches/${match.id as string}`;
 
             return (
               <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
@@ -333,7 +354,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       </span>
                     </div>
                     {(canEdit || canSuggestEdit) && (
-                      <Link href={`/leagues/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                      <Link href={`/tournaments/${id}/matches/${match.id as string}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
                         {canEdit ? 'Edit' : 'Suggest edit'}
                       </Link>
                     )}

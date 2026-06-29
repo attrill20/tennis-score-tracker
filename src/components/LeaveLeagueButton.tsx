@@ -23,7 +23,7 @@ export default function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
       return;
     }
 
-    router.push('/leagues');
+    router.push('/tournaments');
   }
 
   if (confirming) {
@@ -54,7 +54,7 @@ export default function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
         onClick={() => setConfirming(true)}
         className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:border-red-400 text-red-500 hover:text-red-700 transition-colors"
       >
-        Leave league
+        Leave tournament
       </button>
     </div>
   );

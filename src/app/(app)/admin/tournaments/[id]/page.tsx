@@ -44,6 +44,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
       SELECT id, (first_name || ' ' || last_name) AS full_name
       FROM profiles
       WHERE role != 'unverified'
+        AND email != 'qptcscoreadmin@gmail.com'
       ORDER BY first_name, last_name
     `,
   ]);
@@ -60,8 +61,8 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
     <div className="space-y-8 max-w-2xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">{league.name as string}</h1>
-        <p className="text-sm text-gray-400 mb-2">Admin - League management</p>
-        <Link href="/admin/leagues" className="text-sm text-green-700 hover:underline">
+        <p className="text-sm text-gray-400 mb-2">Admin - Tournament management</p>
+        <Link href="/admin/tournaments" className="text-sm text-green-700 hover:underline">
           ← Back to leagues
         </Link>
       </div>

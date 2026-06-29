@@ -47,9 +47,9 @@ export default function DisputeResolutionNotification({
             Dispute resolved{wasOverridden ? ' (score updated)' : ' (original score kept)'}
           </p>
           <p className="text-xs text-green-700 mt-0.5">
-            <Link href={`/leagues/${leagueId}`} className="hover:underline hover:text-blue-600">{leagueName}</Link>
+            <Link href={`/tournaments/${leagueId}`} className="hover:underline hover:text-blue-600">{leagueName}</Link>
             {' · '}
-            <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="hover:underline hover:text-blue-600">{myName} {myScore}-{theirScore} {opponentName}</Link>
+            <Link href={`/tournaments/${leagueId}/matches/${matchId}`} className="hover:underline hover:text-blue-600">{myName} {myScore}-{theirScore} {opponentName}</Link>
           </p>
         </div>
       </div>

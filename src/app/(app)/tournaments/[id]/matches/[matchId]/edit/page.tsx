@@ -32,9 +32,9 @@ export default async function EditMatchPage({
   if (!match) notFound();
 
   if (match.player1_id !== userId && match.player2_id !== userId) {
-    redirect(`/leagues/${leagueId}`);
+    redirect(`/tournaments/${leagueId}`);
   }
-  if (match.status !== 'confirmed') redirect(`/leagues/${leagueId}/matches/${matchId}`);
+  if (match.status !== 'confirmed') redirect(`/tournaments/${leagueId}/matches/${matchId}`);
 
   const isSubmitter = match.submitted_by === userId;
   const isPlayer1 = match.player1_id === userId;

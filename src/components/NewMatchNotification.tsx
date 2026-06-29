@@ -80,17 +80,17 @@ export default function NewMatchNotification({
       </svg>
 
       <div className="flex-1 min-w-0">
-        <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="group block">
+        <Link href={`/tournaments/${leagueId}/matches/${matchId}`} className="group block">
           <p className="text-sm text-gray-800 group-hover:text-blue-600 group-hover:underline">{headline}</p>
         </Link>
         <div className="flex items-center gap-2 mt-1">
-          <Link href={`/leagues/${leagueId}/matches/${matchId}`} className="group flex items-center gap-2">
+          <Link href={`/tournaments/${leagueId}/matches/${matchId}`} className="group flex items-center gap-2">
             <span className={`inline-flex items-center justify-center w-5 h-5 rounded text-[10px] font-bold shrink-0 ${badgeClass}`}>
               {outcome}
             </span>
             <span className="text-xs text-gray-700 group-hover:text-blue-600 group-hover:underline">{scoreLabel}</span>
           </Link>
-          <Link href={`/leagues/${leagueId}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{leagueName}</Link>
+          <Link href={`/tournaments/${leagueId}`} className="text-xs text-gray-500 hover:text-blue-600 hover:underline truncate">{leagueName}</Link>
         </div>
       </div>
 
@@ -103,7 +103,7 @@ export default function NewMatchNotification({
           {loading ? '...' : 'OK'}
         </button>
         <Link
-          href={`/leagues/${leagueId}/matches/${matchId}/edit`}
+          href={`/tournaments/${leagueId}/matches/${matchId}/edit`}
           className="text-xs text-blue-600 hover:underline"
         >
           Suggest edit

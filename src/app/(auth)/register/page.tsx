@@ -218,7 +218,7 @@ export default function RegisterPage() {
             onBlur={handlePhoneBlur}
             autoComplete="tel"
             className={inputClass}
-            placeholder="Optional - visible to your league members"
+            placeholder="Optional - visible to your tournament members"
           />
           {phoneWarning && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{phoneWarning}</p>

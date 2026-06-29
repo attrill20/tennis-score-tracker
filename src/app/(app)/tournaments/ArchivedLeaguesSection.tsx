@@ -19,7 +19,7 @@ function ArchivedLeagueCard({ league }: { league: ArchivedLeague }) {
   const totalPossible = Math.floor(Number(league.player_count) * (Number(league.player_count) - 1) / 2);
   return (
     <Link
-      href={`/leagues/${league.id}`}
+      href={`/tournaments/${league.id}`}
       className="block bg-white rounded-xl border border-gray-200 p-4 hover:border-gray-300 transition-colors opacity-75"
     >
       <div className="flex items-start justify-between">

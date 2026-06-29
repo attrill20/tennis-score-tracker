@@ -27,7 +27,7 @@ export default function WelcomeNotification() {
         <p className="text-sm font-medium text-gray-800">Welcome to the QPTC Score Tracker app!</p>
         <p className="text-xs text-gray-500 mt-0.5">
           Visit the{' '}
-          <Link href="/leagues" className="underline hover:text-blue-600">Leagues page</Link>
+          <Link href="/tournaments" className="underline hover:text-blue-600">Tournaments page</Link>
           {' '}to sign up to an open public league and record your scores via the app. Good luck for your matches!
         </p>
       </div>

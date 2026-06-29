@@ -137,7 +137,7 @@ export default function EditMatchForm({
       return;
     }
 
-    router.push(isSubmitter ? `/leagues/${leagueId}` : `/leagues/${leagueId}/matches/${matchId}`);
+    router.push(isSubmitter ? `/tournaments/${leagueId}` : `/tournaments/${leagueId}/matches/${matchId}`);
   }
 
   async function handleDelete() {
@@ -145,7 +145,7 @@ export default function EditMatchForm({
     const res = await fetch(`/api/matches/${matchId}`, { method: 'DELETE' });
     setDeleting(false);
     if (res.ok) {
-      router.push(`/leagues/${leagueId}`);
+      router.push(`/tournaments/${leagueId}`);
     } else {
       const data = await res.json();
       setError(data.error || 'Failed to delete match');
@@ -163,7 +163,7 @@ export default function EditMatchForm({
           </h1>
           <BackButton />
         </div>
-        <Link href={`/leagues/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
+        <Link href={`/tournaments/${leagueId}`} className="text-sm text-green-700 hover:underline shrink-0 mt-1">
           {leagueName}
         </Link>
       </div>
@@ -314,7 +314,7 @@ export default function EditMatchForm({
           ) : (
             <div className="bg-red-50 border border-red-200 rounded-xl p-4 space-y-3">
               <p className="text-sm text-red-800 font-medium">Delete this match permanently?</p>
-              <p className="text-xs text-red-600">This cannot be undone. The result will be removed from the league table.</p>
+              <p className="text-xs text-red-600">This cannot be undone. The result will be removed from the tournament table.</p>
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex gap-2">
                 <button onClick={() => setDeleteConfirm(false)} disabled={deleting} className="flex-1 text-sm border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-2 rounded-lg transition-colors disabled:opacity-50">

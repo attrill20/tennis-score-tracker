@@ -6,5 +6,5 @@ export default async function SuggestEditPage({
   params: Promise<{ id: string; matchId: string }>;
 }) {
   const { id: leagueId, matchId } = await params;
-  redirect(`/leagues/${leagueId}/matches/${matchId}/edit`);
+  redirect(`/tournaments/${leagueId}/matches/${matchId}/edit`);
 }
