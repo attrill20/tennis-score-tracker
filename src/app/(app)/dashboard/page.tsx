@@ -43,7 +43,9 @@ export default async function DashboardPage() {
         m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
         l.name AS league_name,
         p1.first_name AS player1_first, p2.first_name AS player2_first,
-        p3.first_name AS player3_first, p4.first_name AS player4_first
+        p3.first_name AS player3_first, p4.first_name AS player4_first,
+        p1.last_name AS player1_last, p2.last_name AS player2_last,
+        p3.last_name AS player3_last, p4.last_name AS player4_last
       FROM matches m
       JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
@@ -441,7 +443,7 @@ export default async function DashboardPage() {
                     {effectiveActive && (
                       <Link
                         href={`/tournaments/${id}/submit`}
-                        className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+                        className="relative z-20 inline-flex items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
                       >
                         Submit a result
                       </Link>
@@ -449,7 +451,18 @@ export default async function DashboardPage() {
                     {league.status === 'completed' && (
                       <ArchiveLeagueButton leagueId={id} />
                     )}
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${
+                    <span
+                      className={`sm:hidden inline-block w-2.5 h-2.5 rounded-full ${
+                        effStatus === 'active'
+                          ? 'bg-green-500'
+                          : effStatus === 'upcoming'
+                          ? 'bg-blue-500'
+                          : 'bg-slate-400'
+                      }`}
+                      role="img"
+                      aria-label={effStatus}
+                    />
+                    <span className={`hidden sm:inline-block text-xs px-2 py-0.5 rounded-full ${
                       effStatus === 'active'
                         ? 'bg-green-100 text-green-700'
                         : effStatus === 'upcoming'
@@ -512,9 +525,16 @@ export default async function DashboardPage() {
             const p2First = match.player2_first as string;
             const p3First = match.player3_first as string | null;
             const p4First = match.player4_first as string | null;
-            const opponentName = isDoubles
+            const p1Last = match.player1_last as string;
+            const p2Last = match.player2_last as string;
+            const p3Last = match.player3_last as string | null;
+            const p4Last = match.player4_last as string | null;
+            const opponentFirstName = isDoubles
               ? isTeam1 ? `${p2First} / ${p4First}` : `${p1First} / ${p3First}`
               : isTeam1 ? p2First : p1First;
+            const opponentFullName = isDoubles
+              ? isTeam1 ? `${p2First} ${p2Last} / ${p4First} ${p4Last}` : `${p1First} ${p1Last} / ${p3First} ${p3Last}`
+              : isTeam1 ? `${p2First} ${p2Last}` : `${p1First} ${p1Last}`;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
             const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&
@@ -537,7 +557,7 @@ export default async function DashboardPage() {
                   <div className="flex-1 min-w-0 text-sm">
                     <div className="flex items-center">
                       <span className={`font-medium w-24 shrink-0 truncate ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}>
-                        {session?.user?.name}
+                        Me
                       </span>
                       <div className="flex items-center gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
@@ -556,7 +576,8 @@ export default async function DashboardPage() {
                     </div>
                     <div className="flex items-center mt-0.5">
                       <span className={`font-medium w-24 shrink-0 truncate ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}>
-                        {opponentName}
+                        <span className="hidden sm:inline">{opponentFullName}</span>
+                        <span className="sm:hidden">{opponentFirstName}</span>
                       </span>
                       <div className="flex items-center gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {

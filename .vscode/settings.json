@@ -1,3 +1,5 @@
 {
-  "typescript.tsdk": "node_modules/typescript/lib"
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000
 }
