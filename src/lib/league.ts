@@ -24,10 +24,43 @@ type Match = {
 
 export type Tiebreaker = 'head_to_head' | 'most_sets_won' | 'set_difference';
 
+export type PointsConfig = {
+  winStraightSets: number;
+  loseStraightSets: number;
+  winDecider: number;
+  loseDecider: number;
+  draw: number;
+};
+
+export const DEFAULT_POINTS_CONFIG: PointsConfig = {
+  winStraightSets: 3,
+  loseStraightSets: 0,
+  winDecider: 3,
+  loseDecider: 0,
+  draw: 1,
+};
+
+const POINTS_CONFIG_KEYS = ['winStraightSets', 'loseStraightSets', 'winDecider', 'loseDecider', 'draw'] as const;
+
+/** Returns `null` (classic scoring), a valid PointsConfig, or `'invalid'` if malformed. */
+export function parsePointsConfig(input: unknown): PointsConfig | null | 'invalid' {
+  if (input === null || input === undefined) return null;
+  if (typeof input !== 'object') return 'invalid';
+  const obj = input as Record<string, unknown>;
+  const result = {} as PointsConfig;
+  for (const key of POINTS_CONFIG_KEYS) {
+    const n = Number(obj[key]);
+    if (!Number.isFinite(n) || n < 0 || n > 20) return 'invalid';
+    result[key] = n;
+  }
+  return result;
+}
+
 export function calculateStandings(
   players: { id: string; full_name: string }[],
   matches: Match[],
-  tiebreaker: Tiebreaker = 'head_to_head'
+  tiebreaker: Tiebreaker = 'head_to_head',
+  pointsConfig: PointsConfig = DEFAULT_POINTS_CONFIG
 ): PlayerStanding[] {
   const standings: Record<string, PlayerStanding> = {};
 
@@ -63,8 +96,10 @@ export function calculateStandings(
       const winnerIsTeam1 = match.winner_id === match.player1_id;
       const winners = winnerIsTeam1 ? team1 : team2;
       const losers = winnerIsTeam1 ? team2 : team1;
-      winners.forEach((p) => { p.won++; p.points += 3; });
-      losers.forEach((p) => p.lost++);
+      const loserSets = winnerIsTeam1 ? match.score_player2 : match.score_player1;
+      const straightSets = loserSets === 0;
+      winners.forEach((p) => { p.won++; p.points += straightSets ? pointsConfig.winStraightSets : pointsConfig.winDecider; });
+      losers.forEach((p) => { p.lost++; p.points += straightSets ? pointsConfig.loseStraightSets : pointsConfig.loseDecider; });
       if (match.match_type === 'retirement') {
         team1.forEach((p) => { p.setsFor += match.score_player1; p.setsAgainst += match.score_player2; });
         team2.forEach((p) => { p.setsFor += match.score_player2; p.setsAgainst += match.score_player1; });
@@ -73,14 +108,19 @@ export function calculateStandings(
       team1.forEach((p) => { p.setsFor += match.score_player1; p.setsAgainst += match.score_player2; });
       team2.forEach((p) => { p.setsFor += match.score_player2; p.setsAgainst += match.score_player1; });
 
-      if (match.score_player1 > match.score_player2) {
-        team1.forEach((p) => { p.won++; p.points += 3; });
-        team2.forEach((p) => p.lost++);
-      } else if (match.score_player2 > match.score_player1) {
-        team2.forEach((p) => { p.won++; p.points += 3; });
-        team1.forEach((p) => p.lost++);
+      // An unfinished match always splits points evenly, however many sets were recorded for the record.
+      const isDraw = match.match_type === 'unfinished' || match.score_player1 === match.score_player2;
+
+      if (!isDraw) {
+        const team1Wins = match.score_player1 > match.score_player2;
+        const winners = team1Wins ? team1 : team2;
+        const losers = team1Wins ? team2 : team1;
+        const loserSets = team1Wins ? match.score_player2 : match.score_player1;
+        const straightSets = loserSets === 0;
+        winners.forEach((p) => { p.won++; p.points += straightSets ? pointsConfig.winStraightSets : pointsConfig.winDecider; });
+        losers.forEach((p) => { p.lost++; p.points += straightSets ? pointsConfig.loseStraightSets : pointsConfig.loseDecider; });
       } else {
-        [...team1, ...team2].forEach((p) => { p.drawn++; p.points += 1; });
+        [...team1, ...team2].forEach((p) => { p.drawn++; p.points += pointsConfig.draw; });
       }
     }
   }
@@ -92,8 +132,9 @@ export function calculateStandings(
     if (tiebreaker === 'head_to_head') {
       const match = playedMatches.find(
         (m) =>
-          (m.player1_id === a.id && m.player2_id === b.id) ||
-          (m.player1_id === b.id && m.player2_id === a.id)
+          m.match_type !== 'unfinished' &&
+          ((m.player1_id === a.id && m.player2_id === b.id) ||
+            (m.player1_id === b.id && m.player2_id === a.id))
       );
       if (match) {
         const aIsP1 = match.player1_id === a.id;

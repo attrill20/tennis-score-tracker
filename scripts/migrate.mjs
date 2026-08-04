@@ -150,6 +150,10 @@ const statements = [
 
   // Multi-league round schedule: the start date of each round, in order.
   `ALTER TABLE tournaments ADD COLUMN IF NOT EXISTS round_dates DATE[]`,
+
+  // Custom points-per-outcome scoring. NULL means the classic scheme (win 3, draw 1, loss 0).
+  // Shape: { winStraightSets, loseStraightSets, winDecider, loseDecider, draw }
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS points_config JSONB`,
 ];
 
 async function migrate() {

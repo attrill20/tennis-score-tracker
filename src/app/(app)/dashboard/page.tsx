@@ -15,7 +15,7 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, l.max_players, lp.final_position,
+      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, l.max_players, l.points_config, lp.final_position,
         lp.started_seen, lp.ended_seen,
         t.name AS tournament_name, t.format AS tournament_format, t.status AS tournament_status,
         (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
@@ -64,7 +64,7 @@ export default async function DashboardPage() {
       WHERE lp.league_id = ANY(${leagueIds}::uuid[])
     ` : Promise.resolve([]),
     leagueIds.length > 0 ? sql`
-      SELECT player1_id, player2_id, score_player1, score_player2, status, league_id
+      SELECT player1_id, player2_id, score_player1, score_player2, status, league_id, match_type, winner_id
       FROM matches
       WHERE league_id = ANY(${leagueIds}::uuid[])
     ` : Promise.resolve([]),
@@ -155,8 +155,11 @@ export default async function DashboardPage() {
       score_player1: number;
       score_player2: number;
       status: string;
+      match_type?: string | null;
+      winner_id?: string | null;
     }[];
-    const standings = calculateStandings(players, matches);
+    const pointsConfig = (league.points_config as import('@/lib/league').PointsConfig | null) ?? undefined;
+    const standings = calculateStandings(players, matches, 'head_to_head', pointsConfig);
     const played = standings.find((s) => s.id === userId)?.played ?? 0;
 
     let position: number;
@@ -300,13 +303,14 @@ export default async function DashboardPage() {
             const theirPending = m.pending_score_player2 as number;
             const pendingMatchType = m.pending_match_type as string | null;
             const pendingSetScores = (m.pending_set_scores ?? null) as [number, number][] | null;
-            const outcome = myPending > theirPending ? 'W' : myPending < theirPending ? 'L' : 'D';
+            const outcome = pendingMatchType === 'unfinished' ? 'D' : myPending > theirPending ? 'W' : myPending < theirPending ? 'L' : 'D';
             const badgeClass = outcome === 'W' ? 'bg-green-100 text-green-700' : outcome === 'L' ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-500';
-            const scoreLabel = pendingMatchType === 'walkover'
+            const rawScoreLabel = pendingMatchType === 'walkover'
               ? 'Walkover'
               : pendingSetScores && pendingSetScores.length > 0
               ? pendingSetScores.map(([p1, p2]) => `${p1}-${p2}`).join(', ')
               : `${myPending}-${theirPending}`;
+            const scoreLabel = pendingMatchType === 'unfinished' ? `Unfinished, ${rawScoreLabel}` : rawScoreLabel;
             return (
               <div key={m.id as string} className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 flex items-center gap-3">
                 <svg className="shrink-0 w-5 h-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -367,8 +371,10 @@ export default async function DashboardPage() {
             // - opponent / opponent2: user is on team2, team2 wins if score_player2 > score_player1
             // - partner: user is on team1 (same as submitter), team1 wins if score_player1 > score_player2
             const isTeam1 = notificationRole === 'partner';
-            const team1Won = winnerId ? winnerId === m.player1_id : (m.score_player1 as number) > (m.score_player2 as number);
-            const iWon = isTeam1 ? team1Won : !team1Won;
+            const isUnfinishedMatch = m.match_type === 'unfinished';
+            const team1Won = !isUnfinishedMatch && (winnerId ? winnerId === m.player1_id : (m.score_player1 as number) > (m.score_player2 as number));
+            const team2Won = !isUnfinishedMatch && (winnerId ? winnerId !== m.player1_id : (m.score_player2 as number) > (m.score_player1 as number));
+            const iWon = isTeam1 ? team1Won : team2Won;
 
             const setScores = (m.set_scores ?? null) as [number, number][] | null;
             // Flip set scores so they're from "my team" perspective

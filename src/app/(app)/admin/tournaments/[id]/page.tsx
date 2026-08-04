@@ -52,7 +52,8 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
     matches as { player1_id: string; player2_id: string; score_player1: number; score_player2: number; status: string }[],
-    (league.tiebreaker as string ?? 'head_to_head') as import('@/lib/league').Tiebreaker
+    (league.tiebreaker as string ?? 'head_to_head') as import('@/lib/league').Tiebreaker,
+    (league.points_config as import('@/lib/league').PointsConfig | null) ?? undefined
   );
 
   const leagueType = (league.league_type as string) ?? 'singles';
@@ -78,6 +79,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentTiebreaker={(league.tiebreaker as string) ?? 'head_to_head'}
         currentColor={(league.color as string) ?? null}
         currentScoringMethod={(league.scoring_method as string) ?? 'best_of_3_tiebreak'}
+        currentPointsConfig={(league.points_config as import('@/lib/league').PointsConfig | null) ?? null}
         currentMaxPlayers={Number(league.max_players ?? 8)}
         currentNumPromoted={Number(league.num_promoted ?? 0)}
         currentNumRelegated={Number(league.num_relegated ?? 0)}

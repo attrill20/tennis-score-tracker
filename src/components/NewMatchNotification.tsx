@@ -48,14 +48,15 @@ export default function NewMatchNotification({
 
   if (dismissed) return null;
 
-  const isDraw = myScore === theirScore && matchType !== 'walkover';
+  const isDraw = matchType === 'unfinished' || (myScore === theirScore && matchType !== 'walkover');
   const outcome = iWon ? 'W' : isDraw ? 'D' : 'L';
 
-  const scoreLabel = matchType === 'walkover'
+  const rawScoreLabel = matchType === 'walkover'
     ? 'Walkover'
     : setScores && setScores.length > 0
     ? setScores.map(([my, their]) => `${my}-${their}`).join(', ')
     : `${myScore}-${theirScore}`;
+  const scoreLabel = matchType === 'unfinished' ? `Unfinished, ${rawScoreLabel}` : rawScoreLabel;
 
   const badgeClass = iWon
     ? 'bg-green-100 text-green-700'

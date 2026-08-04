@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
+import { parsePointsConfig } from '@/lib/league';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -9,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType } = await req.json();
+  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType, pointsConfig } = await req.json();
 
   if (name !== undefined) {
     if (!name.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -76,6 +77,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const valid = ['invite_only', 'open_invite'];
     if (!valid.includes(joinType)) return NextResponse.json({ error: 'Invalid join type' }, { status: 400 });
     await sql`UPDATE leagues SET join_type = ${joinType} WHERE id = ${id}`;
+  }
+
+  if (pointsConfig !== undefined) {
+    const resolved = parsePointsConfig(pointsConfig);
+    if (resolved === 'invalid') return NextResponse.json({ error: 'Invalid points scoring configuration' }, { status: 400 });
+    await sql`UPDATE leagues SET points_config = ${resolved ? JSON.stringify(resolved) : null} WHERE id = ${id}`;
   }
 
   return NextResponse.json({ ok: true });

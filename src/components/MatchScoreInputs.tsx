@@ -1,6 +1,6 @@
 'use client';
 
-export type MatchType = 'normal' | 'walkover' | 'retirement';
+export type MatchType = 'normal' | 'walkover' | 'retirement' | 'unfinished';
 export type TbEntry = { my: string; their: string };
 
 export function isTiebreakSet(my: number, their: number): boolean {
@@ -72,7 +72,7 @@ export default function MatchScoreInputs({
       <div>
         <p className="text-sm font-medium text-gray-700 mb-2">Match type</p>
         <div className="flex rounded-lg overflow-hidden border border-gray-300">
-          {(['normal', 'walkover', 'retirement'] as const).map((type) => (
+          {(['normal', 'walkover', 'retirement', 'unfinished'] as const).map((type) => (
             <button
               key={type}
               type="button"
@@ -139,9 +139,12 @@ export default function MatchScoreInputs({
             ))}
           </div>
           {matchType === 'retirement' && (
-            <p className="mt-2 text-xs text-gray-400">Enter the sets completed before retirement. Partial sets are not counted.</p>
+            <p className="mt-2 text-xs text-gray-400">Enter the score up to the point of retirement. The opponent is awarded the win - straight sets or a deciding set, based on the score you enter.</p>
           )}
-          {(() => {
+          {matchType === 'unfinished' && (
+            <p className="mt-2 text-xs text-gray-400">Enter the score up to the point the match was stopped. Points are always split evenly between both players, whatever the score.</p>
+          )}
+          {matchType === 'normal' && (() => {
             const suspicious = sets
               .map((s, i) => ({ i, my: parseInt(s.my), their: parseInt(s.their) }))
               .filter(({ my, their }) => !isNaN(my) && !isNaN(their) && isSuspiciousScore(my, their));
@@ -155,7 +158,7 @@ export default function MatchScoreInputs({
                   <p className="text-xs font-medium text-amber-800">Double-check your scores</p>
                   <p className="text-xs text-amber-700 mt-0.5">
                     Sets are normally played to 6 games (or 7-5 / 7-6).{' '}
-                    {suspicious.map(({ i, my, their }) => `Set ${i + 1}: ${my}-${their}`).join(', ')} {suspicious.length === 1 ? 'looks' : 'look'} unusual. If the match wasn&apos;t completed, use the <span className="font-medium">Retirement</span> match type instead.
+                    {suspicious.map(({ i, my, their }) => `Set ${i + 1}: ${my}-${their}`).join(', ')} {suspicious.length === 1 ? 'looks' : 'look'} unusual. If the match wasn&apos;t completed, use the <span className="font-medium">Retirement</span> or <span className="font-medium">Unfinished</span> match type instead.
                   </p>
                 </div>
               </div>

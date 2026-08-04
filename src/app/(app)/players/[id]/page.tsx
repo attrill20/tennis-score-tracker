@@ -52,6 +52,7 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   if (!player) notFound();
 
   function getResult(m: (typeof matches)[0]): 'W' | 'L' | 'D' {
+    if (m.match_type === 'unfinished') return 'D';
     const isTeam1 = m.player1_id === id || m.player3_id === id;
     const winnerId = m.winner_id as string | null;
     if (winnerId) {

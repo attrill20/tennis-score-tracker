@@ -3,7 +3,9 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import LeagueColorPicker from '@/components/LeagueColorPicker';
+import PointsConfigFields from '@/components/PointsConfigFields';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
+import { type PointsConfig } from '@/lib/league';
 
 export default function EditLeagueForm({
   leagueId,
@@ -16,6 +18,7 @@ export default function EditLeagueForm({
   currentTiebreaker,
   currentColor,
   currentScoringMethod,
+  currentPointsConfig,
   currentMaxPlayers,
   currentNumPromoted,
   currentNumRelegated,
@@ -32,6 +35,7 @@ export default function EditLeagueForm({
   currentTiebreaker: string;
   currentColor: string | null;
   currentScoringMethod: string;
+  currentPointsConfig: PointsConfig | null;
   currentMaxPlayers: number;
   currentNumPromoted: number;
   currentNumRelegated: number;
@@ -47,6 +51,7 @@ export default function EditLeagueForm({
   const [isPublic, setIsPublic] = useState(currentIsPublic);
   const [tiebreaker, setTiebreaker] = useState(currentTiebreaker);
   const [scoringMethod, setScoringMethod] = useState(currentScoringMethod);
+  const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(currentPointsConfig);
   const [maxPlayers, setMaxPlayers] = useState(currentMaxPlayers);
   const [numPromoted, setNumPromoted] = useState(currentNumPromoted);
   const [numRelegated, setNumRelegated] = useState(currentNumRelegated);
@@ -73,7 +78,7 @@ export default function EditLeagueForm({
     const res = await fetch(`/api/leagues/${leagueId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType }),
+      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker, color, scoringMethod, pointsConfig, maxPlayers, numPromoted, numRelegated, joinType }),
     });
 
     const data = await res.json();
@@ -171,6 +176,8 @@ export default function EditLeagueForm({
           <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
         </select>
       </div>
+
+      <PointsConfigFields value={pointsConfig} onChange={(v) => { setPointsConfig(v); mark(); }} />
 
       <div>
         <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">

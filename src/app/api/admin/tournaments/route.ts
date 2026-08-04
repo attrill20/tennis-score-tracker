@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
+import { parsePointsConfig } from '@/lib/league';
 
 const VALID_SCORING = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
 const VALID_TIEBREAKERS = ['head_to_head', 'most_sets_won', 'set_difference'];
@@ -37,6 +38,7 @@ export async function POST(req: NextRequest) {
     maxPlayers,
     numPromoted,
     numRelegated,
+    pointsConfig,
   } = body;
 
   if (!name) {
@@ -50,6 +52,12 @@ export async function POST(req: NextRequest) {
   if (!VALID_SCORING.includes(scoringMethod)) {
     return NextResponse.json({ error: 'Invalid scoring method' }, { status: 400 });
   }
+
+  const resolvedPointsConfig = parsePointsConfig(pointsConfig);
+  if (resolvedPointsConfig === 'invalid') {
+    return NextResponse.json({ error: 'Invalid points scoring configuration' }, { status: 400 });
+  }
+  const pointsConfigToStore = resolvedPointsConfig ? JSON.stringify(resolvedPointsConfig) : null;
 
   const resolvedTiebreaker = VALID_TIEBREAKERS.includes(tiebreaker) ? tiebreaker : 'set_difference';
   const resolvedJoinType = joinType === 'open_invite' ? 'open_invite' : 'invite_only';
@@ -95,8 +103,8 @@ export async function POST(req: NextRequest) {
       const order = i + 1;
       const divName = `Division ${order}`;
       const [div] = await sql`
-        INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order)
-        VALUES (${divName}, ${round1Start}, ${round1End}, ${round1Status}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, 'invite_only', ${null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, ${order})
+        INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config)
+        VALUES (${divName}, ${round1Start}, ${round1End}, ${round1Status}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, 'invite_only', ${null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, ${order}, ${pointsConfigToStore})
         RETURNING id
       `;
       divisions.push({ id: div.id as string, name: divName, order });
@@ -118,8 +126,8 @@ export async function POST(req: NextRequest) {
   `;
 
   const [div] = await sql`
-    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order)
-    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? statusForStart(startDate)}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, ${resolvedJoinType}, ${description ?? null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, 1)
+    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config)
+    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? statusForStart(startDate)}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, ${resolvedJoinType}, ${description ?? null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, 1, ${pointsConfigToStore})
     RETURNING id
   `;
 

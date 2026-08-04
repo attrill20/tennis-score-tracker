@@ -99,7 +99,7 @@ export default function EditMatchForm({
       return [tbMy ?? 0, tbTheir ?? 0];
     });
 
-    if (matchType !== 'walkover' && playedSets.length < 2) {
+    if (matchType !== 'walkover' && matchType !== 'unfinished' && playedSets.length < 2) {
       setError('At least 2 sets must be entered.');
       return;
     }
@@ -152,7 +152,9 @@ export default function EditMatchForm({
     }
   }
 
-  const myWon = currentMyScore > currentTheirScore;
+  const isUnfinished = existingMatchType === 'unfinished';
+  const highlightMine = existingWinnerId ? existingWinnerId === myId : (!isUnfinished && currentMyScore > currentTheirScore);
+  const highlightTheirs = existingWinnerId ? existingWinnerId !== myId : (!isUnfinished && currentTheirScore > currentMyScore);
 
   return (
     <div className="max-w-lg mx-auto">
@@ -181,13 +183,16 @@ export default function EditMatchForm({
             {existingMatchType === 'retirement' && (
               <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
             )}
+            {existingMatchType === 'unfinished' && (
+              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Unfinished</span>
+            )}
           </div>
           <span className="text-xs text-gray-400">{formattedDate}</span>
         </div>
 
         {existingMatchType === 'walkover' ? (
           <p className="text-sm text-center text-gray-500 py-1">
-            {myWon ? 'You won' : `${opponentName} won`} by walkover
+            {highlightMine ? 'You won' : `${opponentName} won`} by walkover
           </p>
         ) : (
           <>
@@ -199,7 +204,7 @@ export default function EditMatchForm({
             </div>
 
             <div className="flex items-center gap-3 mb-2">
-              <Link href={`/players/${myId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>{myName}</Link>
+              <Link href={`/players/${myId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightMine ? 'text-gray-800' : 'text-gray-400'}`}>{myName}</Link>
               {[0, 1, 2].map((i) => {
                 const myTb = tiebreakScores?.[i] != null ? tiebreakScores![i]![0] : null;
                 return (
@@ -218,7 +223,7 @@ export default function EditMatchForm({
             </div>
 
             <div className="flex items-center gap-3">
-              <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
+              <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
               {[0, 1, 2].map((i) => {
                 const theirTb = tiebreakScores?.[i] != null ? tiebreakScores![i]![1] : null;
                 return (

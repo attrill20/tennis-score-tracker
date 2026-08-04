@@ -19,6 +19,7 @@ type DivisionRow = {
   tiebreaker: string;
   is_public: boolean;
   color: string | null;
+  points_config: import('@/lib/league').PointsConfig | null;
 };
 
 /**
@@ -50,7 +51,7 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
   if (existing.length > 0) return [];
 
   const divisions = (await sql`
-    SELECT id, name, division_order, league_type, max_players, scoring_method, tiebreaker, is_public, color
+    SELECT id, name, division_order, league_type, max_players, scoring_method, tiebreaker, is_public, color, points_config
     FROM leagues
     WHERE tournament_id = ${tournamentId} AND round_number = ${completedRound}
     ORDER BY division_order ASC
@@ -71,7 +72,7 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
       FROM matches WHERE league_id = ${div.id}
     `) as unknown as Parameters<typeof calculateStandings>[1];
 
-    const ordered = calculateStandings(players, matches, (div.tiebreaker as Tiebreaker) ?? 'head_to_head');
+    const ordered = calculateStandings(players, matches, (div.tiebreaker as Tiebreaker) ?? 'head_to_head', div.points_config ?? undefined);
     standings.push(ordered.map((s) => s.id));
   }
 
@@ -95,8 +96,8 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
   for (let d = 0; d < divisions.length; d++) {
     const template = divisions[d];
     const [div] = await sql`
-      INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order)
-      VALUES (${template.name}, ${start}, ${end}, ${status}, ${template.max_players}, ${template.scoring_method}, ${t.num_promoted}, ${t.num_relegated}, ${template.tiebreaker}, ${null}, ${template.is_public}, 'invite_only', ${null}, ${template.league_type}, ${template.color}, ${tournamentId}, ${nextRound}, ${template.division_order})
+      INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config)
+      VALUES (${template.name}, ${start}, ${end}, ${status}, ${template.max_players}, ${template.scoring_method}, ${t.num_promoted}, ${t.num_relegated}, ${template.tiebreaker}, ${null}, ${template.is_public}, 'invite_only', ${null}, ${template.league_type}, ${template.color}, ${tournamentId}, ${nextRound}, ${template.division_order}, ${template.points_config ? JSON.stringify(template.points_config) : null})
       RETURNING id
     `;
     const newDivisionId = div.id as string;

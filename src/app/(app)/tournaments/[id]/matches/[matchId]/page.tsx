@@ -47,7 +47,8 @@ export default async function MatchPage({
   const winnerId = match.winner_id as string | null;
   const myScore = isPlayer1 ? match.score_player1 as number : match.score_player2 as number;
   const theirScore = isPlayer1 ? match.score_player2 as number : match.score_player1 as number;
-  const iWon = winnerId ? winnerId === userId : myScore > theirScore;
+  const highlightMine = winnerId ? winnerId === userId : (matchType !== 'unfinished' && myScore > theirScore);
+  const highlightTheirs = winnerId ? winnerId !== userId : (matchType !== 'unfinished' && theirScore > myScore);
 
   const p1First = match.player1_first as string;
   const p2First = match.player2_first as string;
@@ -84,13 +85,16 @@ export default async function MatchPage({
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Match result</h1>
           <BackButton />
-          {(matchType === 'walkover' || matchType === 'retirement' || isPendingEdit || match.status === 'disputed' || match.status === 'overridden') && (
+          {(matchType === 'walkover' || matchType === 'retirement' || matchType === 'unfinished' || isPendingEdit || match.status === 'disputed' || match.status === 'overridden') && (
             <div className="flex items-center gap-2 mt-1">
               {matchType === 'walkover' && (
                 <span className="text-xs bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full">Walkover</span>
               )}
               {matchType === 'retirement' && (
                 <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
+              )}
+              {matchType === 'unfinished' && (
+                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Unfinished</span>
               )}
               {isPendingEdit && (
                 <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
@@ -121,7 +125,7 @@ export default async function MatchPage({
         {matchType === 'walkover' ? (
           <div className="text-center py-2">
             <p className="text-sm font-semibold text-gray-800">
-              {iWon ? myName : opponentName} won by walkover
+              {highlightMine ? myName : opponentName} won by walkover
             </p>
           </div>
         ) : (
@@ -134,7 +138,7 @@ export default async function MatchPage({
             </div>
 
             <div className="flex items-center gap-3 mb-2">
-              <Link href={`/players/${userId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${iWon ? 'text-gray-800' : 'text-gray-400'}`}>
+              <Link href={`/players/${userId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightMine ? 'text-gray-800' : 'text-gray-400'}`}>
                 {myName}
               </Link>
               {[0, 1, 2].map((i) => {
@@ -159,7 +163,7 @@ export default async function MatchPage({
             </div>
 
             <div className="flex items-center gap-3">
-              <Link href={`/players/${opponentPlayerId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${!iWon ? 'text-gray-800' : 'text-gray-400'}`}>
+              <Link href={`/players/${opponentPlayerId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>
                 {opponentName}
               </Link>
               {[0, 1, 2].map((i) => {

@@ -131,6 +131,8 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
       ? walkoverId === 'them'
       : matchType === 'retirement'
       ? retiredPlayer === 'them'
+      : matchType === 'unfinished'
+      ? false
       : mySetsWon > (playedSets.length - mySetsWon);
 
     setLoading(true);

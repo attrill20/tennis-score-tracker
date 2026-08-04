@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
     const { sets, tiebreaks, playedAt, matchType = 'normal', walkoverId, retiredPlayer } = body;
 
-    if (matchType !== 'walkover' && (!sets?.length || !playedAt)) {
+    if (matchType !== 'walkover' && matchType !== 'unfinished' && (!sets?.length || !playedAt)) {
       return NextResponse.json({ error: 'Sets and date are required' }, { status: 400 });
     }
     if (!playedAt) {
@@ -176,7 +176,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ma
 
   const { sets, tiebreaks, playedAt, matchType = 'normal', walkoverId, retiredPlayer } = body;
 
-  if (matchType !== 'walkover' && (!sets?.length || !playedAt)) {
+  if (matchType !== 'walkover' && matchType !== 'unfinished' && (!sets?.length || !playedAt)) {
     return NextResponse.json({ error: 'All fields are required' }, { status: 400 });
   }
   if (!playedAt) {

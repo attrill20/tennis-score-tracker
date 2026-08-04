@@ -23,6 +23,7 @@ export default async function ProfilePage() {
   const profile = rows[0];
 
   function getResult(m: (typeof matches)[0]): 'W' | 'L' | 'D' {
+    if (m.match_type === 'unfinished') return 'D';
     const isTeam1 = m.player1_id === userId || m.player3_id === userId;
     const winnerId = m.winner_id as string | null;
     if (winnerId) return (winnerId === m.player1_id) === isTeam1 ? 'W' : 'L';

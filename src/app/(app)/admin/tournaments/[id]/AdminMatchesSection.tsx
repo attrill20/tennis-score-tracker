@@ -35,8 +35,10 @@ function getInitialWalkoverId(match: AdminMatchRow): 'me' | 'them' {
 function formatMatchScore(match: AdminMatchRow): string {
   if (match.match_type === 'walkover') return 'Walkover';
   if (match.match_type === 'retirement') return 'Retirement';
-  if (!match.set_scores?.length) return `${match.score_player1}-${match.score_player2}`;
-  return match.set_scores.map(([p1, p2]) => `${p1}-${p2}`).join(', ');
+  const score = !match.set_scores?.length
+    ? `${match.score_player1}-${match.score_player2}`
+    : match.set_scores.map(([p1, p2]) => `${p1}-${p2}`).join(', ');
+  return match.match_type === 'unfinished' ? `Unfinished, ${score}` : score;
 }
 
 function MatchForm({
@@ -405,9 +407,9 @@ export default function AdminMatchesSection({
                 <div className="flex items-center justify-between py-3 gap-3">
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-gray-800">
-                      <span className={match.winner_id === match.player1_id || (!match.winner_id && match.score_player1 > match.score_player2) ? 'font-semibold' : ''}>{match.player1_name}</span>
+                      <span className={match.winner_id === match.player1_id || (!match.winner_id && match.match_type !== 'unfinished' && match.score_player1 > match.score_player2) ? 'font-semibold' : ''}>{match.player1_name}</span>
                       <span className="text-gray-400 mx-1">vs</span>
-                      <span className={match.winner_id === match.player2_id || (!match.winner_id && match.score_player2 > match.score_player1) ? 'font-semibold' : ''}>{match.player2_name}</span>
+                      <span className={match.winner_id === match.player2_id || (!match.winner_id && match.match_type !== 'unfinished' && match.score_player2 > match.score_player1) ? 'font-semibold' : ''}>{match.player2_name}</span>
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
                       {formatMatchScore(match)}

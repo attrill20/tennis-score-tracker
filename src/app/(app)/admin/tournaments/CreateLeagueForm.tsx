@@ -5,7 +5,9 @@ import Link from 'next/link';
 import DatePicker from '@/components/DatePicker';
 import LeagueColorPicker from '@/components/LeagueColorPicker';
 import AssignPlayersPanel from '@/components/AssignPlayersPanel';
+import PointsConfigFields from '@/components/PointsConfigFields';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
+import { type PointsConfig } from '@/lib/league';
 
 type Member = { id: string; full_name: string };
 type Division = { id: string; name: string; order: number };
@@ -19,6 +21,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   const [status, setStatus] = useState<'upcoming' | 'active'>('upcoming');
   const [maxPlayers, setMaxPlayers] = useState(8);
   const [scoringMethod, setScoringMethod] = useState('best_of_3_tiebreak');
+  const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(null);
   const [numPromoted, setNumPromoted] = useState(0);
   const [numRelegated, setNumRelegated] = useState(0);
   const [tiebreaker, setTiebreaker] = useState('head_to_head');
@@ -62,6 +65,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             format,
             name,
             scoringMethod,
+            pointsConfig,
             tiebreaker,
             leagueType,
             isPublic,
@@ -81,6 +85,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             endDate,
             status,
             scoringMethod,
+            pointsConfig,
             tiebreaker,
             leagueType,
             isPublic,
@@ -304,6 +309,8 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
         </select>
       </div>
+
+      <PointsConfigFields value={pointsConfig} onChange={setPointsConfig} />
 
       <div>
         <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">

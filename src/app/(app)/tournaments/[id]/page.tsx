@@ -7,6 +7,7 @@ import { notFound } from 'next/navigation';
 import StandingsRow from './StandingsRow';
 import ArchiveLeagueButton from '../ArchiveLeagueButton';
 import LeaveLeagueButton from '@/components/LeaveLeagueButton';
+import ScoringRulesInfo from '@/components/ScoringRulesInfo';
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -63,10 +64,13 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const isDoubles = league.league_type === 'doubles';
 
+  const pointsConfig = (league.points_config as import('@/lib/league').PointsConfig | null) ?? undefined;
+
   const standings = calculateStandings(
     players as { id: string; full_name: string }[],
     matches as { player1_id: string; player2_id: string; player3_id?: string | null; player4_id?: string | null; score_player1: number; score_player2: number; status: string; match_type?: string | null; winner_id?: string | null }[],
-    ((league.tiebreaker as string) ?? 'head_to_head') as Tiebreaker
+    ((league.tiebreaker as string) ?? 'head_to_head') as Tiebreaker,
+    pointsConfig
   );
 
   // For doubles, collapse standings into one row per pair
@@ -166,7 +170,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
       {/* Tournament Table */}
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
+        <div className="flex items-center gap-1.5">
+          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
+          <ScoringRulesInfo pointsConfig={pointsConfig} />
+        </div>
         {isInLeague && divisionActive && (
           <Link
             href={`/tournaments/${id}/submit`}
@@ -272,9 +279,11 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             const topScore = topIsPlayer1 ? match.score_player1 as number : match.score_player2 as number;
             const bottomScore = topIsPlayer1 ? match.score_player2 as number : match.score_player1 as number;
             const topPlayerId = topIsPlayer1 ? match.player1_id as string : match.player2_id as string;
-            const topWon = winnerId ? winnerId === topPlayerId : topScore > bottomScore;
+            const isUnfinishedMatch = matchType === 'unfinished';
+            const topWon = !isUnfinishedMatch && (winnerId ? winnerId === topPlayerId : topScore > bottomScore);
+            const bottomWon = !isUnfinishedMatch && (winnerId ? winnerId !== topPlayerId : bottomScore > topScore);
 
-            const result = isInvolved ? (topWon ? 'W' : (winnerId || topScore < bottomScore) ? 'L' : 'D') : null;
+            const result = isInvolved ? (isUnfinishedMatch ? 'D' : topWon ? 'W' : (winnerId || topScore < bottomScore) ? 'L' : 'D') : null;
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
             const matchBorderColor = result === 'W' ? 'border-l-green-300' : result === 'L' ? 'border-l-red-300' : result === 'D' ? 'border-l-yellow-300' : 'border-l-gray-200';
 
@@ -315,7 +324,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       </div>
                     </div>
                     <div className="flex items-center mt-0.5">
-                      <span className={`font-medium ${isDoubles ? 'w-24 sm:w-48' : 'w-24'} shrink-0 truncate ${!topWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                      <span className={`font-medium ${isDoubles ? 'w-24 sm:w-48' : 'w-24'} shrink-0 truncate ${bottomWon ? 'text-gray-800' : 'text-gray-400'}`}>
                         {isDoubles ? <><span className="sm:hidden">{bottomName}</span><span className="hidden sm:inline">{bottomNameDesktop}</span></> : bottomName}
                       </span>
                       <div className="flex items-center gap-1.5">
@@ -342,6 +351,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                       )}
                       {matchType === 'retirement' && (
                         <span className="text-xs bg-orange-100 text-orange-600 px-2 py-0.5 rounded-full">Retirement</span>
+                      )}
+                      {matchType === 'unfinished' && (
+                        <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full">Unfinished</span>
                       )}
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
