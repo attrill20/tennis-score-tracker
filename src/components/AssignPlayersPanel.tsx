@@ -33,6 +33,7 @@ export default function AssignPlayersPanel({
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingOverride, setPendingOverride] = useState<{ message: string; onConfirm: () => void } | null>(null);
 
   useEffect(() => {
     async function load() {
@@ -51,19 +52,29 @@ export default function AssignPlayersPanel({
     load();
   }, [leagueId]);
 
-  async function togglePlayer(id: string) {
+  async function togglePlayer(id: string, force = false) {
     const isAdding = !selected.includes(id);
-    setSelected((prev) => isAdding ? [...prev, id] : prev.filter((p) => p !== id));
+    if (!force) setSelected((prev) => isAdding ? [...prev, id] : prev.filter((p) => p !== id));
     setError('');
+    setPendingOverride(null);
     setSaving(true);
     try {
       if (isAdding) {
         const res = await fetch(`/api/admin/leagues/${leagueId}/players`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ playerIds: [id] }),
+          body: JSON.stringify({ playerIds: [id], ...(force ? { force: true } : {}) }),
         });
-        if (!res.ok) throw new Error((await res.json()).error || 'Failed to add player');
+        const data = await res.json();
+        if (!res.ok) {
+          if (res.status === 409 && data.needsConfirmation) {
+            if (!force) setSelected((prev) => prev.filter((p) => p !== id));
+            setPendingOverride({ message: data.error, onConfirm: () => togglePlayer(id, true) });
+            return;
+          }
+          throw new Error(data.error || 'Failed to add player');
+        }
+        if (force) setSelected((prev) => [...prev, id]);
       } else {
         const res = await fetch(`/api/admin/leagues/${leagueId}/players`, {
           method: 'DELETE',
@@ -83,22 +94,34 @@ export default function AssignPlayersPanel({
 
   const pairedIds = new Set(pairs.flatMap((p) => [p.p1Id, p.p2Id]));
 
-  async function addPair() {
-    if (!newP1 || !newP2 || newP1 === newP2) return;
-    const pair: Pair = { p1Id: newP1, p2Id: newP2 };
-    if (pairs.some((p) => pairKey(p) === pairKey(pair))) return;
-    setPairs((prev) => [...prev, pair]);
-    setNewP1('');
-    setNewP2('');
+  async function addPair(force = false, pairOverride?: Pair) {
+    const pair: Pair = pairOverride ?? { p1Id: newP1, p2Id: newP2 };
+    if (!force) {
+      if (!newP1 || !newP2 || newP1 === newP2) return;
+      if (pairs.some((p) => pairKey(p) === pairKey(pair))) return;
+      setPairs((prev) => [...prev, pair]);
+      setNewP1('');
+      setNewP2('');
+    }
     setError('');
+    setPendingOverride(null);
     setSaving(true);
     try {
       const res = await fetch(`/api/admin/leagues/${leagueId}/players`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pairs: [pair] }),
+        body: JSON.stringify({ pairs: [pair], ...(force ? { force: true } : {}) }),
       });
-      if (!res.ok) throw new Error((await res.json()).error || 'Failed to add pair');
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 409 && data.needsConfirmation) {
+          if (!force) setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
+          setPendingOverride({ message: data.error, onConfirm: () => addPair(true, pair) });
+          return;
+        }
+        throw new Error(data.error || 'Failed to add pair');
+      }
+      if (force) setPairs((prev) => [...prev, pair]);
       router.refresh();
     } catch (e) {
       setPairs((prev) => prev.filter((p) => pairKey(p) !== pairKey(pair)));
@@ -127,6 +150,28 @@ export default function AssignPlayersPanel({
       setSaving(false);
     }
   }
+
+  const overrideConfirm = pendingOverride && (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-3 space-y-2">
+      <p className="text-sm text-amber-800">{pendingOverride.message}</p>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setPendingOverride(null)}
+          className="flex-1 text-xs border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-1.5 rounded-lg transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={() => pendingOverride.onConfirm()}
+          className="flex-1 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium py-1.5 rounded-lg transition-colors"
+        >
+          Assign anyway
+        </button>
+      </div>
+    </div>
+  );
 
   if (leagueType === 'doubles') {
     const p1Options = members.filter(
@@ -240,7 +285,7 @@ export default function AssignPlayersPanel({
               </div>
             </div>
             <div className="px-3 py-2.5 border-t border-gray-200">
-              <button type="button" onClick={addPair} disabled={!newP1 || !newP2 || newP1 === newP2 || saving}
+              <button type="button" onClick={() => addPair()} disabled={!newP1 || !newP2 || newP1 === newP2 || saving}
                 className="w-full py-2 rounded-lg bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white text-sm font-medium transition-colors">
                 {saving ? 'Saving...' : 'Add pair'}
               </button>
@@ -253,6 +298,7 @@ export default function AssignPlayersPanel({
             Warning: {pairs.length} pairs assigned but the league limit is {maxPlayers}. Reduce pairs or increase the limit in league settings.
           </p>
         )}
+        {overrideConfirm}
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
       </div>
     );
@@ -347,6 +393,7 @@ export default function AssignPlayersPanel({
           Warning: {selected.length} players assigned but the league limit is {maxPlayers}. Remove players or increase the limit in league settings.
         </p>
       )}
+      {overrideConfirm}
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
     </div>
   );

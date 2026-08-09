@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
+import { individualEligible } from '@/lib/genderCategory';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -10,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const userId = session.user.id;
 
   const leagues = await sql`
-    SELECT id, join_type, max_players, league_type, status,
+    SELECT id, join_type, max_players, league_type, status, gender_category,
       (SELECT COUNT(*) FROM league_players WHERE league_id = id) AS player_count
     FROM leagues WHERE id = ${leagueId}
   `;
@@ -19,6 +20,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   if (league.join_type !== 'open_invite') {
     return NextResponse.json({ error: 'This league is invite-only' }, { status: 403 });
+  }
+
+  const [me] = await sql`SELECT gender FROM profiles WHERE id = ${userId}`;
+  const { eligible, reason } = individualEligible(league.gender_category as string, (me?.gender as string) ?? null);
+  if (!eligible) {
+    return NextResponse.json({ error: reason }, { status: 403 });
   }
 
   if (league.status === 'completed') {

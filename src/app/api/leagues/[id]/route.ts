@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { parsePointsConfig } from '@/lib/league';
+import { validGenderCategories } from '@/lib/genderCategory';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -10,7 +11,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const { id } = await params;
-  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType, pointsConfig } = await req.json();
+  const { name, seasonStart, seasonEnd, isPublic, description, status, tiebreaker, color, scoringMethod, maxPlayers, numPromoted, numRelegated, joinType, pointsConfig, genderCategory } = await req.json();
 
   if (name !== undefined) {
     if (!name.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -83,6 +84,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     const resolved = parsePointsConfig(pointsConfig);
     if (resolved === 'invalid') return NextResponse.json({ error: 'Invalid points scoring configuration' }, { status: 400 });
     await sql`UPDATE leagues SET points_config = ${resolved ? JSON.stringify(resolved) : null} WHERE id = ${id}`;
+  }
+
+  if (genderCategory !== undefined) {
+    const [league] = await sql`SELECT league_type FROM leagues WHERE id = ${id}`;
+    if (!league) return NextResponse.json({ error: 'League not found' }, { status: 404 });
+    if (!validGenderCategories(league.league_type as string).includes(genderCategory)) {
+      return NextResponse.json({ error: 'Invalid gender category' }, { status: 400 });
+    }
+    await sql`UPDATE leagues SET gender_category = ${genderCategory} WHERE id = ${id}`;
   }
 
   return NextResponse.json({ ok: true });

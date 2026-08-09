@@ -5,6 +5,7 @@ import Link from 'next/link';
 import JoinLeagueButton from '@/components/JoinLeagueButton';
 import ArchivedLeaguesSection from './ArchivedLeaguesSection';
 import ArchiveLeagueButton from './ArchiveLeagueButton';
+import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
 
 type League = {
   id: string;
@@ -22,6 +23,7 @@ type League = {
   is_member: boolean;
   user_archived: boolean;
   color: string | null;
+  gender_category: string;
 };
 
 type MultiTournament = {
@@ -92,6 +94,11 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
             {!league.is_public && (
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>
             )}
+            {league.gender_category !== 'either' && league.gender_category !== 'open' && (
+              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full font-medium">
+                {GENDER_CATEGORY_LABELS[league.gender_category as keyof typeof GENDER_CATEGORY_LABELS]}
+              </span>
+            )}
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${
               league.status === 'active'
                 ? 'bg-green-100 text-green-700'
@@ -153,6 +160,7 @@ export default async function LeaguesPage() {
   const rows = await sql`
     SELECT
       l.id, l.name, l.status, l.season_start, l.season_end, l.is_public, l.color,
+      COALESCE(l.gender_category, 'either') AS gender_category,
       COALESCE(l.join_type, 'invite_only') AS join_type,
       COALESCE(l.league_type, 'singles') AS league_type,
       COALESCE(l.max_players, 8) AS max_players,

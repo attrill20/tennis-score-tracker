@@ -8,6 +8,7 @@ import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 import PointsConfigFields from '@/components/PointsConfigFields';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 import { type PointsConfig } from '@/lib/league';
+import { SINGLES_GENDER_OPTIONS, DOUBLES_GENDER_OPTIONS, defaultGenderCategory, type GenderCategory } from '@/lib/genderCategory';
 
 type Member = { id: string; full_name: string };
 type Division = { id: string; name: string; order: number };
@@ -26,6 +27,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   const [numRelegated, setNumRelegated] = useState(0);
   const [tiebreaker, setTiebreaker] = useState('head_to_head');
   const [leagueType, setLeagueType] = useState<'singles' | 'doubles'>('singles');
+  const [genderCategory, setGenderCategory] = useState<GenderCategory>('either');
   const [isPublic, setIsPublic] = useState(true);
   const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
   const [description, setDescription] = useState('');
@@ -68,6 +70,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             pointsConfig,
             tiebreaker,
             leagueType,
+            genderCategory,
             isPublic,
             description,
             color,
@@ -88,6 +91,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             pointsConfig,
             tiebreaker,
             leagueType,
+            genderCategory,
             isPublic,
             joinType,
             description,
@@ -199,7 +203,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             <button
               key={val}
               type="button"
-              onClick={() => { setLeagueType(val); setMaxPlayers(8); }}
+              onClick={() => { setLeagueType(val); setMaxPlayers(8); setGenderCategory(defaultGenderCategory(val)); }}
               className={`py-2.5 rounded-lg border text-sm font-medium transition-colors ${
                 leagueType === val
                   ? 'bg-green-900 border-green-900 text-white'
@@ -207,6 +211,26 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
               }`}
             >
               {val === 'singles' ? 'Singles' : 'Doubles'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Gender category</label>
+        <div className={`grid gap-2 ${leagueType === 'doubles' ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+          {(leagueType === 'doubles' ? DOUBLES_GENDER_OPTIONS : SINGLES_GENDER_OPTIONS).map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => setGenderCategory(val)}
+              className={`py-2 rounded-lg border text-sm font-medium transition-colors ${
+                genderCategory === val
+                  ? 'bg-green-900 border-green-900 text-white'
+                  : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
+              }`}
+            >
+              {label}
             </button>
           ))}
         </div>

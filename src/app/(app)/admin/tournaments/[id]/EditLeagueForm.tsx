@@ -6,6 +6,7 @@ import LeagueColorPicker from '@/components/LeagueColorPicker';
 import PointsConfigFields from '@/components/PointsConfigFields';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 import { type PointsConfig } from '@/lib/league';
+import { SINGLES_GENDER_OPTIONS, DOUBLES_GENDER_OPTIONS, type GenderCategory } from '@/lib/genderCategory';
 
 export default function EditLeagueForm({
   leagueId,
@@ -19,6 +20,7 @@ export default function EditLeagueForm({
   currentColor,
   currentScoringMethod,
   currentPointsConfig,
+  currentGenderCategory,
   currentMaxPlayers,
   currentNumPromoted,
   currentNumRelegated,
@@ -36,6 +38,7 @@ export default function EditLeagueForm({
   currentColor: string | null;
   currentScoringMethod: string;
   currentPointsConfig: PointsConfig | null;
+  currentGenderCategory: GenderCategory;
   currentMaxPlayers: number;
   currentNumPromoted: number;
   currentNumRelegated: number;
@@ -52,6 +55,7 @@ export default function EditLeagueForm({
   const [tiebreaker, setTiebreaker] = useState(currentTiebreaker);
   const [scoringMethod, setScoringMethod] = useState(currentScoringMethod);
   const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(currentPointsConfig);
+  const [genderCategory, setGenderCategory] = useState<GenderCategory>(currentGenderCategory);
   const [maxPlayers, setMaxPlayers] = useState(currentMaxPlayers);
   const [numPromoted, setNumPromoted] = useState(currentNumPromoted);
   const [numRelegated, setNumRelegated] = useState(currentNumRelegated);
@@ -78,7 +82,7 @@ export default function EditLeagueForm({
     const res = await fetch(`/api/leagues/${leagueId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker, color, scoringMethod, pointsConfig, maxPlayers, numPromoted, numRelegated, joinType }),
+      body: JSON.stringify({ name, description, status, seasonStart, seasonEnd, isPublic, tiebreaker, color, scoringMethod, pointsConfig, genderCategory, maxPlayers, numPromoted, numRelegated, joinType }),
     });
 
     const data = await res.json();
@@ -284,6 +288,26 @@ export default function EditLeagueForm({
         <p className="text-sm text-gray-500 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
           {isDoubles ? 'Doubles' : 'Singles'} <span className="text-gray-400 text-xs ml-1">(cannot be changed after creation)</span>
         </p>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-2">Gender category</label>
+        <div className={`grid gap-2 ${isDoubles ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-3'}`}>
+          {(isDoubles ? DOUBLES_GENDER_OPTIONS : SINGLES_GENDER_OPTIONS).map(([val, label]) => (
+            <button
+              key={val}
+              type="button"
+              onClick={() => { setGenderCategory(val); mark(); }}
+              className={`py-2 rounded-lg border text-sm font-medium transition-colors ${
+                genderCategory === val
+                  ? 'bg-green-900 border-green-900 text-white'
+                  : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       <LeagueColorPicker value={color} onChange={(k) => { setColor(k); mark(); }} />

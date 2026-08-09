@@ -81,6 +81,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentColor={(league.color as string) ?? null}
         currentScoringMethod={(league.scoring_method as string) ?? 'best_of_3_tiebreak'}
         currentPointsConfig={(league.points_config as import('@/lib/league').PointsConfig | null) ?? null}
+        currentGenderCategory={(league.gender_category as import('@/lib/genderCategory').GenderCategory) ?? 'either'}
         currentMaxPlayers={Number(league.max_players ?? 8)}
         currentNumPromoted={Number(league.num_promoted ?? 0)}
         currentNumRelegated={Number(league.num_relegated ?? 0)}

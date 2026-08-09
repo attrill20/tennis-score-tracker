@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
+import { individualEligible, pairEligible } from '@/lib/genderCategory';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -43,11 +44,34 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id: leagueId } = await params;
   const body = await req.json();
+  const force = body.force === true;
+
+  const [league] = await sql`SELECT gender_category FROM leagues WHERE id = ${leagueId}`;
+  const genderCategory = (league?.gender_category as string) ?? 'either';
 
   // Doubles: body is { pairs: [{p1Id, p2Id}] }
   if (body.pairs) {
     const pairs = body.pairs as { p1Id: string; p2Id: string }[];
     if (!pairs.length) return NextResponse.json({ error: 'No pairs provided' }, { status: 400 });
+
+    if (!force) {
+      for (const { p1Id, p2Id } of pairs) {
+        const genderRows = await sql`
+          SELECT id, gender, (first_name || ' ' || last_name) AS full_name
+          FROM profiles WHERE id IN (${p1Id}, ${p2Id})
+        `;
+        const g1 = genderRows.find((r) => r.id === p1Id);
+        const g2 = genderRows.find((r) => r.id === p2Id);
+
+        const check1 = individualEligible(genderCategory, (g1?.gender as string) ?? null, g1?.full_name as string);
+        if (!check1.eligible) return NextResponse.json({ error: check1.reason, needsConfirmation: true }, { status: 409 });
+        const check2 = individualEligible(genderCategory, (g2?.gender as string) ?? null, g2?.full_name as string);
+        if (!check2.eligible) return NextResponse.json({ error: check2.reason, needsConfirmation: true }, { status: 409 });
+
+        const pairCheck = pairEligible(genderCategory, (g1?.gender as string) ?? null, (g2?.gender as string) ?? null);
+        if (!pairCheck.eligible) return NextResponse.json({ error: pairCheck.reason, needsConfirmation: true }, { status: 409 });
+      }
+    }
 
     for (const { p1Id, p2Id } of pairs) {
       await sql`
@@ -68,6 +92,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { playerIds } = body;
   if (!Array.isArray(playerIds) || playerIds.length === 0) {
     return NextResponse.json({ error: 'No players provided' }, { status: 400 });
+  }
+
+  if (!force) {
+    const genderRows = await sql`
+      SELECT id, gender, (first_name || ' ' || last_name) AS full_name
+      FROM profiles WHERE id = ANY(${playerIds}::uuid[])
+    `;
+    for (const playerId of playerIds) {
+      const row = genderRows.find((r) => r.id === playerId);
+      const check = individualEligible(genderCategory, (row?.gender as string) ?? null, row?.full_name as string);
+      if (!check.eligible) return NextResponse.json({ error: check.reason, needsConfirmation: true }, { status: 409 });
+    }
   }
 
   for (const playerId of playerIds) {

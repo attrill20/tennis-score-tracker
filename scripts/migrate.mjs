@@ -154,6 +154,9 @@ const statements = [
   // Custom points-per-outcome scoring. NULL means the classic scheme (win 3, draw 1, loss 0).
   // Shape: { winStraightSets, loseStraightSets, winDecider, loseDecider, draw }
   `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS points_config JSONB`,
+
+  // Gender category: singles uses mens/womens/either, doubles uses mens/womens/mixed/open.
+  `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS gender_category TEXT NOT NULL DEFAULT 'either' CHECK (gender_category IN ('mens', 'womens', 'either', 'mixed', 'open'))`,
 ];
 
 async function migrate() {

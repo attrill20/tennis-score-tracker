@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { parsePointsConfig } from '@/lib/league';
+import { validGenderCategories, defaultGenderCategory } from '@/lib/genderCategory';
 
 const VALID_SCORING = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
 const VALID_TIEBREAKERS = ['head_to_head', 'most_sets_won', 'set_difference'];
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
     numPromoted,
     numRelegated,
     pointsConfig,
+    genderCategory,
   } = body;
 
   if (!name) {
@@ -62,6 +64,9 @@ export async function POST(req: NextRequest) {
   const resolvedTiebreaker = VALID_TIEBREAKERS.includes(tiebreaker) ? tiebreaker : 'set_difference';
   const resolvedJoinType = joinType === 'open_invite' ? 'open_invite' : 'invite_only';
   const resolvedLeagueType = leagueType === 'doubles' ? 'doubles' : 'singles';
+  const resolvedGenderCategory = validGenderCategories(resolvedLeagueType).includes(genderCategory)
+    ? genderCategory
+    : defaultGenderCategory(resolvedLeagueType);
   const resolvedColor = VALID_COLORS.includes(color) ? color : VALID_COLORS[Math.floor(Math.random() * VALID_COLORS.length)];
   const promoted = Number(numPromoted ?? 0);
   const relegated = Number(numRelegated ?? 0);
@@ -103,8 +108,8 @@ export async function POST(req: NextRequest) {
       const order = i + 1;
       const divName = `Division ${order}`;
       const [div] = await sql`
-        INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config)
-        VALUES (${divName}, ${round1Start}, ${round1End}, ${round1Status}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, 'invite_only', ${null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, ${order}, ${pointsConfigToStore})
+        INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config, gender_category)
+        VALUES (${divName}, ${round1Start}, ${round1End}, ${round1Status}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, 'invite_only', ${null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, ${order}, ${pointsConfigToStore}, ${resolvedGenderCategory})
         RETURNING id
       `;
       divisions.push({ id: div.id as string, name: divName, order });
@@ -126,8 +131,8 @@ export async function POST(req: NextRequest) {
   `;
 
   const [div] = await sql`
-    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config)
-    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? statusForStart(startDate)}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, ${resolvedJoinType}, ${description ?? null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, 1, ${pointsConfigToStore})
+    INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config, gender_category)
+    VALUES (${name}, ${startDate}, ${endDate}, ${status ?? statusForStart(startDate)}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, ${resolvedJoinType}, ${description ?? null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, 1, ${pointsConfigToStore}, ${resolvedGenderCategory})
     RETURNING id
   `;
 
