@@ -44,6 +44,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
       SELECT id, (first_name || ' ' || last_name) AS full_name
       FROM profiles
       WHERE role != 'unverified'
+        AND deleted_at IS NULL
         AND email != 'qptcscoreadmin@gmail.com'
       ORDER BY first_name, last_name
     `,

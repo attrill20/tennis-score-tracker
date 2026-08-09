@@ -78,6 +78,13 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
 
   const nextMembership = computePromotionMoves(standings, t.num_promoted, t.num_relegated);
 
+  // Guard against resurrecting a player who deleted their account mid-tournament.
+  const allCandidateIds = nextMembership.flat();
+  const deletedRows = allCandidateIds.length > 0 ? await sql`
+    SELECT id FROM profiles WHERE deleted_at IS NOT NULL AND id = ANY(${allCandidateIds}::uuid[])
+  ` : [];
+  const deletedIds = new Set(deletedRows.map((r) => r.id as string));
+
   // Resolve this round's start/end as plain YYYY-MM-DD strings in SQL to dodge JS Date
   // timezone shifts. Postgres arrays are 1-indexed, so round N's date is round_dates[N].
   const [dateRow] = await sql`
@@ -104,6 +111,7 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
     createdIds.push(newDivisionId);
 
     for (const playerId of nextMembership[d]) {
+      if (deletedIds.has(playerId)) continue;
       await sql`
         INSERT INTO league_players (league_id, player_id)
         VALUES (${newDivisionId}, ${playerId})

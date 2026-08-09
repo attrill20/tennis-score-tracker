@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
+import { softDeleteAccount } from '@/lib/accountDeletion';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -61,9 +62,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: 'Cannot delete a super admin' }, { status: 403 });
   }
 
-  await sql`DELETE FROM disputes WHERE raised_by = ${targetId} OR resolved_by = ${targetId}`;
-  await sql`DELETE FROM league_players WHERE player_id = ${targetId}`;
-  await sql`DELETE FROM profiles WHERE id = ${targetId}`;
+  await softDeleteAccount(targetId);
 
   return NextResponse.json({ success: true });
 }

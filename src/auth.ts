@@ -18,13 +18,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         const rows = await sql`
-          SELECT id, email, first_name, last_name, password_hash, role, email_verified
+          SELECT id, email, first_name, last_name, password_hash, role, email_verified, deleted_at
           FROM profiles
           WHERE LOWER(email) = ${(credentials.email as string).toLowerCase().trim()}
         `;
 
         const user = rows[0];
-        if (!user) return null;
+        if (!user || user.deleted_at) return null;
 
         const passwordMatch = await bcrypt.compare(
           credentials.password as string,

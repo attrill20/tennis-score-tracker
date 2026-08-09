@@ -17,6 +17,7 @@ function LoginForm() {
   const registered = searchParams.get('registered') === 'true';
   const verified = searchParams.get('verified') === 'true';
   const reset = searchParams.get('reset') === 'true';
+  const deleted = searchParams.get('deleted') === 'true';
   const invalidToken = searchParams.get('error') === 'invalid_token';
 
   async function handleSubmit(e: React.FormEvent) {
@@ -58,6 +59,11 @@ function LoginForm() {
       {reset && (
         <div className="mb-4 text-sm text-green-900 bg-green-50 px-3 py-2 rounded-lg">
           Password updated! You can now sign in with your new password.
+        </div>
+      )}
+      {deleted && (
+        <div className="mb-4 text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-lg">
+          Your account has been deleted.
         </div>
       )}
       {invalidToken && (

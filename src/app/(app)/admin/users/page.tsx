@@ -201,7 +201,7 @@ export default async function AdminUsersPage({
 
       {sortedArchived.length > 0 && (
         <div>
-          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Archived (never verified)</h2>
+          <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Archived / deleted accounts</h2>
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto opacity-60">
             <table className="w-full text-sm">
               <thead>{tableHeaders}</thead>

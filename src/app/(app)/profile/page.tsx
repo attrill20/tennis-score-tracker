@@ -4,10 +4,12 @@ import Link from 'next/link';
 import InjuryToggle from './InjuryToggle';
 import ProfileForm from './ProfileForm';
 import AvatarUpload from './AvatarUpload';
+import DeleteAccountSection from './DeleteAccountSection';
 
 export default async function ProfilePage() {
   const session = await auth();
   const userId = session!.user.id;
+  const isSuperAdmin = session!.user.role === 'super_admin';
 
   const [rows, matches] = await Promise.all([
     sql`SELECT first_name, last_name, email, phone, is_injured, gender, avatar_url FROM profiles WHERE id = ${userId}`,
@@ -111,6 +113,12 @@ export default async function ProfilePage() {
           </Link>
         </div>
       </div>
+
+      {!isSuperAdmin && (
+        <div className="mt-8">
+          <DeleteAccountSection />
+        </div>
+      )}
     </div>
   );
 }

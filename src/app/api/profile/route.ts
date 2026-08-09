@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import bcrypt from 'bcryptjs';
+import { softDeleteAccount } from '@/lib/accountDeletion';
 
 export async function PATCH(req: NextRequest) {
   const session = await auth();
@@ -55,6 +56,33 @@ export async function PATCH(req: NextRequest) {
       WHERE id = ${session.user.id}
     `;
   }
+
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(req: NextRequest) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { password } = await req.json();
+  if (!password) return NextResponse.json({ error: 'Password is required' }, { status: 400 });
+
+  const rows = await sql`SELECT password_hash, role, deleted_at FROM profiles WHERE id = ${session.user.id}`;
+  const profile = rows[0];
+  if (!profile || profile.deleted_at) {
+    return NextResponse.json({ error: 'Account not found' }, { status: 404 });
+  }
+
+  const passwordMatch = await bcrypt.compare(password, profile.password_hash as string);
+  if (!passwordMatch) {
+    return NextResponse.json({ error: 'Incorrect password' }, { status: 400 });
+  }
+
+  if (profile.role === 'super_admin') {
+    return NextResponse.json({ error: 'Super admin accounts cannot be self-deleted' }, { status: 403 });
+  }
+
+  await softDeleteAccount(session.user.id);
 
   return NextResponse.json({ success: true });
 }

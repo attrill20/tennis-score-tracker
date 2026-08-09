@@ -39,6 +39,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       WHERE lp.league_id = ${id}
         AND lp.player_id != ${session.user.id}
         AND lp.player_id != ${myPartnerId}
+        AND p.deleted_at IS NULL
         AND lp.partner_id IS NOT NULL
         AND lp.partner_id > lp.player_id
         AND NOT EXISTS (
@@ -73,6 +74,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
       JOIN league_players lp ON lp.player_id = p.id
       WHERE lp.league_id = ${id}
       AND p.id != ${session.user.id}
+      AND p.deleted_at IS NULL
       AND NOT EXISTS (
         SELECT 1 FROM matches m
         WHERE m.league_id = ${id}
