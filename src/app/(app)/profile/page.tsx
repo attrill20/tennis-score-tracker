@@ -84,8 +84,8 @@ export default async function ProfilePage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between"><span className="text-gray-500">Played</span><span className="font-semibold text-gray-800">{singles.total}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Wins</span><span className="font-semibold text-green-700">{singles.wins} <span className="text-xs text-green-600">({singles.pct(singles.wins)})</span></span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Losses</span><span className="font-semibold text-red-500">{singles.losses} <span className="text-xs text-red-400">({singles.pct(singles.losses)})</span></span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Draws</span><span className="font-semibold text-yellow-500">{singles.draws} <span className="text-xs text-yellow-400">({singles.pct(singles.draws)})</span></span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Losses</span><span className="font-semibold text-red-500">{singles.losses} <span className="text-xs text-red-400">({singles.pct(singles.losses)})</span></span></div>
                     </div>
                   </div>
                 )}
@@ -96,8 +96,8 @@ export default async function ProfilePage() {
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between"><span className="text-gray-500">Played</span><span className="font-semibold text-gray-800">{dbl.total}</span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Wins</span><span className="font-semibold text-green-700">{dbl.wins} <span className="text-xs text-green-600">({dbl.pct(dbl.wins)})</span></span></div>
-                      <div className="flex justify-between"><span className="text-gray-500">Losses</span><span className="font-semibold text-red-500">{dbl.losses} <span className="text-xs text-red-400">({dbl.pct(dbl.losses)})</span></span></div>
                       <div className="flex justify-between"><span className="text-gray-500">Draws</span><span className="font-semibold text-yellow-500">{dbl.draws} <span className="text-xs text-yellow-400">({dbl.pct(dbl.draws)})</span></span></div>
+                      <div className="flex justify-between"><span className="text-gray-500">Losses</span><span className="font-semibold text-red-500">{dbl.losses} <span className="text-xs text-red-400">({dbl.pct(dbl.losses)})</span></span></div>
                     </div>
                   </div>
                 )}
