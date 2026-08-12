@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { notFound } from 'next/navigation';
 import BackButton from '@/components/BackButton';
 import PlayerAvatar from '@/components/PlayerAvatar';
+import WinDrawLossBar from '@/components/WinDrawLossBar';
 
 export default async function PlayerPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -75,7 +76,6 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const headToHeadWins = headToHeadMatches.filter((m) => getResultForViewer(m) === 'W').length;
   const headToHeadLosses = headToHeadMatches.filter((m) => getResultForViewer(m) === 'L').length;
   const headToHeadDraws = timesPlayed - headToHeadWins - headToHeadLosses;
-  const headToHeadPct = (n: number) => timesPlayed === 0 ? '0%' : Math.round((n / timesPlayed) * 100) + '%';
 
   const name = [player.title, player.first_name, player.last_name].filter(Boolean).join(' ');
 
@@ -137,23 +137,12 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         {timesPlayed === 0 ? (
           <p className="text-sm text-gray-400">You haven&apos;t played each other yet.</p>
         ) : (
-          <div className="space-y-2 text-sm">
-            <div className="flex justify-between">
+          <div>
+            <div className="flex justify-between text-sm mb-2">
               <span className="text-gray-500">Times Played</span>
               <span className="font-semibold text-gray-800">{timesPlayed}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Wins</span>
-              <span className="font-semibold text-green-700">{headToHeadWins} <span className="text-xs text-green-600">({headToHeadPct(headToHeadWins)})</span></span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Draws</span>
-              <span className="font-semibold text-yellow-500">{headToHeadDraws} <span className="text-xs text-yellow-400">({headToHeadPct(headToHeadDraws)})</span></span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Losses</span>
-              <span className="font-semibold text-red-500">{headToHeadLosses} <span className="text-xs text-red-400">({headToHeadPct(headToHeadLosses)})</span></span>
-            </div>
+            <WinDrawLossBar wins={headToHeadWins} draws={headToHeadDraws} losses={headToHeadLosses} />
           </div>
         )}
       </div>
