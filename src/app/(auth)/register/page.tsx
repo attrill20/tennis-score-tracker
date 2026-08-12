@@ -37,6 +37,7 @@ export default function RegisterPage() {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
   const [error, setError] = useState('');
   const [nameWarning, setNameWarning] = useState('');
   const [emailWarning, setEmailWarning] = useState('');
@@ -109,6 +110,10 @@ export default function RegisterPage() {
     }
     if (!passwordsMatch) {
       setError('Passwords do not match.');
+      return;
+    }
+    if (!privacyAccepted) {
+      setError('Please confirm you have read and agree to the QPTC Privacy Notice.');
       return;
     }
 
@@ -258,6 +263,29 @@ export default function RegisterPage() {
           )}
         </div>
 
+        <div className="flex items-start gap-2">
+          <input
+            id="privacyAccepted"
+            type="checkbox"
+            checked={privacyAccepted}
+            onChange={(e) => setPrivacyAccepted(e.target.checked)}
+            required
+            className="mt-0.5 h-4 w-4 rounded border-gray-300 text-green-900 focus:ring-green-900"
+          />
+          <label htmlFor="privacyAccepted" className="text-sm text-gray-600">
+            I have read and agree to the{' '}
+            <a
+              href="https://qptc.co.uk/wp-content/uploads/2026/04/QPTC-CIC-Privacy-Notice-QPTC-members.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              QPTC Privacy Notice
+            </a>
+            {' '}<span className="text-red-500">*</span>
+          </label>
+        </div>
+
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
 
         <button
@@ -271,7 +299,7 @@ export default function RegisterPage() {
 
       <p className="text-sm text-center text-gray-500 mt-6">
         Already have an account?{' '}
-        <Link href="/login" className="text-green-900 font-medium hover:underline">
+        <Link href="/login" className="text-blue-600 underline hover:text-blue-800">
           Sign in
         </Link>
       </p>

@@ -6,7 +6,27 @@ export default function Footer() {
   return (
     <footer className="mt-auto border-t border-green-900 bg-green-900">
       <div className="max-w-4xl mx-auto px-6 py-5 flex flex-row items-center justify-between gap-4 text-xs text-white">
-        <span>&copy; {year} Queen's Park<br className="sm:hidden" />Tennis Club</span>
+        <span className="text-left">
+          Licenced by{' '}
+          <a
+            href="https://qptc.co.uk"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white font-medium hover:underline"
+          >
+            Queen&apos;s Park Tennis Club
+          </a>
+          <br className="sm:hidden" />
+          {' '}&middot;{' '}
+          <a
+            href="https://qptc.co.uk/wp-content/uploads/2026/04/QPTC-CIC-Privacy-Notice-QPTC-members.pdf"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-white font-medium hover:underline"
+          >
+            Privacy Notice
+          </a>
+        </span>
 
         <Link
           href="/contact"
@@ -16,8 +36,7 @@ export default function Footer() {
         </Link>
 
         <span className="text-right sm:text-left">
-          Made by<br className="sm:hidden" />
-          {' '}
+          Copyright &copy; {year}{' '}
           <a
             href="https://github.com/attrill20"
             target="_blank"
@@ -26,6 +45,8 @@ export default function Footer() {
           >
             James Attrill
           </a>
+          .<br className="sm:hidden" />
+          {' '}All Rights Reserved.
         </span>
       </div>
     </footer>
