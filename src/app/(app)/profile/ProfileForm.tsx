@@ -157,6 +157,7 @@ export default function ProfileForm({
           required
           className={inputClass}
         />
+        <p className="text-xs text-gray-400 mt-1">Displayed as primary contact method if no phone number entered.</p>
         {emailWarning && (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{emailWarning}</p>
         )}
@@ -170,9 +171,10 @@ export default function ProfileForm({
           onChange={(e) => { setPhone(e.target.value); setPhoneWarning(''); }}
           onBlur={handlePhoneBlur}
           autoComplete="tel"
-          placeholder="Optional - visible to your tournament members"
+          placeholder="Optional field"
           className={inputClass}
         />
+        <p className="text-xs text-gray-400 mt-1">Only displayed to other players in your league to arrange matches.</p>
         {phoneWarning && (
           <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{phoneWarning}</p>
         )}

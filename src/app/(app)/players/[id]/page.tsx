@@ -116,20 +116,17 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
           <>
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Info</h2>
             <div>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
-              <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
-                {player.email as string}
-              </a>
-            </div>
-
-            <div>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Phone</p>
+              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">
+                {player.phone ? 'Phone' : 'Email'}
+              </p>
               {player.phone ? (
                 <a href={`tel:${player.phone as string}`} className="text-sm text-green-700 hover:underline">
                   {player.phone as string}
                 </a>
               ) : (
-                <p className="text-sm text-gray-400">Not provided</p>
+                <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
+                  {player.email as string}
+                </a>
               )}
             </div>
           </>
