@@ -94,7 +94,7 @@ function LoginForm() {
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
-            <Link href="/forgot-password" className="text-xs text-green-900 hover:underline">
+            <Link href="/forgot-password" className="text-xs text-blue-600 underline hover:text-blue-800">
               Forgot password?
             </Link>
           </div>
@@ -124,7 +124,7 @@ function LoginForm() {
 
       <p className="text-sm text-center text-gray-500 mt-6">
         New user? Please{' '}
-        <Link href="/register" className="text-green-900 font-medium hover:underline">
+        <Link href="/register" className="text-blue-600 underline hover:text-blue-800">
           Register Here
         </Link>
       </p>
