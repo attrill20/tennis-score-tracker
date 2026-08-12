@@ -99,10 +99,17 @@ export default async function ProfilePage() {
           </div>
 
           <Link
-            href="/matches"
+            href="/my-match-history"
             className="block w-full text-center text-sm bg-white border border-gray-200 hover:border-green-400 text-green-700 font-medium px-4 py-2.5 rounded-xl transition-colors"
           >
-            View my matches →
+            My Match History →
+          </Link>
+
+          <Link
+            href="/my-tournament-history"
+            className="block w-full text-center text-sm bg-white border border-gray-200 hover:border-green-400 text-green-700 font-medium px-4 py-2.5 rounded-xl transition-colors"
+          >
+            My Tournament History →
           </Link>
         </div>
       </div>

@@ -635,7 +635,7 @@ export default async function DashboardPage() {
       )}
 
       <div className="mt-3">
-        <Link href="/matches" className="text-sm text-green-700 font-medium hover:underline">
+        <Link href="/my-match-history" className="text-sm text-green-700 font-medium hover:underline">
           View all my matches →
         </Link>
       </div>

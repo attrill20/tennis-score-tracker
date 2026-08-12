@@ -16,16 +16,6 @@ export default function Footer() {
           >
             Queen&apos;s Park Tennis Club
           </a>
-          <br className="sm:hidden" />
-          {' '}&middot;{' '}
-          <a
-            href="https://qptc.co.uk/wp-content/uploads/2026/04/QPTC-CIC-Privacy-Notice-QPTC-members.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white font-medium hover:underline"
-          >
-            Privacy Notice
-          </a>
         </span>
 
         <Link
@@ -45,8 +35,6 @@ export default function Footer() {
           >
             James Attrill
           </a>
-          .<br className="sm:hidden" />
-          {' '}All Rights Reserved.
         </span>
       </div>
     </footer>

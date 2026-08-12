@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import Link from 'next/link';
+import WinDrawLossBar from '@/components/WinDrawLossBar';
 
 export default async function MatchesPage() {
   const session = await auth();
@@ -64,49 +65,37 @@ export default async function MatchesPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">My Matches</h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">My Match History</h1>
 
       {(hasSingles || hasDoubles) && (
         <>
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">My Overall Stats</h2>
           <div className="bg-white rounded-xl border border-gray-200 px-4 py-3 mb-6">
             {hasSingles && hasDoubles ? (
-              <div className="grid grid-cols-2 gap-4 text-sm">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 {(['singles', 'doubles'] as const).map((type) => {
                   const s = type === 'singles' ? singles : dbl;
                   return (
                     <div key={type}>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1.5">{type}</p>
-                      <div className="space-y-1">
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Played</span>
-                          <span className="font-semibold text-gray-800">{s.total}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Wins</span>
-                          <span className="font-semibold text-green-700">{s.wins} <span className="text-xs text-green-600">({s.pct(s.wins)})</span></span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Losses</span>
-                          <span className="font-semibold text-red-500">{s.losses} <span className="text-xs text-red-400">({s.pct(s.losses)})</span></span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-500">Draws</span>
-                          <span className="font-semibold text-yellow-500">{s.draws} <span className="text-xs text-yellow-400">({s.pct(s.draws)})</span></span>
-                        </div>
+                      <div className="flex justify-between mb-2">
+                        <span className="text-gray-500">Matches Played</span>
+                        <span className="font-semibold text-gray-800">{s.total}</span>
                       </div>
+                      <WinDrawLossBar wins={s.wins} draws={s.draws} losses={s.losses} />
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div className="flex flex-wrap justify-center gap-x-6 gap-y-1 text-sm">
+              <div className="text-sm">
                 {(() => { const s = hasSingles ? singles : dbl; return (
                   <>
-                    <span className="text-gray-500">Played: <span className="font-semibold text-gray-800">{s.total}</span></span>
-                    <span className="text-gray-500">Wins: <span className="font-semibold text-green-700">{s.wins}</span> <span className="text-xs text-green-600">({s.pct(s.wins)})</span></span>
-                    <span className="text-gray-500">Losses: <span className="font-semibold text-red-500">{s.losses}</span> <span className="text-xs text-red-500">({s.pct(s.losses)})</span></span>
-                    <span className="text-gray-500">Draws: <span className="font-semibold text-yellow-500">{s.draws}</span> <span className="text-xs text-yellow-500">({s.pct(s.draws)})</span></span>
+                    <div className="flex justify-between mb-2">
+                      <span className="text-gray-500">Matches Played</span>
+                      <span className="font-semibold text-gray-800">{s.total}</span>
+                    </div>
+                    <WinDrawLossBar wins={s.wins} draws={s.draws} losses={s.losses} />
                   </>
                 ); })()}
               </div>
