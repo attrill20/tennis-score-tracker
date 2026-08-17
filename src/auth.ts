@@ -7,6 +7,10 @@ class EmailNotVerifiedError extends CredentialsSignin {
   code = 'EMAIL_NOT_VERIFIED';
 }
 
+class AccountDeactivatedError extends CredentialsSignin {
+  code = 'ACCOUNT_DEACTIVATED';
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
     Credentials({
@@ -18,7 +22,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         if (!credentials?.email || !credentials?.password) return null;
 
         const rows = await sql`
-          SELECT id, email, first_name, last_name, password_hash, role, email_verified, deleted_at
+          SELECT id, email, first_name, last_name, password_hash, role, email_verified, deleted_at, is_active
           FROM profiles
           WHERE LOWER(email) = ${(credentials.email as string).toLowerCase().trim()}
         `;
@@ -35,6 +39,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!user.email_verified) {
           throw new EmailNotVerifiedError();
+        }
+
+        if (!user.is_active) {
+          throw new AccountDeactivatedError();
         }
 
         await sql`UPDATE profiles SET last_login_at = NOW() WHERE id = ${user.id as string}`;

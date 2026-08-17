@@ -41,6 +41,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     `;
   }
 
+  if (body.isActive !== undefined) {
+    if (targetId === session.user.id) {
+      return NextResponse.json({ error: 'Cannot deactivate your own account' }, { status: 400 });
+    }
+    await sql`UPDATE profiles SET is_active = ${!!body.isActive} WHERE id = ${targetId}`;
+  }
+
   return NextResponse.json({ success: true });
 }
 

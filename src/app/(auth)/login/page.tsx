@@ -35,6 +35,8 @@ function LoginForm() {
 
     if (result?.error === 'EMAIL_NOT_VERIFIED') {
       setError('Please verify your email before signing in. Check your inbox for the verification link.');
+    } else if (result?.error === 'ACCOUNT_DEACTIVATED') {
+      setError('Your account has been deactivated. Please contact an admin.');
     } else if (result?.error) {
       setError('Invalid email or password');
     } else {

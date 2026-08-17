@@ -3,18 +3,29 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function RoleForm({ userId, currentRole }: { userId: string; currentRole: string }) {
+export default function RoleForm({
+  userId,
+  currentRole,
+  currentIsActive,
+}: {
+  userId: string;
+  currentRole: string;
+  currentIsActive: boolean;
+}) {
   const router = useRouter();
-  const [role, setRole] = useState(currentRole);
+  const [value, setValue] = useState(currentIsActive ? currentRole : 'inactive');
   const [loading, setLoading] = useState(false);
 
-  async function handleChange(newRole: string) {
-    setRole(newRole);
+  async function handleChange(newValue: string) {
+    setValue(newValue);
     setLoading(true);
+    const body = newValue === 'inactive'
+      ? { isActive: false }
+      : { role: newValue, isActive: true };
     await fetch(`/api/admin/users/${userId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ role: newRole }),
+      body: JSON.stringify(body),
     });
     setLoading(false);
     router.refresh();
@@ -22,7 +33,7 @@ export default function RoleForm({ userId, currentRole }: { userId: string; curr
 
   return (
     <select
-      value={role}
+      value={value}
       onChange={(e) => handleChange(e.target.value)}
       disabled={loading}
       className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
@@ -30,6 +41,7 @@ export default function RoleForm({ userId, currentRole }: { userId: string; curr
       <option value="unverified">unverified</option>
       <option value="member">member</option>
       <option value="admin">admin</option>
+      <option value="inactive">inactive</option>
     </select>
   );
 }

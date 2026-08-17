@@ -157,6 +157,9 @@ const statements = [
 
   // Gender category: singles uses mens/womens/either, doubles uses mens/womens/mixed/open.
   `ALTER TABLE leagues ADD COLUMN IF NOT EXISTS gender_category TEXT NOT NULL DEFAULT 'either' CHECK (gender_category IN ('mens', 'womens', 'either', 'mixed', 'open'))`,
+
+  // Reversible admin suspension - blocks login without deleting/anonymizing the account.
+  `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE`,
 ];
 
 async function migrate() {

@@ -31,6 +31,7 @@ type User = {
   member_number: number | null;
   deleted_at: Date | null;
   avatar_url: string | null;
+  is_active: boolean;
 };
 
 export default async function AdminUsersPage({
@@ -51,7 +52,7 @@ export default async function AdminUsersPage({
   const search = rawSearch?.trim() ?? '';
 
   const users = await sql`
-    SELECT id, title, first_name, last_name, email, role, created_at, member_number, deleted_at, avatar_url
+    SELECT id, title, first_name, last_name, email, role, created_at, member_number, deleted_at, avatar_url, is_active
     FROM profiles
   `;
 
@@ -165,23 +166,25 @@ export default async function AdminUsersPage({
                 <td className="px-4 py-3">
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      user.role === 'super_admin'
-                        ? 'bg-purple-100 text-purple-700'
-                        : user.role === 'admin'
-                          ? 'bg-blue-100 text-blue-700'
-                          : user.role === 'unverified'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-gray-100 text-gray-500'
+                      !user.is_active
+                        ? 'bg-red-100 text-red-600'
+                        : user.role === 'super_admin'
+                          ? 'bg-purple-100 text-purple-700'
+                          : user.role === 'admin'
+                            ? 'bg-blue-100 text-blue-700'
+                            : user.role === 'unverified'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-gray-100 text-gray-500'
                     }`}
                   >
-                    {user.role}
+                    {user.is_active ? user.role : 'inactive'}
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-500">{formatDate(user.created_at)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">
                     {user.id !== session.user.id && user.role !== 'super_admin' && (
-                      <RoleForm userId={user.id} currentRole={user.role} />
+                      <RoleForm userId={user.id} currentRole={user.role} currentIsActive={user.is_active} />
                     )}
                     {user.role !== 'super_admin' && (
                       <Link
