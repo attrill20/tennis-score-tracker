@@ -277,7 +277,7 @@ export default function RegisterPage() {
           <label htmlFor="privacyAccepted" className="text-sm text-gray-600">
             I have read and agree to the{' '}
             <a
-              href="https://qptc.co.uk/wp-content/uploads/2026/04/QPTC-CIC-Privacy-Notice-QPTC-members.pdf"
+              href="https://qptc.co.uk/wp-content/uploads/2026/08/QPTC-CIC-Privacy-Notice-QPTC-members.pdf"
               target="_blank"
               rel="noopener noreferrer"
               className="text-blue-600 underline hover:text-blue-800"
