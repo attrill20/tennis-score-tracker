@@ -247,7 +247,7 @@ export default function AssignPlayersPanel({
                   <p className="text-xs text-gray-500 mb-1.5 font-medium">Player 1</p>
                   <input type="text" name="p1Search" value={p1Search} onChange={(e) => setP1Search(e.target.value)}
                     placeholder="Search..."
-                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm" />
+                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-xs" />
                 </div>
                 <div className="max-h-44 overflow-y-auto">
                   {p1Options.length === 0 ? (
@@ -268,7 +268,7 @@ export default function AssignPlayersPanel({
                   <p className="text-xs text-gray-500 mb-1.5 font-medium">Player 2</p>
                   <input type="text" name="p2Search" value={p2Search} onChange={(e) => setP2Search(e.target.value)}
                     placeholder="Search..."
-                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm" />
+                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-xs" />
                 </div>
                 <div className="max-h-44 overflow-y-auto">
                   {p2Options.length === 0 ? (
@@ -359,7 +359,7 @@ export default function AssignPlayersPanel({
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
           <div className="max-h-52 overflow-y-auto">

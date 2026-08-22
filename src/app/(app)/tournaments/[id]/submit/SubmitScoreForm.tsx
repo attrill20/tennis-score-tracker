@@ -204,7 +204,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
                 value={opponent}
                 onChange={(e) => setOpponent(e.target.value)}
                 required
-                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               >
                 <option value="">
                   {players.length === 0 ? 'No remaining opponents' : 'Select opponent...'}
@@ -236,7 +236,7 @@ export default function SubmitScoreForm({ userName }: { userName: string }) {
                     setOpponent2(pair?.p2Id ?? '');
                   }}
                   required
-                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                  className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                 >
                   <option value="">
                     {opponentPairs.length === 0 ? 'No opponents available' : 'Select opponents...'}

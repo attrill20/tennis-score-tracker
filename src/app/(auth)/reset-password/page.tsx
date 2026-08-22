@@ -71,7 +71,7 @@ function ResetPasswordForm() {
             required
             minLength={8}
             autoComplete="new-password"
-            inputClassName="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-base sm:text-sm text-gray-900 placeholder:text-gray-500"
+            inputClassName="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
             placeholder="Min. 8 characters"
           />
         </div>
@@ -87,7 +87,7 @@ function ResetPasswordForm() {
             onChange={(e) => setConfirm(e.target.value)}
             required
             autoComplete="new-password"
-            inputClassName="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-base sm:text-sm text-gray-900 placeholder:text-gray-500"
+            inputClassName="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
             placeholder="••••••••"
           />
         </div>

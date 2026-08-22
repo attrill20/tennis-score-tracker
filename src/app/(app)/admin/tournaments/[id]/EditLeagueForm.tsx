@@ -100,7 +100,7 @@ export default function EditLeagueForm({
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
       <div className="flex items-center justify-between gap-4">
-        <h2 className="text-base sm:text-sm font-semibold text-gray-700">Tournament settings</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Tournament settings</h2>
         <div className="flex items-center gap-3">
           {saved && <p className="text-xs text-green-700">Saved!</p>}
           <button
@@ -124,7 +124,7 @@ export default function EditLeagueForm({
           value={name}
           onChange={(e) => { setName(e.target.value); mark(); }}
           required
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         />
       </div>
 
@@ -136,7 +136,7 @@ export default function EditLeagueForm({
           value={description}
           onChange={(e) => { setDescription(e.target.value); mark(); }}
           rows={3}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm resize-none"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
           placeholder="e.g. Summer singles tournament for intermediate players..."
         />
       </div>
@@ -151,7 +151,7 @@ export default function EditLeagueForm({
             value={seasonStart}
             onChange={(e) => { setSeasonStart(e.target.value); mark(); }}
             required
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div>
@@ -163,7 +163,7 @@ export default function EditLeagueForm({
             value={seasonEnd}
             onChange={(e) => { setSeasonEnd(e.target.value); mark(); }}
             required
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
       </div>
@@ -175,7 +175,7 @@ export default function EditLeagueForm({
           name="scoringMethod"
           value={scoringMethod}
           onChange={(e) => { setScoringMethod(e.target.value); mark(); }}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
           <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
@@ -197,7 +197,7 @@ export default function EditLeagueForm({
           name="maxPlayers"
           value={maxPlayers}
           onChange={(e) => { setMaxPlayers(Number(e.target.value)); mark(); }}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           {isDoubles
             ? Array.from({ length: 7 }, (_, i) => i + 2).map((n) => (
@@ -217,7 +217,7 @@ export default function EditLeagueForm({
             name="numPromoted"
             value={numPromoted}
             onChange={(e) => { setNumPromoted(Number(e.target.value)); mark(); }}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -229,7 +229,7 @@ export default function EditLeagueForm({
             name="numRelegated"
             value={numRelegated}
             onChange={(e) => { setNumRelegated(Number(e.target.value)); mark(); }}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -243,7 +243,7 @@ export default function EditLeagueForm({
           name="leagueTiebreaker"
           value={tiebreaker}
           onChange={(e) => { setTiebreaker(e.target.value); mark(); }}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="head_to_head">Head-to-head result</option>
           <option value="most_sets_won">Most sets won</option>
@@ -259,7 +259,7 @@ export default function EditLeagueForm({
             name="leagueStatus"
             value={status}
             onChange={(e) => { setStatus(e.target.value); mark(); }}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="upcoming">Upcoming</option>
             <option value="active">Active</option>
@@ -273,7 +273,7 @@ export default function EditLeagueForm({
             name="leagueVisibility"
             value={isPublic ? 'public' : 'private'}
             onChange={(e) => { setIsPublic(e.target.value === 'public'); mark(); }}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="public">Public</option>
             <option value="private">Private</option>
@@ -288,7 +288,7 @@ export default function EditLeagueForm({
           name="joinType"
           value={joinType}
           onChange={(e) => { setJoinType(e.target.value); mark(); }}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="invite_only">Invite only - admin assigns all players</option>
           <option value="open_invite">Open invite - members can sign up themselves</option>

@@ -95,7 +95,7 @@ export default function MatchScoreInputs({
             name="walkoverId"
             value={walkoverId}
             onChange={(e) => setWalkoverId(e.target.value as 'me' | 'them')}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="them">{myName} won ({opponentName} did not appear)</option>
             <option value="me">{opponentName} won ({myName} did not appear)</option>
@@ -121,7 +121,7 @@ export default function MatchScoreInputs({
                 name={`set-${i}-my`}
                 value={set.my}
                 onChange={(e) => updateSet(i, 'my', e.target.value)}
-                className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm text-center"
+                className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
                 placeholder="-"
               />
             ))}
@@ -136,7 +136,7 @@ export default function MatchScoreInputs({
                 name={`set-${i}-their`}
                 value={set.their}
                 onChange={(e) => updateSet(i, 'their', e.target.value)}
-                className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm text-center"
+                className="w-14 px-2 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm text-center"
                 placeholder="-"
               />
             ))}
@@ -184,7 +184,7 @@ export default function MatchScoreInputs({
                             name={`tiebreak-${i}-my`}
                             value={tiebreaks[i].my}
                             onChange={(e) => updateTiebreak(i, 'my', e.target.value)}
-                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-base sm:text-sm text-center"
+                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
                             placeholder="Me"
                             maxLength={2}
                           />
@@ -194,7 +194,7 @@ export default function MatchScoreInputs({
                             name={`tiebreak-${i}-their`}
                             value={tiebreaks[i].their}
                             onChange={(e) => updateTiebreak(i, 'their', e.target.value)}
-                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-base sm:text-sm text-center"
+                            className="w-full px-1 py-1 rounded border border-gray-300 focus:outline-none focus:ring-1 focus:ring-green-500 text-xs text-center"
                             placeholder="Opp"
                             maxLength={2}
                           />
@@ -217,7 +217,7 @@ export default function MatchScoreInputs({
             name="retiredPlayer"
             value={retiredPlayer}
             onChange={(e) => setRetiredPlayer(e.target.value as 'me' | 'them')}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="them">{myName} won ({opponentName} retired)</option>
             <option value="me">{opponentName} won ({myName} retired)</option>
@@ -234,7 +234,7 @@ export default function MatchScoreInputs({
           value={playedAt}
           onChange={(e) => setPlayedAt(e.target.value)}
           required
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         />
       </div>
     </>

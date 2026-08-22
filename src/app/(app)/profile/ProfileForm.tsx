@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import PasswordInput from '@/components/PasswordInput';
 
-const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 text-base sm:text-sm text-gray-900';
+const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 text-sm text-gray-900';
 
 export default function ProfileForm({
   initialFirstName,

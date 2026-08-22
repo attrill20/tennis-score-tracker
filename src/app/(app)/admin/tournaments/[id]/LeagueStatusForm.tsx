@@ -25,7 +25,7 @@ export default function LeagueStatusForm({ leagueId, currentStatus }: { leagueId
         name="leagueStatus"
         value={status}
         onChange={(e) => setStatus(e.target.value)}
-        className="px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+        className="px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
       >
         <option value="upcoming">Upcoming</option>
         <option value="active">Active</option>

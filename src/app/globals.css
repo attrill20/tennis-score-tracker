@@ -26,5 +26,13 @@ body {
 }
 
 input, select, textarea {
-  color: rgb(17 24 39); /* gray-900 — prevents iOS Safari from rendering input text in washed-out grey */
+  color: rgb(17 24 39); /* gray-900 - prevents iOS Safari from rendering input text in washed-out grey */
+}
+
+/* -webkit-touch-callout is only recognised on iOS WebKit (Safari and Chrome-on-iOS
+   both use it), not desktop Safari or Android - so this only targets iOS. */
+@supports (-webkit-touch-callout: none) {
+  input, select, textarea {
+    font-size: 16px !important; /* iOS auto-zooms the page on focus for any input under 16px */
+  }
 }

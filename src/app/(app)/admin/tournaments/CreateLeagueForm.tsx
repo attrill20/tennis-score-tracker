@@ -245,7 +245,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           value={name}
           onChange={(e) => setName(e.target.value)}
           required
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           placeholder={format === 'multi' ? 'e.g. Summer 2026 Championship' : 'e.g. Division 1 - Spring 2026'}
         />
       </div>
@@ -281,7 +281,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
               name="numDivisions"
               value={numDivisions}
               onChange={(e) => setNumDivisions(Number(e.target.value))}
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             >
               {[2, 3, 4, 5, 6, 7, 8].map((n) => (
                 <option key={n} value={n}>{n} divisions</option>
@@ -326,7 +326,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           name="scoringMethod"
           value={scoringMethod}
           onChange={(e) => setScoringMethod(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
           <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
@@ -350,7 +350,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           name="maxPlayers"
           value={maxPlayers}
           onChange={(e) => setMaxPlayers(Number(e.target.value))}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           {leagueType === 'doubles'
             ? Array.from({ length: 7 }, (_, i) => i + 2).map((n) => (
@@ -370,7 +370,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             name="numPromoted"
             value={numPromoted}
             onChange={(e) => setNumPromoted(Number(e.target.value))}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {[0, 1, 2, 3, 4, 5].map((n) => (
               <option key={n} value={n}>{n}</option>
@@ -384,7 +384,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             name="numRelegated"
             value={numRelegated}
             onChange={(e) => setNumRelegated(Number(e.target.value))}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {[0, 1, 2, 3, 4, 5].map((n) => (
               <option key={n} value={n}>{n}</option>
@@ -401,7 +401,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             name="status"
             value={status}
             onChange={(e) => setStatus(e.target.value as 'upcoming' | 'active')}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="upcoming">Upcoming</option>
             <option value="active">Active</option>
@@ -417,7 +417,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm resize-none"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
           placeholder="e.g. Summer singles tournament for intermediate players..."
         />
       </div>
@@ -429,7 +429,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           name="tiebreaker"
           value={tiebreaker}
           onChange={(e) => setTiebreaker(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="head_to_head">Head-to-head result</option>
           <option value="most_sets_won">Most sets won</option>
@@ -444,7 +444,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           name="visibility"
           value={isPublic ? 'public' : 'private'}
           onChange={(e) => setIsPublic(e.target.value === 'public')}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="public">Public - visible to all members</option>
           <option value="private">Private - invited players and admins only</option>
@@ -459,7 +459,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             name="joinType"
             value={joinType}
             onChange={(e) => setJoinType(e.target.value as 'invite_only' | 'open_invite')}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="invite_only">Invite only - admin assigns all players</option>
             <option value="open_invite">Open invite - members can sign up themselves</option>

@@ -196,7 +196,7 @@ function MatchForm({
               value={player1Id}
               onChange={(e) => setPlayer1Id(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             >
               <option value="">Select...</option>
               {players.filter((p) => p.id !== player2Id).map((p) => (
@@ -212,7 +212,7 @@ function MatchForm({
               value={player2Id}
               onChange={(e) => setPlayer2Id(e.target.value)}
               required
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             >
               <option value="">Select...</option>
               {players.filter((p) => p.id !== player1Id).map((p) => (
@@ -235,7 +235,7 @@ function MatchForm({
                 value={player1Id}
                 onChange={(e) => setPlayer1Id(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               >
                 <option value="">Select...</option>
                 {players.filter((p) => p.id !== player2Id && p.id !== player3Id && p.id !== player4Id).map((p) => (
@@ -251,7 +251,7 @@ function MatchForm({
                 value={player3Id}
                 onChange={(e) => setPlayer3Id(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               >
                 <option value="">Select...</option>
                 {players.filter((p) => p.id !== player1Id && p.id !== player2Id && p.id !== player4Id).map((p) => (
@@ -270,7 +270,7 @@ function MatchForm({
                 value={player2Id}
                 onChange={(e) => setPlayer2Id(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               >
                 <option value="">Select...</option>
                 {players.filter((p) => p.id !== player1Id && p.id !== player3Id && p.id !== player4Id).map((p) => (
@@ -286,7 +286,7 @@ function MatchForm({
                 value={player4Id}
                 onChange={(e) => setPlayer4Id(e.target.value)}
                 required
-                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               >
                 <option value="">Select...</option>
                 {players.filter((p) => p.id !== player1Id && p.id !== player2Id && p.id !== player3Id).map((p) => (
@@ -361,7 +361,7 @@ export default function AdminMatchesSection({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-base sm:text-sm font-semibold text-gray-700">Results</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Results</h2>
         <button
           onClick={() => { setShowAddForm(!showAddForm); setEditingMatchId(null); }}
           className="text-sm text-green-700 hover:underline font-medium"

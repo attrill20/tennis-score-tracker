@@ -150,7 +150,7 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
           name="assignLeague"
           value={leagueId}
           onChange={(e) => handleLeagueChange(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         >
           <option value="">Select a tournament...</option>
           {leagues.map((l) => (
@@ -211,7 +211,7 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
                     value={newP1}
                     onChange={(e) => setNewP1(e.target.value)}
                     disabled={saving}
-                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm disabled:opacity-40"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm disabled:opacity-40"
                   >
                     <option value="">Player 1...</option>
                     {members
@@ -225,7 +225,7 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
                     value={newP2}
                     onChange={(e) => setNewP2(e.target.value)}
                     disabled={saving}
-                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm disabled:opacity-40"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm disabled:opacity-40"
                   >
                     <option value="">Player 2...</option>
                     {members
@@ -261,7 +261,7 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search players..."
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
                   />
                 </div>
                 <div className="max-h-64 overflow-y-auto">

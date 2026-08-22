@@ -86,7 +86,7 @@ export default function EditUserForm({
     <>
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base sm:text-sm font-semibold text-gray-700">Personal details</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Personal details</h2>
           <div className="flex items-center gap-3">
             {saved && <p className="text-xs text-green-700">Saved!</p>}
             <button
@@ -112,7 +112,7 @@ export default function EditUserForm({
               onChange={(e) => { setFirstName(e.target.value); setSaved(false); }}
               required
               autoComplete="given-name"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
           <div>
@@ -125,7 +125,7 @@ export default function EditUserForm({
               onChange={(e) => { setLastName(e.target.value); setSaved(false); }}
               required
               autoComplete="family-name"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
         </div>
@@ -140,7 +140,7 @@ export default function EditUserForm({
               value={email}
               onChange={(e) => { setEmail(e.target.value); setSaved(false); }}
               autoComplete="email"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
           <div>
@@ -152,7 +152,7 @@ export default function EditUserForm({
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setSaved(false); }}
               autoComplete="tel"
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>
         </div>
@@ -180,7 +180,7 @@ export default function EditUserForm({
 
       <form onSubmit={handleRoleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base sm:text-sm font-semibold text-gray-700">Role</h2>
+          <h2 className="text-sm font-semibold text-gray-700">Role</h2>
           <div className="flex items-center gap-3">
             {roleSaved && <p className="text-xs text-green-700">Saved!</p>}
             <button
@@ -202,7 +202,7 @@ export default function EditUserForm({
             name="role"
             value={role}
             onChange={(e) => { setRole(e.target.value); setRoleSaved(false); }}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             <option value="member">member</option>
             <option value="admin">admin</option>

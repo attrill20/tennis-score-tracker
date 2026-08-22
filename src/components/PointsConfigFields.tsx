@@ -79,7 +79,7 @@ export default function PointsConfigFields({
             max={20}
             value={config.winStraightSets}
             onChange={(e) => updateField('winStraightSets', e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div>
@@ -92,7 +92,7 @@ export default function PointsConfigFields({
             max={20}
             value={config.loseStraightSets}
             onChange={(e) => updateField('loseStraightSets', e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div>
@@ -105,7 +105,7 @@ export default function PointsConfigFields({
             max={20}
             value={config.winDecider}
             onChange={(e) => updateField('winDecider', e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div>
@@ -118,7 +118,7 @@ export default function PointsConfigFields({
             max={20}
             value={config.loseDecider}
             onChange={(e) => updateField('loseDecider', e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
         <div className="col-span-2">
@@ -131,7 +131,7 @@ export default function PointsConfigFields({
             max={20}
             value={config.draw}
             onChange={(e) => updateField('draw', e.target.value)}
-            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           />
         </div>
       </div>

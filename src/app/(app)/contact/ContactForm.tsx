@@ -76,7 +76,7 @@ export default function ContactForm({ isLoggedIn }: { isLoggedIn: boolean }) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               placeholder="you@example.com"
             />
           </div>
@@ -93,7 +93,7 @@ export default function ContactForm({ isLoggedIn }: { isLoggedIn: boolean }) {
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             required
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             placeholder="e.g. Query about my tournament"
           />
         </div>
@@ -109,7 +109,7 @@ export default function ContactForm({ isLoggedIn }: { isLoggedIn: boolean }) {
             onChange={(e) => setMessage(e.target.value)}
             required
             rows={5}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm resize-none"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
             placeholder="Your message..."
           />
         </div>

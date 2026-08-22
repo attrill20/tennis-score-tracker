@@ -76,7 +76,7 @@ export default function TournamentSettingsForm({
   return (
     <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
       <div className="flex items-center justify-between">
-        <h2 className="text-base sm:text-sm font-semibold text-gray-700">Tournament settings</h2>
+        <h2 className="text-sm font-semibold text-gray-700">Tournament settings</h2>
         <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">Close</button>
       </div>
 
@@ -88,7 +88,7 @@ export default function TournamentSettingsForm({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
         />
       </div>
 
@@ -100,7 +100,7 @@ export default function TournamentSettingsForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm resize-none"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
           placeholder="e.g. Summer championship across three divisions..."
         />
       </div>
@@ -141,7 +141,7 @@ export default function TournamentSettingsForm({
             name="numPromoted"
             value={numPromoted}
             onChange={(e) => setNumPromoted(Number(e.target.value))}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
@@ -153,7 +153,7 @@ export default function TournamentSettingsForm({
             name="numRelegated"
             value={numRelegated}
             onChange={(e) => setNumRelegated(Number(e.target.value))}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
           >
             {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
