@@ -140,9 +140,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       ) : (
         <Link href="/tournaments" className="text-sm text-green-700 hover:underline">&larr; All tournaments</Link>
       )}
-      <div className="flex items-center justify-between mb-1 mt-2">
-        <h1 className="text-2xl font-bold text-gray-800">{displayName}</h1>
-        <div className="flex items-center gap-2 shrink-0">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-1 mt-2 gap-1">
+        <h1 className="text-2xl font-bold text-gray-800 w-full sm:w-auto">{displayName}</h1>
+        <div className="hidden sm:flex items-center gap-2 shrink-0">
           {league.gender_category !== 'either' && league.gender_category !== 'open' && (
             <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full font-medium">
               {GENDER_CATEGORY_LABELS[league.gender_category as keyof typeof GENDER_CATEGORY_LABELS]}
@@ -157,13 +157,27 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           </span>
         </div>
       </div>
-      <div className="flex items-center justify-between mb-2">
+      <div className="flex items-center justify-between mb-2 gap-2">
         <p className="text-sm text-gray-400">
           {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
           {' - '}
           {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
         <div className="flex items-center gap-2">
+          <div className="flex sm:hidden items-center gap-2">
+            {league.gender_category !== 'either' && league.gender_category !== 'open' && (
+              <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full font-medium">
+                {GENDER_CATEGORY_LABELS[league.gender_category as keyof typeof GENDER_CATEGORY_LABELS]}
+              </span>
+            )}
+            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+              displayStatus === 'active' ? 'bg-green-100 text-green-700'
+              : displayStatus === 'upcoming' ? 'bg-blue-100 text-blue-700'
+              : 'bg-slate-100 text-slate-600'
+            }`}>
+              {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
+            </span>
+          </div>
           {isInLeague && league.status === 'upcoming' && league.join_type === 'open_invite' && (
             <LeaveLeagueButton leagueId={id} />
           )}
