@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import PasswordInput from '@/components/PasswordInput';
 
-const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 text-sm text-gray-900';
+const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 text-base sm:text-sm text-gray-900';
 
 export default function ProfileForm({
   initialFirstName,
@@ -121,9 +121,11 @@ export default function ProfileForm({
     <form onSubmit={handleSubmit} onChange={() => setSuccess('')} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">First name <span className="text-red-500">*</span></label>
+          <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First name <span className="text-red-500">*</span></label>
           <input
+            id="firstName"
             type="text"
+            name="firstName"
             value={firstName}
             onChange={(e) => { setFirstName(e.target.value); setNameWarning(''); }}
             onBlur={handleFirstNameBlur}
@@ -132,9 +134,11 @@ export default function ProfileForm({
           />
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Last name <span className="text-red-500">*</span></label>
+          <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last name <span className="text-red-500">*</span></label>
           <input
+            id="lastName"
             type="text"
+            name="lastName"
             value={lastName}
             onChange={(e) => { setLastName(e.target.value); setNameWarning(''); }}
             onBlur={handleLastNameBlur}
@@ -148,13 +152,16 @@ export default function ProfileForm({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+        <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
         <input
+          id="email"
           type="email"
+          name="email"
           value={email}
           onChange={(e) => { setEmail(e.target.value); setEmailWarning(''); }}
           onBlur={handleEmailBlur}
           required
+          autoComplete="email"
           className={inputClass}
         />
         <p className="text-xs text-gray-400 mt-1">Displayed as primary contact method if no phone number entered.</p>
@@ -164,9 +171,11 @@ export default function ProfileForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
+        <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
         <input
+          id="phone"
           type="tel"
+          name="phone"
           value={phone}
           onChange={(e) => { setPhone(e.target.value); setPhoneWarning(''); }}
           onBlur={handlePhoneBlur}
@@ -204,8 +213,10 @@ export default function ProfileForm({
       <p className="text-xs text-gray-400">Leave password fields blank to keep your current password</p>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">New password</label>
+        <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">New password</label>
         <PasswordInput
+          id="new-password"
+          name="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           autoComplete="new-password"
@@ -215,8 +226,10 @@ export default function ProfileForm({
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
+        <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">Confirm new password</label>
         <PasswordInput
+          id="confirm-password"
+          name="confirm-password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           autoComplete="new-password"

@@ -147,9 +147,10 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
         <label htmlFor="assignLeague" className="block text-sm font-medium text-gray-700 mb-1">Tournament</label>
         <select
           id="assignLeague"
+          name="assignLeague"
           value={leagueId}
           onChange={(e) => handleLeagueChange(e.target.value)}
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
         >
           <option value="">Select a tournament...</option>
           {leagues.map((l) => (
@@ -206,10 +207,11 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
                 <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Add a pair</p>
                 <div className="grid grid-cols-2 gap-2">
                   <select
+                    name="newPlayer1"
                     value={newP1}
                     onChange={(e) => setNewP1(e.target.value)}
                     disabled={saving}
-                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm disabled:opacity-40"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm disabled:opacity-40"
                   >
                     <option value="">Player 1...</option>
                     {members
@@ -219,10 +221,11 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
                       ))}
                   </select>
                   <select
+                    name="newPlayer2"
                     value={newP2}
                     onChange={(e) => setNewP2(e.target.value)}
                     disabled={saving}
-                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm disabled:opacity-40"
+                    className="px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm disabled:opacity-40"
                   >
                     <option value="">Player 2...</option>
                     {members
@@ -254,10 +257,11 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
                 <div className="p-2 border-b border-gray-200 bg-gray-50">
                   <input
                     type="text"
+                    name="search"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Search players..."
-                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    className="w-full px-3 py-2 rounded-md border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
                   />
                 </div>
                 <div className="max-h-64 overflow-y-auto">

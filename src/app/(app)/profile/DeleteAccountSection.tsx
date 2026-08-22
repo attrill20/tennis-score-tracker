@@ -67,11 +67,12 @@ export default function DeleteAccountSection() {
                 </label>
                 <PasswordInput
                   id="deletePassword"
+                  name="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   autoComplete="current-password"
-                  inputClassName="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 text-sm"
+                  inputClassName="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-red-500 text-base sm:text-sm"
                 />
               </div>
 

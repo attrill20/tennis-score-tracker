@@ -33,10 +33,11 @@ export default function RoleForm({
 
   return (
     <select
+      name="role"
       value={value}
       onChange={(e) => handleChange(e.target.value)}
       disabled={loading}
-      className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+      className="text-base sm:text-sm px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
     >
       <option value="unverified">unverified</option>
       <option value="member">member</option>

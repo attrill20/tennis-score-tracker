@@ -86,7 +86,7 @@ export default function EditUserForm({
     <>
       <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-gray-700">Personal details</h2>
+          <h2 className="text-base sm:text-sm font-semibold text-gray-700">Personal details</h2>
           <div className="flex items-center gap-3">
             {saved && <p className="text-xs text-green-700">Saved!</p>}
             <button
@@ -106,22 +106,26 @@ export default function EditUserForm({
             <label htmlFor="userFirstName" className="block text-sm font-medium text-gray-700 mb-1">First name</label>
             <input
               id="userFirstName"
+              name="firstName"
               type="text"
               value={firstName}
               onChange={(e) => { setFirstName(e.target.value); setSaved(false); }}
               required
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              autoComplete="given-name"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
             />
           </div>
           <div>
             <label htmlFor="userLastName" className="block text-sm font-medium text-gray-700 mb-1">Last name</label>
             <input
               id="userLastName"
+              name="lastName"
               type="text"
               value={lastName}
               onChange={(e) => { setLastName(e.target.value); setSaved(false); }}
               required
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              autoComplete="family-name"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
             />
           </div>
         </div>
@@ -131,20 +135,24 @@ export default function EditUserForm({
             <label htmlFor="userEmail" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               id="userEmail"
+              name="email"
               type="email"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setSaved(false); }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              autoComplete="email"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
             />
           </div>
           <div>
             <label htmlFor="userPhone" className="block text-sm font-medium text-gray-700 mb-1">Phone <span className="text-gray-400 font-normal">(optional)</span></label>
             <input
               id="userPhone"
+              name="phone"
               type="tel"
               value={phone}
               onChange={(e) => { setPhone(e.target.value); setSaved(false); }}
-              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              autoComplete="tel"
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
             />
           </div>
         </div>
@@ -172,7 +180,7 @@ export default function EditUserForm({
 
       <form onSubmit={handleRoleSubmit} className="bg-white rounded-xl border border-gray-200 p-6 space-y-5">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="text-base font-semibold text-gray-700">Role</h2>
+          <h2 className="text-base sm:text-sm font-semibold text-gray-700">Role</h2>
           <div className="flex items-center gap-3">
             {roleSaved && <p className="text-xs text-green-700">Saved!</p>}
             <button
@@ -191,9 +199,10 @@ export default function EditUserForm({
           <label htmlFor="userRole" className="block text-sm font-medium text-gray-700 mb-1">Role</label>
           <select
             id="userRole"
+            name="role"
             value={role}
             onChange={(e) => { setRole(e.target.value); setRoleSaved(false); }}
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
           >
             <option value="member">member</option>
             <option value="admin">admin</option>

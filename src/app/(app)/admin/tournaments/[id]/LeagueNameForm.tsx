@@ -38,11 +38,12 @@ export default function LeagueNameForm({ leagueId, currentName }: { leagueId: st
       <div className="flex-1">
         <input
           id="leagueName"
+          name="leagueName"
           type="text"
           value={name}
           onChange={(e) => { setName(e.target.value); setSaved(false); }}
           required
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
         />
       </div>
       <div className="relative">

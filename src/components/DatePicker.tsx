@@ -27,11 +27,13 @@ function formatDisplay(date: Date): string {
 
 export default function DatePicker({
   id,
+  name,
   value,
   onChange,
   required,
 }: {
   id?: string;
+  name?: string;
   value: string;
   onChange: (value: string) => void;
   required?: boolean;
@@ -90,6 +92,7 @@ export default function DatePicker({
       <input
         type="date"
         id={id}
+        name={name ?? id}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         required={required}

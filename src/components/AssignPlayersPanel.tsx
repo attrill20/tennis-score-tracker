@@ -245,9 +245,9 @@ export default function AssignPlayersPanel({
               <div className="flex flex-col">
                 <div className="px-2 pt-2 pb-1.5 border-b border-gray-200">
                   <p className="text-xs text-gray-500 mb-1.5 font-medium">Player 1</p>
-                  <input type="text" value={p1Search} onChange={(e) => setP1Search(e.target.value)}
+                  <input type="text" name="p1Search" value={p1Search} onChange={(e) => setP1Search(e.target.value)}
                     placeholder="Search..."
-                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-xs" />
+                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm" />
                 </div>
                 <div className="max-h-44 overflow-y-auto">
                   {p1Options.length === 0 ? (
@@ -266,9 +266,9 @@ export default function AssignPlayersPanel({
               <div className="flex flex-col">
                 <div className="px-2 pt-2 pb-1.5 border-b border-gray-200">
                   <p className="text-xs text-gray-500 mb-1.5 font-medium">Player 2</p>
-                  <input type="text" value={p2Search} onChange={(e) => setP2Search(e.target.value)}
+                  <input type="text" name="p2Search" value={p2Search} onChange={(e) => setP2Search(e.target.value)}
                     placeholder="Search..."
-                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-xs" />
+                    className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm" />
                 </div>
                 <div className="max-h-44 overflow-y-auto">
                   {p2Options.length === 0 ? (
@@ -355,10 +355,11 @@ export default function AssignPlayersPanel({
             </p>
             <input
               type="text"
+              name="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search..."
-              className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+              className="w-full px-3 py-2 rounded-md border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-base sm:text-sm"
             />
           </div>
           <div className="max-h-52 overflow-y-auto">

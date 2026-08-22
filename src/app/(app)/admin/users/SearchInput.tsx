@@ -28,10 +28,11 @@ export default function SearchInput({
     <div className="relative w-full">
       <input
         type="text"
+        name="search"
         defaultValue={initialSearch}
         onChange={handleChange}
         placeholder="Search by name or email..."
-        className="w-full px-4 py-2 pl-9 text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+        className="w-full px-4 py-2 pl-9 text-base sm:text-sm bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
       />
       <svg
         className="absolute left-3 top-2.5 h-4 w-4 text-gray-400"
