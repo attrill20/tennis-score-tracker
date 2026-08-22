@@ -2,6 +2,8 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import Link from 'next/link';
 import WinDrawLossBar from '@/components/WinDrawLossBar';
+import { leagueBarColor } from '@/lib/leagueColor';
+import { truncateName } from '@/lib/format';
 
 export default async function MatchesPage() {
   const session = await auth();
@@ -12,11 +14,11 @@ export default async function MatchesPage() {
       m.id, m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at,
       m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
       m.match_type, m.winner_id,
-      l.name AS league_name,
+      l.name AS league_name, l.color AS league_color,
       p1.first_name AS player1_first, (p1.first_name || ' ' || p1.last_name) AS player1_name,
       p2.first_name AS player2_first, (p2.first_name || ' ' || p2.last_name) AS player2_name,
-      p3.first_name AS player3_first,
-      p4.first_name AS player4_first
+      p3.first_name AS player3_first, p3.last_name AS player3_last,
+      p4.first_name AS player4_first, p4.last_name AS player4_last
     FROM matches m
     JOIN leagues l ON l.id = m.league_id
     JOIN profiles p1 ON p1.id = m.player1_id
@@ -60,8 +62,6 @@ export default async function MatchesPage() {
   const dbl = calcStats(doublesMatches);
   const hasDoubles = doublesMatches.length > 0;
   const hasSingles = singlesMatches.length > 0;
-
-  const myFirstName = (session?.user?.name ?? '').split(' ')[0];
 
   return (
     <div>
@@ -125,16 +125,15 @@ export default async function MatchesPage() {
             const tiebreakScores = match.tiebreak_scores as ([number, number] | null)[] | null;
 
             // Name display
-            const p1First = match.player1_first as string;
-            const p2First = match.player2_first as string;
             const p3First = match.player3_first as string | null;
             const p4First = match.player4_first as string | null;
+            const p3Last = match.player3_last as string | null;
+            const p4Last = match.player4_last as string | null;
 
-            const myDisplayName = isDoubles
-              ? `${myFirstName} / ${isTeam1 ? (p3First ?? '') : (p4First ?? '')}`
-              : (session?.user?.name ?? '');
-            const theirDisplayName = isDoubles
-              ? `${isTeam1 ? p2First : p1First} / ${isTeam1 ? (p4First ?? '') : (p3First ?? '')}`
+            const theirFullName = isDoubles
+              ? isTeam1
+                ? `${match.player2_name as string} / ${p4First ?? ''} ${p4Last ?? ''}`
+                : `${match.player1_name as string} / ${p3First ?? ''} ${p3Last ?? ''}`
               : (isTeam1 ? (match.player2_name as string) : (match.player1_name as string));
 
             // Scores from "my team" perspective
@@ -142,19 +141,27 @@ export default async function MatchesPage() {
             const theirTeamScore = isTeam1 ? match.score_player2 as number : match.score_player1 as number;
             const myWon = result === 'W';
 
+            const barColor = leagueBarColor(match.league_id as string, match.league_color as string | null);
+
             return (
-              <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
+              <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-green-400 transition-colors cursor-pointer">
                 <Link
                   href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`}
                   className="absolute inset-0 rounded-xl z-10"
                 />
-                <div className="relative flex items-center gap-3">
+                <div className={`sm:hidden flex items-center justify-between gap-2 px-4 py-1 text-sm font-medium text-gray-700 ${barColor.bg}`}>
+                  <span>{match.league_name as string}</span>
+                  <span className="shrink-0 whitespace-nowrap text-xs">
+                    {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  </span>
+                </div>
+                <div className="relative flex items-center gap-3 p-4">
                   <span className={`text-xs font-bold px-1.5 py-1 rounded shrink-0 self-center ${badgeClass}`}>{result}</span>
 
                   <div className="flex-1 min-w-0 text-sm">
                     <div className="flex items-center">
-                      <span className={`font-medium w-28 shrink-0 truncate ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>
-                        {myDisplayName}
+                      <span className={`font-medium w-32 shrink-0 truncate ${myWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                        Me
                       </span>
                       <div className="flex items-center gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
@@ -172,8 +179,8 @@ export default async function MatchesPage() {
                       </div>
                     </div>
                     <div className="flex items-center mt-0.5">
-                      <span className={`font-medium w-28 shrink-0 truncate ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>
-                        {theirDisplayName}
+                      <span className={`font-medium w-32 shrink-0 truncate ${!myWon ? 'text-gray-800' : 'text-gray-400'}`}>
+                        {truncateName(theirFullName)}
                       </span>
                       <div className="flex items-center gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
@@ -192,8 +199,8 @@ export default async function MatchesPage() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col items-end gap-1 shrink-0 text-right">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-col items-end gap-1 w-20 sm:w-auto shrink-0 overflow-hidden sm:overflow-visible text-right">
+                    <div className="flex flex-col items-end gap-0.5 w-full sm:w-auto">
                       {isDoubles && (
                         <span className="text-xs bg-blue-50 text-blue-500 px-1.5 py-0.5 rounded-full font-medium">Doubles</span>
                       )}
@@ -203,21 +210,21 @@ export default async function MatchesPage() {
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
-                      <span className="text-xs text-gray-400">{match.league_name as string}</span>
-                      {canEdit && (
-                        <Link href={`/tournaments/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
-                          Edit
-                        </Link>
-                      )}
-                      {canSuggestEdit && (
-                        <Link href={`/tournaments/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
-                          Suggest edit
-                        </Link>
-                      )}
+                      <span className="hidden sm:inline text-xs text-gray-400">{match.league_name as string}</span>
                     </div>
-                    <span className="text-xs text-gray-400">
+                    <span className="hidden sm:inline text-xs text-gray-400">
                       {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                     </span>
+                    {canEdit && (
+                      <Link href={`/tournaments/${match.league_id}/matches/${match.id}/edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        Edit
+                      </Link>
+                    )}
+                    {canSuggestEdit && (
+                      <Link href={`/tournaments/${match.league_id}/matches/${match.id}/suggest-edit`} className="relative z-20 text-xs text-green-700 hover:underline">
+                        Suggest edit
+                      </Link>
+                    )}
                   </div>
                 </div>
               </div>

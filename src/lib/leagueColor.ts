@@ -35,6 +35,23 @@ const LEAGUE_RIGHT_BORDER_COLORS: Record<LeagueColorKey, string> = {
   sky:    'border-r-sky-300',
 };
 
+const LEAGUE_BAR_COLORS: Record<LeagueColorKey, { bg: string; text: string }> = {
+  blue:   { bg: 'bg-blue-50',   text: 'text-blue-700' },
+  purple: { bg: 'bg-purple-50', text: 'text-purple-700' },
+  orange: { bg: 'bg-orange-50', text: 'text-orange-700' },
+  pink:   { bg: 'bg-pink-50',   text: 'text-pink-700' },
+  teal:   { bg: 'bg-teal-50',   text: 'text-teal-700' },
+  indigo: { bg: 'bg-indigo-50', text: 'text-indigo-700' },
+  cyan:   { bg: 'bg-cyan-50',   text: 'text-cyan-700' },
+  rose:   { bg: 'bg-rose-50',   text: 'text-rose-700' },
+  yellow: { bg: 'bg-yellow-50', text: 'text-yellow-700' },
+  green:  { bg: 'bg-green-50',  text: 'text-green-700' },
+  lime:   { bg: 'bg-lime-50',   text: 'text-lime-700' },
+  violet: { bg: 'bg-violet-50', text: 'text-violet-700' },
+  amber:  { bg: 'bg-amber-50',  text: 'text-amber-700' },
+  sky:    { bg: 'bg-sky-50',    text: 'text-sky-700' },
+};
+
 function resolveKey(leagueId: string, color?: string | null): LeagueColorKey {
   if (color && LEAGUE_COLOR_KEYS.includes(color as LeagueColorKey)) {
     return color as LeagueColorKey;
@@ -49,6 +66,10 @@ export function leagueBorderColor(leagueId: string, color?: string | null): stri
 
 export function leagueRightBorderColor(leagueId: string, color?: string | null): string {
   return LEAGUE_RIGHT_BORDER_COLORS[resolveKey(leagueId, color)];
+}
+
+export function leagueBarColor(leagueId: string, color?: string | null): { bg: string; text: string } {
+  return LEAGUE_BAR_COLORS[resolveKey(leagueId, color)];
 }
 
 export const LEAGUE_COLOR_SWATCHES: { key: LeagueColorKey; bg: string; ring: string; label: string }[] = [

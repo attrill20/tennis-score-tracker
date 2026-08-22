@@ -1,5 +1,6 @@
 import { auth } from '@/auth';
-import { leagueBorderColor, leagueRightBorderColor } from '@/lib/leagueColor';
+import { leagueBorderColor, leagueRightBorderColor, leagueBarColor } from '@/lib/leagueColor';
+import { truncateName } from '@/lib/format';
 import sql from '@/lib/db';
 import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
@@ -535,9 +536,6 @@ export default async function DashboardPage() {
             const p2Last = match.player2_last as string;
             const p3Last = match.player3_last as string | null;
             const p4Last = match.player4_last as string | null;
-            const opponentFirstName = isDoubles
-              ? isTeam1 ? `${p2First} / ${p4First}` : `${p1First} / ${p3First}`
-              : isTeam1 ? p2First : p1First;
             const opponentFullName = isDoubles
               ? isTeam1 ? `${p2First} ${p2Last} / ${p4First} ${p4Last}` : `${p1First} ${p1Last} / ${p3First} ${p3Last}`
               : isTeam1 ? `${p2First} ${p2Last}` : `${p1First} ${p1Last}`;
@@ -551,28 +549,35 @@ export default async function DashboardPage() {
             const result = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
             const matchBorderColor = result === 'W' ? 'border-l-green-300' : result === 'L' ? 'border-l-red-300' : 'border-l-yellow-300';
+            const barColor = leagueBarColor(match.league_id as string, leagueColorMap[match.league_id as string]);
 
             return (
-              <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
+              <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} overflow-hidden hover:border-green-400 transition-colors cursor-pointer`}>
                 <Link href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl z-10" />
-                <div className="relative flex items-center gap-3">
+                <div className={`sm:hidden flex items-center justify-between gap-2 px-4 py-1 text-sm font-medium text-gray-700 ${barColor.bg}`}>
+                  <span>{match.league_name as string}</span>
+                  <span className="shrink-0 whitespace-nowrap text-xs">
+                    {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  </span>
+                </div>
+                <div className="relative flex items-center gap-3 py-3 sm:py-4 px-4">
                   {/* W/L badge */}
                   <span className={`text-xs font-bold px-1.5 py-1 rounded shrink-0 self-center ${badgeClass}`}>{result}</span>
 
                   {/* Player rows with fixed-width name column */}
                   <div className="flex-1 min-w-0 text-sm">
                     <div className="flex items-center">
-                      <span className={`font-medium w-24 shrink-0 truncate ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}>
+                      <span className={`font-medium w-32 shrink-0 truncate ${myScore > theirScore ? 'text-gray-800' : 'text-gray-400'}`}>
                         Me
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 sm:gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const my = isTeam1 ? p1 : p2;
                           const their = isTeam1 ? p2 : p1;
                           const tb = tiebreakScores?.[i] ?? null;
                           const myTb = tb ? (isTeam1 ? tb[0] : tb[1]) : null;
                           return (
-                            <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>
+                            <span key={i} className={`relative inline-block text-xs font-medium w-5 sm:w-6 text-center ${my > their ? 'text-gray-700' : 'text-gray-400'}`}>
                               {my}
                               {myTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[9px] font-normal leading-none opacity-50">{myTb}</span>}
                             </span>
@@ -581,18 +586,17 @@ export default async function DashboardPage() {
                       </div>
                     </div>
                     <div className="flex items-center mt-0.5">
-                      <span className={`font-medium w-24 shrink-0 truncate ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}>
-                        <span className="hidden sm:inline">{opponentFullName}</span>
-                        <span className="sm:hidden">{opponentFirstName}</span>
+                      <span className={`font-medium w-32 shrink-0 truncate ${theirScore > myScore ? 'text-gray-800' : 'text-gray-400'}`}>
+                        {truncateName(opponentFullName)}
                       </span>
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-1 sm:gap-1.5">
                         {setScores && setScores.length > 0 ? setScores.map(([p1, p2], i) => {
                           const my = isTeam1 ? p1 : p2;
                           const their = isTeam1 ? p2 : p1;
                           const tb = tiebreakScores?.[i] ?? null;
                           const theirTb = tb ? (isTeam1 ? tb[1] : tb[0]) : null;
                           return (
-                            <span key={i} className={`relative inline-block text-xs font-medium w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>
+                            <span key={i} className={`relative inline-block text-xs font-medium w-5 sm:w-6 text-center ${their > my ? 'text-gray-700' : 'text-gray-400'}`}>
                               {their}
                               {theirTb !== null && <span className="absolute -top-0.5 -right-0.5 text-[9px] font-normal leading-none opacity-50">{theirTb}</span>}
                             </span>
@@ -603,17 +607,17 @@ export default async function DashboardPage() {
                   </div>
 
                   {/* Right side: league name, date, action link */}
-                  <div className={`flex flex-col items-end gap-1 w-24 shrink-0 text-right border-r-2 ${leagueRightBorderColor(match.league_id as string, leagueColorMap[match.league_id as string])} pr-2`}>
-                    <div className="flex flex-col items-end gap-0.5">
+                  <div className={`flex flex-col items-end gap-1 w-20 sm:w-auto shrink-0 overflow-hidden sm:overflow-visible text-right sm:border-r-2 ${leagueRightBorderColor(match.league_id as string, leagueColorMap[match.league_id as string])} sm:pr-2`}>
+                    <div className="flex flex-col items-end gap-0.5 w-full sm:w-auto">
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
                       )}
                       {match.status === 'overridden' && (
                         <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">Overridden</span>
                       )}
-                      <span className="text-xs text-gray-400 truncate">{match.league_name as string}</span>
+                      <span className="hidden sm:inline text-xs text-gray-400">{match.league_name as string}</span>
                     </div>
-                    <span className="text-xs text-gray-400">
+                    <span className="hidden sm:inline text-xs text-gray-400">
                       {new Date(match.played_at as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
                     </span>
                     {canEdit && (
