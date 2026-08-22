@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
 
-const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500';
+const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-base text-gray-900 placeholder:text-gray-500';
 
 function PasswordStrength({ password }: { password: string }) {
   const checks = [
@@ -146,6 +146,7 @@ export default function RegisterPage() {
             <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">First name <span className="text-red-500">*</span></label>
             <input
               id="firstName"
+              name="firstName"
               type="text"
               value={firstName}
               onChange={(e) => { setFirstName(e.target.value); setNameWarning(''); }}
@@ -160,6 +161,7 @@ export default function RegisterPage() {
             <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">Last name <span className="text-red-500">*</span></label>
             <input
               id="lastName"
+              name="lastName"
               type="text"
               value={lastName}
               onChange={(e) => { setLastName(e.target.value); setNameWarning(''); }}
@@ -199,6 +201,7 @@ export default function RegisterPage() {
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
           <input
             id="email"
+            name="email"
             type="email"
             value={email}
             onChange={(e) => { setEmail(e.target.value); setEmailWarning(''); }}
@@ -218,6 +221,7 @@ export default function RegisterPage() {
           <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">Phone number</label>
           <input
             id="phone"
+            name="phone"
             type="tel"
             value={phone}
             onChange={(e) => { handlePhone(e); setPhoneWarning(''); }}
@@ -236,6 +240,7 @@ export default function RegisterPage() {
           <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password <span className="text-red-500">*</span></label>
           <PasswordInput
             id="password"
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -250,6 +255,7 @@ export default function RegisterPage() {
           <label htmlFor="confirm" className="block text-sm font-medium text-gray-700 mb-1">Confirm password <span className="text-red-500">*</span></label>
           <PasswordInput
             id="confirm"
+            name="confirm-password"
             value={confirm}
             onChange={(e) => setConfirm(e.target.value)}
             required

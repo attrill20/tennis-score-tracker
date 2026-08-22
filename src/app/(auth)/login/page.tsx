@@ -81,12 +81,13 @@ function LoginForm() {
           </label>
           <input
             id="email"
+            name="email"
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
             autoComplete="username"
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-base text-gray-900 placeholder:text-gray-500"
             placeholder="you@example.com"
           />
         </div>
@@ -102,11 +103,12 @@ function LoginForm() {
           </div>
           <PasswordInput
             id="password"
+            name="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            inputClassName="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500"
+            inputClassName="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-base text-gray-900 placeholder:text-gray-500"
             placeholder="••••••••"
           />
         </div>
