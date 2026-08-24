@@ -47,7 +47,11 @@ export async function GET(req: NextRequest) {
           verification_token_expires = ${expires.toISOString()}
       WHERE id = ${user.id}
     `;
-    await sendVerificationReminderEmail(user.email as string, token);
+    try {
+      await sendVerificationReminderEmail(user.email as string, token);
+    } catch (err) {
+      console.error(`Failed to send verification reminder to ${user.email as string}:`, err);
+    }
   }
 
   for (const user of finalWarningUsers) {
@@ -58,7 +62,11 @@ export async function GET(req: NextRequest) {
           verification_token_expires = ${expires.toISOString()}
       WHERE id = ${user.id}
     `;
-    await sendVerificationFinalWarningEmail(user.email as string, token);
+    try {
+      await sendVerificationFinalWarningEmail(user.email as string, token);
+    } catch (err) {
+      console.error(`Failed to send final verification warning to ${user.email as string}:`, err);
+    }
   }
 
   return NextResponse.json({

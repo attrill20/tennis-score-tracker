@@ -27,7 +27,11 @@ export async function POST(req: NextRequest) {
     WHERE LOWER(email) = ${email}
   `;
 
-  await sendPasswordResetEmail(rows[0].email as string, resetToken);
+  try {
+    await sendPasswordResetEmail(rows[0].email as string, resetToken);
+  } catch (err) {
+    console.error('Failed to send password reset email:', err);
+  }
 
   return NextResponse.json({ success: true });
 }

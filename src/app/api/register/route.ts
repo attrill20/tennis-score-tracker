@@ -51,7 +51,11 @@ export async function POST(req: NextRequest) {
     )
   `;
 
-  await sendVerificationEmail(email, verificationToken);
+  try {
+    await sendVerificationEmail(email, verificationToken);
+  } catch (err) {
+    console.error('Failed to send verification email:', err);
+  }
 
   return NextResponse.json({ success: true }, { status: 201 });
 }

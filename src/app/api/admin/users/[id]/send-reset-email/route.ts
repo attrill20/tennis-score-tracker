@@ -33,7 +33,12 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
     WHERE id = ${targetId}
   `;
 
-  await sendPasswordResetEmail(email, resetToken);
+  try {
+    await sendPasswordResetEmail(email, resetToken);
+  } catch (err) {
+    console.error('Failed to send admin-triggered password reset email:', err);
+    return NextResponse.json({ error: 'The reset link was created but the email failed to send' }, { status: 502 });
+  }
 
   return NextResponse.json({ success: true });
 }
