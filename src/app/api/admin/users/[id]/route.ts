@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       UPDATE profiles
       SET first_name = ${firstName.trim()},
           last_name = ${lastName.trim()},
-          email = ${email?.trim() || null},
+          email = ${email?.toLowerCase().trim() || null},
           phone = ${phone?.trim() || null},
           gender = ${gender || null}
       WHERE id = ${targetId}

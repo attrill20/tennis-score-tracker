@@ -8,7 +8,8 @@ export async function PATCH(req: NextRequest) {
   const session = await auth();
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { firstName, lastName, email, phone, gender, newPassword, isInjured } = await req.json();
+  const { firstName, lastName, email: rawEmail, phone, gender, newPassword, isInjured } = await req.json();
+  const email = rawEmail?.toLowerCase().trim();
 
   // Injury-only update from InjuryToggle
   if (isInjured !== undefined && !firstName && !lastName && !email) {
@@ -21,7 +22,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   const existing = await sql`
-    SELECT id FROM profiles WHERE email = ${email} AND id != ${session.user.id}
+    SELECT id FROM profiles WHERE LOWER(email) = ${email} AND id != ${session.user.id}
   `;
   if (existing.length > 0) {
     return NextResponse.json({ error: 'That email is already in use' }, { status: 409 });

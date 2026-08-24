@@ -208,6 +208,9 @@ export default function RegisterPage() {
             onBlur={handleEmailBlur}
             required
             autoComplete="email"
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             className={inputClass}
             placeholder="you@example.com"
           />

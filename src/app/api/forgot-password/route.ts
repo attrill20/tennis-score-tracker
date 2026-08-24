@@ -4,13 +4,14 @@ import sql from '@/lib/db';
 import { sendPasswordResetEmail } from '@/lib/mailer';
 
 export async function POST(req: NextRequest) {
-  const { email } = await req.json();
+  const { email: rawEmail } = await req.json();
+  const email = rawEmail?.toLowerCase().trim();
 
   if (!email) {
     return NextResponse.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  const rows = await sql`SELECT id, email_verified FROM profiles WHERE email = ${email}`;
+  const rows = await sql`SELECT id, email, email_verified FROM profiles WHERE LOWER(email) = ${email}`;
 
   if (rows.length === 0) {
     return NextResponse.json({ error: 'No account found with that email address' }, { status: 404 });
@@ -23,10 +24,10 @@ export async function POST(req: NextRequest) {
     UPDATE profiles
     SET reset_token = ${resetToken},
         reset_token_expires = ${resetTokenExpires.toISOString()}
-    WHERE email = ${email}
+    WHERE LOWER(email) = ${email}
   `;
 
-  await sendPasswordResetEmail(email, resetToken);
+  await sendPasswordResetEmail(rows[0].email as string, resetToken);
 
   return NextResponse.json({ success: true });
 }

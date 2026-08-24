@@ -140,6 +140,9 @@ export default function EditUserForm({
               value={email}
               onChange={(e) => { setEmail(e.target.value); setSaved(false); }}
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           </div>

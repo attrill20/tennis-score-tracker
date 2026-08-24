@@ -76,6 +76,9 @@ export default function ContactForm({ isLoggedIn }: { isLoggedIn: boolean }) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
               placeholder="you@example.com"
             />

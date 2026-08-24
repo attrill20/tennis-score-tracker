@@ -162,6 +162,9 @@ export default function ProfileForm({
           onBlur={handleEmailBlur}
           required
           autoComplete="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
           className={inputClass}
         />
         <p className="text-xs text-gray-400 mt-1">Displayed as primary contact method if no phone number entered.</p>
