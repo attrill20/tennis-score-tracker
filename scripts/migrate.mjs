@@ -160,6 +160,13 @@ const statements = [
 
   // Reversible admin suspension - blocks login without deleting/anonymizing the account.
   `ALTER TABLE profiles ADD COLUMN IF NOT EXISTS is_active BOOLEAN NOT NULL DEFAULT TRUE`,
+
+  // Normalize any pre-existing mixed-case emails before enforcing case-insensitive uniqueness below.
+  `UPDATE profiles SET email = LOWER(email) WHERE email != LOWER(email)`,
+
+  // Enforce email uniqueness case-insensitively - the app already lowercases on read/write,
+  // this closes the gap at the database level.
+  `CREATE UNIQUE INDEX IF NOT EXISTS profiles_email_lower_idx ON profiles (LOWER(email))`,
 ];
 
 async function migrate() {
