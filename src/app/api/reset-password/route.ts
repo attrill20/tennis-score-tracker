@@ -29,7 +29,9 @@ export async function POST(req: NextRequest) {
     UPDATE profiles
     SET password_hash = ${passwordHash},
         reset_token = NULL,
-        reset_token_expires = NULL
+        reset_token_expires = NULL,
+        email_verified = true,
+        role = CASE WHEN role = 'unverified' THEN 'member' ELSE role END
     WHERE id = ${rows[0].id}
   `;
 

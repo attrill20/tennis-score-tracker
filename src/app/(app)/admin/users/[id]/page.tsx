@@ -4,6 +4,8 @@ import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import EditUserForm from './EditUserForm';
 import DeleteUserButton from './DeleteUserButton';
+import SendResetEmailButton from './SendResetEmailButton';
+import AdminSetPasswordForm from './AdminSetPasswordForm';
 
 export default async function AdminUserEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -56,6 +58,20 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
           currentPhone={(user.phone as string) ?? ''}
           currentGender={(user.gender as string) ?? ''}
         />
+      )}
+
+      {!isSuperAdmin && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+          <div>
+            <h2 className="text-base font-semibold text-gray-800 mb-1">Password reset</h2>
+            <p className="text-sm text-gray-500 mb-4">Send {fullName} an email with a link to reset their password.</p>
+            <SendResetEmailButton userId={id} />
+          </div>
+          <div className="pt-6 border-t border-gray-100">
+            <p className="text-sm text-gray-500 mb-3">Or set a new password directly (for testing purposes - no email is sent):</p>
+            <AdminSetPasswordForm userId={id} />
+          </div>
+        </div>
       )}
 
       {!isSelf && !isSuperAdmin && (
