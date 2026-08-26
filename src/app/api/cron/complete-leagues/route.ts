@@ -33,10 +33,33 @@ export async function GET(req: NextRequest) {
   ]);
 
   // Activate a multi-league tournament once its first round date arrives.
-  await sql`
+  const multiActivated = await sql`
     UPDATE tournaments
     SET status = 'active'
     WHERE format = 'multi' AND status = 'upcoming' AND round_dates[1] <= CURRENT_DATE
+    RETURNING id, name
+  `;
+  // Single-league tournaments have no round_dates - drive the same transition off
+  // their one division's season_start/season_end instead.
+  const singleActivated = await sql`
+    UPDATE tournaments t
+    SET status = 'active'
+    FROM leagues l
+    WHERE l.tournament_id = t.id
+      AND t.format = 'single'
+      AND t.status = 'upcoming'
+      AND l.season_start <= CURRENT_DATE
+    RETURNING t.id, t.name
+  `;
+  const singleCompleted = await sql`
+    UPDATE tournaments t
+    SET status = 'completed'
+    FROM leagues l
+    WHERE l.tournament_id = t.id
+      AND t.format = 'single'
+      AND t.status = 'active'
+      AND l.season_end < CURRENT_DATE
+    RETURNING t.id, t.name
   `;
   // Keep current-round divisions active while their tournament is active.
   await sql`
@@ -86,6 +109,7 @@ export async function GET(req: NextRequest) {
     activated: activated.map((r) => ({ id: r.id, name: r.name })),
     archived: archived.map((r) => ({ id: r.id, name: r.name })),
     roundsGenerated,
-    tournamentsCompleted: tournamentsCompleted.map((r) => ({ id: r.id, name: r.name })),
+    tournamentsActivated: [...multiActivated, ...singleActivated].map((r) => ({ id: r.id, name: r.name })),
+    tournamentsCompleted: [...tournamentsCompleted, ...singleCompleted].map((r) => ({ id: r.id, name: r.name })),
   });
 }
