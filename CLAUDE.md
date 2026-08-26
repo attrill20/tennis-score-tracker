@@ -123,6 +123,7 @@ API routes largely mirror this (`/api/register`, `/api/verify-email`, `/api/prof
 /api/cron/complete-leagues     → auto-activate/complete single-format tournaments
 /api/cron/cleanup-unverified   → remind/warn/soft-delete unverified accounts
 /api/cron/sync-dev-db          → weekly: reset the dev DB branch from prod and anonymize it (see below)
+/api/cron/backup-prod-db       → nightly: dump all prod tables to a private Vercel Blob (see below)
 ```
 
 ---
@@ -136,7 +137,7 @@ A separate Neon **branch** (`dev`, id in `NEON_DEV_BRANCH_ID`) exists alongside 
 
 To develop locally against this data, point your local `.env.local`'s `DATABASE_URL` (not `DEV_DATABASE_URL`) at the `dev` branch's connection string — `DEV_DATABASE_URL` is only used by the sync job itself. Vercel's production `DATABASE_URL` stays pointed at prod.
 
-**Backups:** Neon's built-in point-in-time restore is currently the only backup for prod data, and the project's History Window is capped at a few hours on the free plan. There is no independent off-database backup (e.g. scheduled `pg_dump` export) yet — treat this as a real gap if/when addressed.
+**Backups:** Neon's built-in point-in-time restore covers the last few hours (the project's History Window is capped on the free plan). Beyond that, `/api/cron/backup-prod-db` (nightly, `src/lib/backupProdDb.ts`) does an application-level dump of every table (there's no `pg_dump` binary available in Vercel's serverless runtime, so this is a `SELECT * FROM <table>` per table, serialized to JSON) and uploads it to Vercel Blob at `backups/prod/<timestamp>.json` with `access: 'private'` — unlike avatar uploads, these contain password hashes and PII so they must not be public. It keeps the newest 14 backups and prunes older ones after each successful upload. This job only ever reads from prod and writes to Blob; it never writes to the database.
 
 ---
 
@@ -184,7 +185,7 @@ npm run test:watch # run tests in watch mode
   - `api` project → `node`, matches `**/__tests__/api/**/*.test.ts`
 - **Note:** Must use Jest 29, not 30 — Jest 30 is incompatible with `next/jest`
 
-### Existing tests (all passing — 38 tests, 7 suites)
+### Existing tests (all passing — 44 tests, 9 suites)
 | File | Covers |
 |---|---|
 | `__tests__/components/login.test.tsx` | Login form fields, calls signIn, redirects on success, shows error on failure, disables button while loading |
@@ -194,6 +195,8 @@ npm run test:watch # run tests in watch mode
 | `__tests__/api/anonymize-dev-db.test.ts` | Dev-DB anonymization: refuses on missing/matching `DEV_DATABASE_URL`, scrubs profiles otherwise |
 | `__tests__/api/neon-api.test.ts` | Dev branch reset: refuses on missing/matching branch ids, restores + polls operations to completion, surfaces failed operations |
 | `__tests__/api/sync-dev-db-cron.test.ts` | `GET /api/cron/sync-dev-db` — 401 without/wrong `CRON_SECRET`, 200 + correct body on success |
+| `__tests__/api/backup-prod-db.test.ts` | Prod backup: dumps every table, uploads as a private blob, prunes backups beyond the retention count |
+| `__tests__/api/backup-prod-db-cron.test.ts` | `GET /api/cron/backup-prod-db` — 401 without/wrong `CRON_SECRET`, 200 + correct body on success |
 
 ### Rules
 - **Run `npm test` before every commit** and confirm all tests pass before proceeding.
@@ -220,7 +223,6 @@ These were originally listed as stretch/future items but are now built and live:
 - [ ] Strength rating actively computed from H2H results (column exists, nothing populates it yet)
 - [ ] Push notifications (score submitted, dispute raised)
 - [ ] Public stats page (optional, currently everything behind login)
-- [ ] Independent off-database backups for prod (see "Local Dev Database" → Backups above)
 
 ---
 
