@@ -96,10 +96,13 @@ export default async function AdminUsersPage({
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   }
 
-  const tableHeaders = (
-    <tr className="bg-gray-50 text-xs text-gray-500 border-b border-gray-200">
+  function renderTableHeaders(count?: number) {
+    return (
+      <tr className="bg-gray-50 text-xs text-gray-500 border-b border-gray-200">
       <th className="text-left px-4 py-3 font-medium">#</th>
-      <th className="px-4 py-3"></th>
+      <th className="px-4 py-3 text-gray-400 font-normal whitespace-nowrap">
+        {count !== undefined && `(${count})`}
+      </th>
       <th className="text-left px-4 py-3 font-medium">
         <Link href={sortHref('name', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
           Member<SortIcon col="name" currentSort={sortCol} currentOrder={sortOrder} />
@@ -117,12 +120,13 @@ export default async function AdminUsersPage({
       </th>
       <th className="text-left px-4 py-3 font-medium">
         <Link href={sortHref('created_at', sortCol, sortOrder, search)} className="hover:text-gray-800 inline-flex items-center">
-          Date Created<SortIcon col="created_at" currentSort={sortCol} currentOrder={sortOrder} />
+          Created<SortIcon col="created_at" currentSort={sortCol} currentOrder={sortOrder} />
         </Link>
       </th>
       <th className="px-4 py-3"></th>
     </tr>
-  );
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -135,7 +139,7 @@ export default async function AdminUsersPage({
 
       <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto">
         <table className="w-full text-sm">
-          <thead>{tableHeaders}</thead>
+          <thead>{renderTableHeaders(sortedActive.length)}</thead>
           <tbody>
             {sortedActive.length === 0 && (
               <tr>
@@ -154,7 +158,7 @@ export default async function AdminUsersPage({
                     size="sm"
                   />
                 </td>
-                <td className="px-4 py-3 text-gray-800">
+                <td className="px-4 py-3 text-gray-800 whitespace-nowrap">
                   <span className="inline-flex items-center gap-2">
                     {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
                     {user.id === session.user.id && (
@@ -162,30 +166,31 @@ export default async function AdminUsersPage({
                     )}
                   </span>
                 </td>
-                <td className="px-4 py-3 text-gray-500">{user.email}</td>
-                <td className="px-4 py-3">
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                      !user.is_active
-                        ? 'bg-red-100 text-red-600'
-                        : user.role === 'super_admin'
-                          ? 'bg-purple-100 text-purple-700'
-                          : user.role === 'admin'
-                            ? 'bg-blue-100 text-blue-700'
-                            : user.role === 'unverified'
-                              ? 'bg-yellow-100 text-yellow-700'
-                              : 'bg-gray-100 text-gray-500'
-                    }`}
-                  >
-                    {user.is_active ? user.role : 'inactive'}
-                  </span>
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{user.email}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  {user.id !== session.user.id && user.role !== 'super_admin' ? (
+                    <RoleForm userId={user.id} currentRole={user.role} currentIsActive={user.is_active} />
+                  ) : (
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                        !user.is_active
+                          ? 'bg-red-100 text-red-600'
+                          : user.role === 'super_admin'
+                            ? 'bg-purple-100 text-purple-700'
+                            : user.role === 'admin'
+                              ? 'bg-blue-100 text-blue-700'
+                              : user.role === 'unverified'
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-gray-100 text-gray-500'
+                      }`}
+                    >
+                      {user.is_active ? user.role : 'inactive'}
+                    </span>
+                  )}
                 </td>
-                <td className="px-4 py-3 text-gray-500">{formatDate(user.created_at)}</td>
-                <td className="px-4 py-3">
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{formatDate(user.created_at)}</td>
+                <td className="px-4 py-3 whitespace-nowrap">
                   <div className="flex items-center gap-2">
-                    {user.id !== session.user.id && user.role !== 'super_admin' && (
-                      <RoleForm userId={user.id} currentRole={user.role} currentIsActive={user.is_active} />
-                    )}
                     {user.role !== 'super_admin' && (
                       <Link
                         href={`/admin/users/${user.id}`}
@@ -207,7 +212,7 @@ export default async function AdminUsersPage({
           <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wide mb-2">Archived / deleted accounts</h2>
           <div className="bg-white rounded-xl border border-gray-200 overflow-hidden overflow-x-auto opacity-60">
             <table className="w-full text-sm">
-              <thead>{tableHeaders}</thead>
+              <thead>{renderTableHeaders(sortedArchived.length)}</thead>
               <tbody>
                 {sortedArchived.map((user) => (
                   <tr key={user.id} className="border-t border-gray-100">
@@ -219,17 +224,17 @@ export default async function AdminUsersPage({
                         size="sm"
                       />
                     </td>
-                    <td className="px-4 py-3 text-gray-500">
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
                       {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
                     </td>
-                    <td className="px-4 py-3 text-gray-400">{user.email}</td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{user.email}</td>
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-red-100 text-red-600">
                         deleted
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-400">{formatDate(user.created_at)}</td>
-                    <td className="px-4 py-3 text-gray-400 text-xs">
+                    <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{formatDate(user.created_at)}</td>
+                    <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">
                       Archived {formatDate(user.deleted_at)}
                     </td>
                   </tr>

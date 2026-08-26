@@ -3,6 +3,13 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
+const ROLE_COLORS: Record<string, string> = {
+  unverified: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  member: 'bg-gray-100 text-gray-600 border-gray-200',
+  admin: 'bg-blue-100 text-blue-700 border-blue-200',
+  inactive: 'bg-red-100 text-red-600 border-red-200',
+};
+
 export default function RoleForm({
   userId,
   currentRole,
@@ -37,7 +44,7 @@ export default function RoleForm({
       value={value}
       onChange={(e) => handleChange(e.target.value)}
       disabled={loading}
-      className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50"
+      className={`text-xs px-2 py-0.5 rounded-full border font-medium focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-50 ${ROLE_COLORS[value] ?? ROLE_COLORS.member}`}
     >
       <option value="unverified">unverified</option>
       <option value="member">member</option>
