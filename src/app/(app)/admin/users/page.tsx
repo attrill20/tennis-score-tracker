@@ -152,19 +152,21 @@ export default async function AdminUsersPage({
               <tr key={user.id} className="border-t border-gray-100">
                 <td className="px-4 py-3 text-gray-400 text-xs">{user.member_number ?? '-'}</td>
                 <td className="pl-2 pr-2 py-3">
-                  <PlayerAvatar
-                    name={`${user.first_name} ${user.last_name}`}
-                    avatarUrl={user.avatar_url}
-                    size="sm"
-                  />
+                  <Link href={`/players/${user.id}`}>
+                    <PlayerAvatar
+                      name={`${user.first_name} ${user.last_name}`}
+                      avatarUrl={user.avatar_url}
+                      size="sm"
+                    />
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-gray-800 whitespace-nowrap">
-                  <span className="inline-flex items-center gap-2">
+                  <Link href={`/players/${user.id}`} className="inline-flex items-center gap-2 hover:underline">
                     {[user.title, user.first_name, user.last_name].filter(Boolean).join(' ')}
                     {user.id === session.user.id && (
                       <span className="text-xs text-green-600 font-medium">(you)</span>
                     )}
-                  </span>
+                  </Link>
                 </td>
                 <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{user.email}</td>
                 <td className="px-4 py-3 whitespace-nowrap">
