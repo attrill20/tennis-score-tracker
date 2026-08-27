@@ -42,7 +42,7 @@ export default async function DashboardPage() {
       SELECT
         m.id, m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at,
         m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
-        l.name AS league_name,
+        l.name AS league_name, l.color AS league_color,
         p1.first_name AS player1_first, p2.first_name AS player2_first,
         p3.first_name AS player3_first, p4.first_name AS player4_first,
         p1.last_name AS player1_last, p2.last_name AS player2_last,
@@ -195,12 +195,6 @@ export default async function DashboardPage() {
     }
 
     leagueStats[id] = { position, played, total };
-  }
-
-
-  const leagueColorMap: Record<string, string | null> = {};
-  for (const league of leagues) {
-    leagueColorMap[league.id as string] = (league.color as string | null) ?? null;
   }
 
   return (
@@ -549,7 +543,7 @@ export default async function DashboardPage() {
             const result = myScore > theirScore ? 'W' : myScore < theirScore ? 'L' : 'D';
             const badgeClass = result === 'W' ? 'bg-green-100 text-green-700' : result === 'L' ? 'bg-red-100 text-red-600' : 'bg-yellow-100 text-yellow-700';
             const matchBorderColor = result === 'W' ? 'border-l-green-300' : result === 'L' ? 'border-l-red-300' : 'border-l-yellow-300';
-            const barColor = leagueBarColor(match.league_id as string, leagueColorMap[match.league_id as string]);
+            const barColor = leagueBarColor(match.league_id as string, match.league_color as string | null);
 
             return (
               <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} overflow-hidden hover:border-green-400 transition-colors cursor-pointer`}>
@@ -607,7 +601,7 @@ export default async function DashboardPage() {
                   </div>
 
                   {/* Right side: league name, date, action link */}
-                  <div className={`flex flex-col items-end gap-1 w-20 sm:w-auto shrink-0 overflow-hidden sm:overflow-visible text-right sm:border-r-2 ${leagueRightBorderColor(match.league_id as string, leagueColorMap[match.league_id as string])} sm:pr-2`}>
+                  <div className={`flex flex-col items-end gap-1 w-20 sm:w-auto shrink-0 overflow-hidden sm:overflow-visible text-right sm:border-r-2 ${leagueRightBorderColor(match.league_id as string, match.league_color as string | null)} sm:pr-2`}>
                     <div className="flex flex-col items-end gap-0.5 w-full sm:w-auto">
                       {match.status === 'pending_edit' && (
                         <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Edit pending</span>
