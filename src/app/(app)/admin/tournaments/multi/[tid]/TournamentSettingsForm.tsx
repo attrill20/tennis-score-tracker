@@ -12,6 +12,8 @@ export default function TournamentSettingsForm({
   initialFinalEnd,
   initialPromoted,
   initialRelegated,
+  hasRegistrationForm,
+  initialMaxRegistrations,
 }: {
   tid: string;
   initialName: string;
@@ -20,6 +22,8 @@ export default function TournamentSettingsForm({
   initialFinalEnd: string;
   initialPromoted: number;
   initialRelegated: number;
+  hasRegistrationForm: boolean;
+  initialMaxRegistrations: number | null;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -29,6 +33,7 @@ export default function TournamentSettingsForm({
   const [finalEnd, setFinalEnd] = useState(initialFinalEnd);
   const [numPromoted, setNumPromoted] = useState(initialPromoted);
   const [numRelegated, setNumRelegated] = useState(initialRelegated);
+  const [maxRegistrations, setMaxRegistrations] = useState(initialMaxRegistrations !== null ? String(initialMaxRegistrations) : '');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -50,7 +55,10 @@ export default function TournamentSettingsForm({
     const res = await fetch(`/api/admin/tournaments/multi/${tid}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, description, roundDates: roundDates.filter(Boolean), finalEnd, numPromoted, numRelegated }),
+      body: JSON.stringify({
+        name, description, roundDates: roundDates.filter(Boolean), finalEnd, numPromoted, numRelegated,
+        maxRegistrations: maxRegistrations !== '' ? Number(maxRegistrations) : null,
+      }),
     });
     const data = await res.json();
     setSaving(false);
@@ -159,6 +167,24 @@ export default function TournamentSettingsForm({
           </select>
         </div>
       </div>
+
+      {hasRegistrationForm && (
+        <div>
+          <label htmlFor="t-maxRegistrations" className="block text-sm font-medium text-gray-700 mb-1">
+            Maximum total registrations <span className="text-gray-400 font-normal">(optional)</span>
+          </label>
+          <input
+            id="t-maxRegistrations"
+            name="maxRegistrations"
+            type="number"
+            min={1}
+            value={maxRegistrations}
+            onChange={(e) => setMaxRegistrations(e.target.value)}
+            placeholder="Unlimited"
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          />
+        </div>
+      )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
       {saved && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Settings saved.</p>}

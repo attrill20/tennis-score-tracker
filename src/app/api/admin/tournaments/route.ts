@@ -3,6 +3,7 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { parsePointsConfig } from '@/lib/league';
 import { validGenderCategories, defaultGenderCategory } from '@/lib/genderCategory';
+import { validateRegistrationQuestions } from '@/lib/registration';
 
 const VALID_SCORING = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
 const VALID_TIEBREAKERS = ['head_to_head', 'most_sets_won', 'set_difference'];
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
     numRelegated,
     pointsConfig,
     genderCategory,
+    hasRegistrationForm,
+    maxRegistrations,
+    registrationQuestions,
   } = body;
 
   if (!name) {
@@ -71,14 +75,24 @@ export async function POST(req: NextRequest) {
   const promoted = Number(numPromoted ?? 0);
   const relegated = Number(numRelegated ?? 0);
   const isPub = isPublic !== false;
+  const resolvedHasRegistrationForm = hasRegistrationForm === true;
+
+  let registrationQuestionsToStore: string | null = null;
+  if (resolvedHasRegistrationForm) {
+    const validatedQuestions = validateRegistrationQuestions(registrationQuestions ?? []);
+    if (validatedQuestions === 'invalid') {
+      return NextResponse.json({ error: 'Invalid registration questions - each needs a label, and multiple-choice questions need at least 2 options' }, { status: 400 });
+    }
+    registrationQuestionsToStore = JSON.stringify(validatedQuestions);
+  }
 
   if (format === 'multi') {
     const numDivisions = Number(body.numDivisions);
     const roundDates: string[] = Array.isArray(body.roundDates) ? body.roundDates.filter(Boolean) : [];
     const finalEnd: string = body.finalEnd;
 
-    if (!Number.isInteger(numDivisions) || numDivisions < 2 || numDivisions > 8) {
-      return NextResponse.json({ error: 'Number of divisions must be between 2 and 8' }, { status: 400 });
+    if (!Number.isInteger(numDivisions) || numDivisions < 2 || numDivisions > 10) {
+      return NextResponse.json({ error: 'Number of divisions must be between 2 and 10' }, { status: 400 });
     }
     if (roundDates.length < 1) {
       return NextResponse.json({ error: 'At least one round start date is required' }, { status: 400 });
@@ -90,11 +104,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Promoted + relegated cannot exceed players per division' }, { status: 400 });
     }
 
+    let resolvedMaxRegistrations: number | null = null;
+    if (resolvedHasRegistrationForm && maxRegistrations !== null && maxRegistrations !== undefined && maxRegistrations !== '') {
+      const n = Number(maxRegistrations);
+      if (!Number.isInteger(n) || n < 1) {
+        return NextResponse.json({ error: 'Maximum registrations must be a positive whole number' }, { status: 400 });
+      }
+      resolvedMaxRegistrations = n;
+    }
+
     const sortedRounds = [...roundDates].sort();
 
     const [{ id: tournamentId }] = await sql`
-      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, round_dates, is_public, color, description, created_by)
-      VALUES (${name}, 'multi', ${statusForStart(sortedRounds[0])}, ${numDivisions}, ${promoted}, ${relegated}, ${sortedRounds.length}, ${finalEnd}, ${sortedRounds}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id})
+      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, round_dates, is_public, color, description, created_by, has_registration_form, max_registrations, registration_questions)
+      VALUES (${name}, 'multi', ${statusForStart(sortedRounds[0])}, ${numDivisions}, ${promoted}, ${relegated}, ${sortedRounds.length}, ${finalEnd}, ${sortedRounds}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id}, ${resolvedHasRegistrationForm}, ${resolvedMaxRegistrations}, ${registrationQuestionsToStore})
       RETURNING id
     `;
 
@@ -125,8 +148,8 @@ export async function POST(req: NextRequest) {
   }
 
   const [{ id: tournamentId }] = await sql`
-    INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, is_public, color, description, created_by)
-    VALUES (${name}, 'single', ${status ?? statusForStart(startDate)}, 1, ${promoted}, ${relegated}, 1, ${endDate}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id})
+    INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, is_public, color, description, created_by, has_registration_form, registration_questions)
+    VALUES (${name}, 'single', ${status ?? statusForStart(startDate)}, 1, ${promoted}, ${relegated}, 1, ${endDate}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id}, ${resolvedHasRegistrationForm}, ${registrationQuestionsToStore})
     RETURNING id
   `;
 

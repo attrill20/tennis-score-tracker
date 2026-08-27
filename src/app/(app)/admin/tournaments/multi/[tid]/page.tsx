@@ -5,6 +5,8 @@ import Link from 'next/link';
 import GenerateRoundButton from './GenerateRoundButton';
 import TournamentSettingsForm from './TournamentSettingsForm';
 import DeleteTournamentButton from './DeleteTournamentButton';
+import RegistrationsPanel from '@/components/RegistrationsPanel';
+import { computeSuggestedDivisions, type RegistrationQuestion } from '@/lib/registration';
 
 type Tournament = {
   id: string;
@@ -19,6 +21,9 @@ type Tournament = {
   description: string | null;
   round_dates_text: string[] | null;
   final_end_text: string | null;
+  has_registration_form: boolean;
+  max_registrations: number | null;
+  registration_questions: RegistrationQuestion[] | null;
 };
 
 type Division = {
@@ -57,6 +62,46 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
     ORDER BY l.division_order ASC
   `) as unknown as Division[];
 
+  let registrationCount = 0;
+  let pendingRegistrations: {
+    id: string; player_id: string; full_name: string; phone: string | null; email: string;
+    ability_level: string; answers: Record<string, string>; suggested_division: number | null;
+  }[] = [];
+  const registrationQuestions = tournament.registration_questions ?? [];
+
+  if (tournament.has_registration_form) {
+    const [{ count }] = await sql`SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = ${tid}`;
+    registrationCount = Number(count);
+
+    const rows = await sql`
+      SELECT r.id, r.player_id, (p.first_name || ' ' || p.last_name) AS full_name, p.phone, p.email,
+        r.ability_level, r.answers
+      FROM tournament_registrations r
+      JOIN profiles p ON p.id = r.player_id
+      WHERE r.tournament_id = ${tid} AND r.assigned_league_id IS NULL
+      ORDER BY r.created_at ASC
+    `;
+
+    const suggestions = computeSuggestedDivisions(
+      rows.map((r) => ({
+        id: r.id as string,
+        ability_level: r.ability_level as import('@/lib/registration').AbilityLevel,
+      })),
+      tournament.num_divisions
+    );
+
+    pendingRegistrations = rows.map((r) => ({
+      id: r.id as string,
+      player_id: r.player_id as string,
+      full_name: r.full_name as string,
+      phone: r.phone as string | null,
+      email: r.email as string,
+      ability_level: r.ability_level as string,
+      answers: (r.answers as Record<string, string> | null) ?? {},
+      suggested_division: suggestions.get(r.id as string) ?? null,
+    }));
+  }
+
   return (
     <div className="space-y-6">
       <div>
@@ -79,7 +124,19 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
         initialFinalEnd={tournament.final_end_text ?? ''}
         initialPromoted={tournament.num_promoted}
         initialRelegated={tournament.num_relegated}
+        hasRegistrationForm={tournament.has_registration_form}
+        initialMaxRegistrations={tournament.max_registrations}
       />
+
+      {tournament.has_registration_form && (
+        <RegistrationsPanel
+          registrations={pendingRegistrations}
+          registrationCount={registrationCount}
+          maxRegistrations={tournament.max_registrations}
+          divisions={divisions.map((d) => ({ id: d.id, name: d.name, order: d.division_order }))}
+          questions={registrationQuestions}
+        />
+      )}
 
       {Number(current_round) < tournament.num_rounds && (
         <div className="bg-white rounded-xl border border-gray-200 p-4">

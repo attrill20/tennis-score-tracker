@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { leagueBorderColor } from '@/lib/leagueColor';
+import RegisterButton from '@/components/RegisterButton';
 
 type Tournament = {
   id: string;
@@ -17,6 +18,8 @@ type Tournament = {
   is_public: boolean;
   color: string | null;
   description: string | null;
+  has_registration_form: boolean;
+  max_registrations: number | null;
 };
 
 type Division = {
@@ -43,6 +46,7 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
   const session = await auth();
   const userId = session!.user.id;
   const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin';
+  const today = new Date().toISOString().split('T')[0];
 
   const tRows = await sql`SELECT * FROM tournaments WHERE id = ${tid}`;
   if (tRows.length === 0) notFound();
@@ -93,6 +97,21 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
   );
   const tournamentActive = tournament.status === 'active';
 
+  const isMemberRows = await sql`
+    SELECT 1 FROM league_players lp JOIN leagues l ON l.id = lp.league_id
+    WHERE l.tournament_id = ${tid} AND lp.player_id = ${userId} LIMIT 1
+  `;
+  const isMember = isMemberRows.length > 0;
+
+  let isRegistered = false;
+  let registrationCount = 0;
+  if (tournament.has_registration_form) {
+    const rows = await sql`SELECT 1 FROM tournament_registrations WHERE tournament_id = ${tid} AND player_id = ${userId}`;
+    isRegistered = rows.length > 0;
+    const [{ count }] = await sql`SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = ${tid}`;
+    registrationCount = Number(count);
+  }
+
   // Per-round start/end dates, computed in SQL (as text) to avoid timezone shifts.
   // A round runs from its start date until the day before the next round starts (or the final date).
   const roundSchedule = (await sql`
@@ -121,6 +140,11 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
             <p className="text-sm text-gray-400 mt-1">
               {fmt(roundSchedule[0]?.start_date ?? null)} - {fmt(roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end)}
             </p>
+            {tournament.has_registration_form && (
+              <p className="text-sm text-gray-400 mt-1">
+                Registered: {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}
+              </p>
+            )}
           </div>
           <div className="flex flex-col items-end gap-2 shrink-0">
             <span className={`text-xs px-2 py-1 rounded-full font-medium ${
@@ -130,6 +154,9 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
             }`}>
               {tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
             </span>
+            {tournament.has_registration_form && !isMember && tournament.status === 'upcoming' && (
+              <RegisterButton tournamentId={tournament.id} isRegistered={isRegistered} />
+            )}
             {isAdmin && (
               <Link
                 href={`/admin/tournaments/multi/${tournament.id}`}
@@ -181,21 +208,28 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
       <div>
         <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">Round schedule</h2>
         <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
-          {roundSchedule.map(({ round: r, start_date, end_date }) => (
-            <div key={r} className="flex items-center justify-between px-4 py-3">
-              <div>
-                <span className="text-sm text-gray-700">Round {r}</span>
-                <span className="block text-xs text-gray-400 mt-0.5">{fmt(start_date)} - {fmt(end_date)}</span>
+          {roundSchedule.map(({ round: r, start_date, end_date }) => {
+            // A round only counts as started/completed once its own start date has actually arrived -
+            // not just because it's the highest round with divisions generated for it.
+            const hasStarted = !!start_date && start_date <= today;
+            const hasEnded = !!end_date && end_date < today;
+            const roundLabel = hasEnded ? 'Completed' : hasStarted ? 'Current' : 'Upcoming';
+            return (
+              <div key={r} className="flex items-center justify-between px-4 py-3">
+                <div>
+                  <span className="text-sm text-gray-700">Round {r}</span>
+                  <span className="block text-xs text-gray-400 mt-0.5">{fmt(start_date)} - {fmt(end_date)}</span>
+                </div>
+                <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                  hasEnded ? 'bg-slate-100 text-slate-500'
+                  : hasStarted ? 'bg-green-100 text-green-700'
+                  : 'bg-blue-50 text-blue-600'
+                }`}>
+                  {roundLabel}
+                </span>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                r < Number(current_round) ? 'bg-slate-100 text-slate-500'
-                : r === Number(current_round) ? 'bg-green-100 text-green-700'
-                : 'bg-blue-50 text-blue-600'
-              }`}>
-                {r < Number(current_round) ? 'Completed' : r === Number(current_round) ? 'Current' : 'Upcoming'}
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </div>

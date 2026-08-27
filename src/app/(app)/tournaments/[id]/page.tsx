@@ -19,9 +19,15 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   if (!league) notFound();
 
   const tRows = league.tournament_id
-    ? await sql`SELECT id, name, format, description, status FROM tournaments WHERE id = ${league.tournament_id}`
+    ? await sql`SELECT id, name, format, description, status, has_registration_form, max_registrations FROM tournaments WHERE id = ${league.tournament_id}`
     : [];
   const tournament = tRows[0];
+
+  let registrationCount = 0;
+  if (tournament?.has_registration_form) {
+    const [{ count }] = await sql`SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = ${tournament.id}`;
+    registrationCount = Number(count);
+  }
   const isMultiDivision = tournament?.format === 'multi';
   // A current-round division counts as active whenever its parent tournament is active.
   // (A completed round - e.g. an earlier round after promotion - stays completed.)
@@ -162,6 +168,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
           {' - '}
           {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+          {tournament?.has_registration_form && (
+            <> | Registered: {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</>
+          )}
         </p>
         <div className="flex items-center gap-2">
           <div className="flex sm:hidden items-center gap-2">

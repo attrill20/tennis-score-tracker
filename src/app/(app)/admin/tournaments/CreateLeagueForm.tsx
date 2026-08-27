@@ -6,8 +6,10 @@ import DatePicker from '@/components/DatePicker';
 import LeagueColorPicker from '@/components/LeagueColorPicker';
 import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 import PointsConfigFields from '@/components/PointsConfigFields';
+import RegistrationQuestionsBuilder from '@/components/RegistrationQuestionsBuilder';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 import { type PointsConfig } from '@/lib/league';
+import { DEFAULT_REGISTRATION_QUESTIONS, type RegistrationQuestion } from '@/lib/registration';
 import { SINGLES_GENDER_OPTIONS, DOUBLES_GENDER_OPTIONS, defaultGenderCategory, type GenderCategory } from '@/lib/genderCategory';
 
 type Member = { id: string; full_name: string };
@@ -32,6 +34,9 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   const [joinType, setJoinType] = useState<'invite_only' | 'open_invite'>('invite_only');
   const [description, setDescription] = useState('');
   const [color, setColor] = useState<LeagueColorKey>(LEAGUE_COLOR_KEYS[0]);
+  const [hasRegistrationForm, setHasRegistrationForm] = useState(false);
+  const [maxRegistrations, setMaxRegistrations] = useState('');
+  const [registrationQuestions, setRegistrationQuestions] = useState<RegistrationQuestion[]>([]);
 
   // Multi-league fields
   const [numDivisions, setNumDivisions] = useState(3);
@@ -80,6 +85,9 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             numDivisions,
             roundDates: roundDates.filter(Boolean),
             finalEnd,
+            hasRegistrationForm,
+            maxRegistrations: hasRegistrationForm && maxRegistrations !== '' ? Number(maxRegistrations) : null,
+            registrationQuestions: hasRegistrationForm ? registrationQuestions : [],
           }
         : {
             format,
@@ -99,6 +107,8 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             maxPlayers,
             numPromoted,
             numRelegated,
+            hasRegistrationForm,
+            registrationQuestions: hasRegistrationForm ? registrationQuestions : [],
           };
 
     const res = await fetch('/api/admin/tournaments', {
@@ -283,7 +293,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
               onChange={(e) => setNumDivisions(Number(e.target.value))}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             >
-              {[2, 3, 4, 5, 6, 7, 8].map((n) => (
+              {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
                 <option key={n} value={n}>{n} divisions</option>
               ))}
             </select>
@@ -408,6 +418,53 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           </select>
         </div>
       )}
+
+      <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            id="hasRegistrationForm"
+            name="hasRegistrationForm"
+            type="checkbox"
+            checked={hasRegistrationForm}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setHasRegistrationForm(checked);
+              if (checked && format === 'multi' && maxRegistrations === '') {
+                setMaxRegistrations(String(numDivisions * maxPlayers));
+              }
+              if (checked && registrationQuestions.length === 0) {
+                setRegistrationQuestions(DEFAULT_REGISTRATION_QUESTIONS.map((q) => ({ ...q, options: q.options ? [...q.options] : undefined })));
+              }
+            }}
+            className="accent-green-700 w-4 h-4"
+          />
+          <span className="text-sm font-medium text-gray-700">Add a registration form</span>
+        </label>
+        <p className="text-xs text-gray-400">
+          Members register interest and answer a few questions before you assign them to a division.
+        </p>
+        {hasRegistrationForm && (
+          <RegistrationQuestionsBuilder questions={registrationQuestions} onChange={setRegistrationQuestions} />
+        )}
+        {hasRegistrationForm && format === 'multi' && (
+          <div>
+            <label htmlFor="maxRegistrations" className="block text-sm font-medium text-gray-700 mb-1">
+              Maximum total registrations <span className="text-gray-400 font-normal">(optional)</span>
+            </label>
+            <input
+              id="maxRegistrations"
+              name="maxRegistrations"
+              type="number"
+              min={1}
+              value={maxRegistrations}
+              onChange={(e) => setMaxRegistrations(e.target.value)}
+              placeholder="Unlimited"
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            />
+            <p className="text-xs text-gray-400 mt-1">Registration closes automatically once this many members have registered. Leave blank for no limit.</p>
+          </div>
+        )}
+      </div>
 
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>

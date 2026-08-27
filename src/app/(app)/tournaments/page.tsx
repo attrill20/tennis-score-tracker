@@ -3,12 +3,14 @@ import { leagueBorderColor } from '@/lib/leagueColor';
 import sql from '@/lib/db';
 import Link from 'next/link';
 import JoinLeagueButton from '@/components/JoinLeagueButton';
+import RegisterButton from '@/components/RegisterButton';
 import ArchivedLeaguesSection from './ArchivedLeaguesSection';
 import ArchiveLeagueButton from './ArchiveLeagueButton';
 import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
 
 type League = {
   id: string;
+  tournament_id: string | null;
   name: string;
   status: string;
   season_start: string;
@@ -24,6 +26,9 @@ type League = {
   user_archived: boolean;
   color: string | null;
   gender_category: string;
+  has_registration_form: boolean;
+  is_registered: boolean;
+  registration_count: string;
 };
 
 type MultiTournament = {
@@ -40,6 +45,9 @@ type MultiTournament = {
   is_public: boolean;
   current_round: number;
   is_member: boolean;
+  has_registration_form: boolean;
+  is_registered: boolean;
+  registration_count: string;
 };
 
 function MultiTournamentCard({ t }: { t: MultiTournament }) {
@@ -59,11 +67,18 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
             }`}>
               {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
             </span>
+            {t.has_registration_form && !t.is_member && t.status === 'upcoming' && (
+              <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
+            )}
           </div>
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-gray-400">
-            {t.num_divisions} divisions | Round {Number(t.current_round)} of {t.num_rounds} | Players: {Number(t.player_count)}
+            {t.num_divisions} divisions | {t.status === 'upcoming' ? `${t.num_rounds} rounds` : `Round ${Number(t.current_round)} of ${t.num_rounds}`}
+            {t.status === 'upcoming'
+              ? t.has_registration_form && <> | Registered: {Number(t.registration_count)}</>
+              : <> | Players: {Number(t.player_count)}</>
+            }
           </span>
           <p className="text-xs text-gray-400">
             {t.start_date ? new Date(t.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : ''}
@@ -108,14 +123,15 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
             }`}>
               {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
             </span>
+            {league.has_registration_form && !league.is_member && league.status === 'upcoming' && league.tournament_id && (
+              <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+            )}
           </div>
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-gray-400">
             {league.status === 'upcoming'
-              ? isDoubles
-                ? <>Pairs: {unitCount}/{league.max_players}</>
-                : <>Players: {playerCount}/{league.max_players}</>
+              ? league.has_registration_form && <>Registered: {Number(league.registration_count)}</>
               : isDoubles
               ? <>Pairs: {unitCount} | Games Played: {league.matches_played}/{totalPossible}</>
               : <>Players: {playerCount} | Games Played: {league.matches_played}/{totalPossible}</>
@@ -159,7 +175,7 @@ export default async function LeaguesPage() {
   // Multi-league tournaments are surfaced separately, below, linking to their overview.
   const rows = await sql`
     SELECT
-      l.id, l.name, l.status, l.season_start, l.season_end, l.is_public, l.color,
+      l.id, l.tournament_id, l.name, l.status, l.season_start, l.season_end, l.is_public, l.color,
       COALESCE(l.gender_category, 'either') AS gender_category,
       COALESCE(l.join_type, 'invite_only') AS join_type,
       COALESCE(l.league_type, 'singles') AS league_type,
@@ -168,7 +184,10 @@ export default async function LeaguesPage() {
       (SELECT lp.final_position FROM league_players lp WHERE lp.league_id = l.id AND lp.player_id = ${userId}) AS my_final_position,
       (SELECT COUNT(*) FROM matches m WHERE m.league_id = l.id) AS matches_played,
       EXISTS (SELECT 1 FROM league_players WHERE league_id = l.id AND player_id = ${userId}) AS is_member,
-      COALESCE((SELECT lp.user_archived FROM league_players lp WHERE lp.league_id = l.id AND lp.player_id = ${userId}), false) AS user_archived
+      COALESCE((SELECT lp.user_archived FROM league_players lp WHERE lp.league_id = l.id AND lp.player_id = ${userId}), false) AS user_archived,
+      COALESCE(t.has_registration_form, false) AS has_registration_form,
+      EXISTS (SELECT 1 FROM tournament_registrations WHERE tournament_id = t.id AND player_id = ${userId}) AS is_registered,
+      (SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = t.id) AS registration_count
     FROM leagues l
     LEFT JOIN tournaments t ON t.id = l.tournament_id
     WHERE (t.format IS NULL OR t.format = 'single')
@@ -194,7 +213,10 @@ export default async function LeaguesPage() {
       EXISTS (
         SELECT 1 FROM league_players lp JOIN leagues l2 ON l2.id = lp.league_id
         WHERE l2.tournament_id = t.id AND lp.player_id = ${userId}
-      ) AS is_member
+      ) AS is_member,
+      t.has_registration_form,
+      EXISTS (SELECT 1 FROM tournament_registrations WHERE tournament_id = t.id AND player_id = ${userId}) AS is_registered,
+      (SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = t.id) AS registration_count
     FROM tournaments t
     WHERE t.format = 'multi'
       AND t.status <> 'archived'

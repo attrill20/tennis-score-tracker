@@ -84,6 +84,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         VALUES (${leagueId}, ${p2Id}, ${p1Id})
         ON CONFLICT (league_id, player_id) DO UPDATE SET partner_id = ${p1Id}
       `;
+      await sql`
+        UPDATE tournament_registrations SET assigned_league_id = ${leagueId}, updated_at = now()
+        WHERE player_id IN (${p1Id}, ${p2Id})
+          AND tournament_id = (SELECT tournament_id FROM leagues WHERE id = ${leagueId})
+      `;
     }
     return NextResponse.json({ success: true }, { status: 201 });
   }
@@ -112,6 +117,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       VALUES (${leagueId}, ${playerId})
       ON CONFLICT (league_id, player_id) DO NOTHING
     `;
+    await sql`
+      UPDATE tournament_registrations SET assigned_league_id = ${leagueId}, updated_at = now()
+      WHERE player_id = ${playerId}
+        AND tournament_id = (SELECT tournament_id FROM leagues WHERE id = ${leagueId})
+    `;
   }
 
   return NextResponse.json({ success: true }, { status: 201 });
@@ -130,11 +140,19 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
   if (body.pairIds) {
     const [p1Id, p2Id] = body.pairIds as [string, string];
     await sql`DELETE FROM league_players WHERE league_id = ${leagueId} AND player_id IN (${p1Id}, ${p2Id})`;
+    await sql`
+      UPDATE tournament_registrations SET assigned_league_id = NULL, updated_at = now()
+      WHERE player_id IN (${p1Id}, ${p2Id}) AND assigned_league_id = ${leagueId}
+    `;
     return NextResponse.json({ success: true });
   }
 
   // Singles: remove a single player
   const { playerId } = body;
   await sql`DELETE FROM league_players WHERE league_id = ${leagueId} AND player_id = ${playerId}`;
+  await sql`
+    UPDATE tournament_registrations SET assigned_league_id = NULL, updated_at = now()
+    WHERE player_id = ${playerId} AND assigned_league_id = ${leagueId}
+  `;
   return NextResponse.json({ success: true });
 }

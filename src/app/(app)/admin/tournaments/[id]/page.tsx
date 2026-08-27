@@ -8,6 +8,7 @@ import EditLeagueForm from './EditLeagueForm';
 import DeleteLeagueButton from './DeleteLeagueButton';
 import AdminMatchesSection from './AdminMatchesSection';
 import AssignPlayersPanel from '@/components/AssignPlayersPanel';
+import RegistrationsPanel from '@/components/RegistrationsPanel';
 
 export default async function AdminLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -59,6 +60,32 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
 
   const leagueType = (league.league_type as string) ?? 'singles';
 
+  const [tournamentRow] = league.tournament_id
+    ? await sql`SELECT has_registration_form, registration_questions FROM tournaments WHERE id = ${league.tournament_id}`
+    : [];
+  const hasRegistrationForm = (tournamentRow?.has_registration_form as boolean) ?? false;
+  const registrationQuestions = (tournamentRow?.registration_questions as import('@/lib/registration').RegistrationQuestion[] | null) ?? [];
+
+  const pendingRegistrations = hasRegistrationForm
+    ? (await sql`
+        SELECT r.id, r.player_id, (p.first_name || ' ' || p.last_name) AS full_name, p.phone, p.email,
+          r.ability_level, r.answers
+        FROM tournament_registrations r
+        JOIN profiles p ON p.id = r.player_id
+        WHERE r.tournament_id = ${league.tournament_id} AND r.assigned_league_id IS NULL
+        ORDER BY r.created_at ASC
+      `).map((r) => ({
+        id: r.id as string,
+        player_id: r.player_id as string,
+        full_name: r.full_name as string,
+        phone: r.phone as string | null,
+        email: r.email as string,
+        ability_level: r.ability_level as string,
+        answers: (r.answers as Record<string, string> | null) ?? {},
+        suggested_division: 1,
+      }))
+    : [];
+
   return (
     <div className="space-y-8 max-w-2xl mx-auto">
       <div>
@@ -88,6 +115,16 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentJoinType={(league.join_type as string) ?? 'invite_only'}
         leagueType={leagueType}
       />
+
+      {hasRegistrationForm && (
+        <RegistrationsPanel
+          registrations={pendingRegistrations}
+          registrationCount={pendingRegistrations.length}
+          maxRegistrations={null}
+          divisions={[{ id, name: league.name as string, order: 1 }]}
+          questions={registrationQuestions}
+        />
+      )}
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-base font-semibold text-gray-700 mb-4">

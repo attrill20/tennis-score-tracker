@@ -10,7 +10,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
 
   const { tid } = await params;
   const body = await req.json();
-  const { name, description, roundDates, finalEnd, numPromoted, numRelegated } = body;
+  const { name, description, roundDates, finalEnd, numPromoted, numRelegated, maxRegistrations } = body;
 
   if (!name || typeof name !== 'string') {
     return NextResponse.json({ error: 'Tournament name is required' }, { status: 400 });
@@ -38,6 +38,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
 
   const cleanDescription = typeof description === 'string' && description.trim() !== '' ? description : null;
 
+  let resolvedMaxRegistrations: number | null = null;
+  if (maxRegistrations !== null && maxRegistrations !== undefined && maxRegistrations !== '') {
+    const n = Number(maxRegistrations);
+    if (!Number.isInteger(n) || n < 1) {
+      return NextResponse.json({ error: 'Maximum registrations must be a positive whole number' }, { status: 400 });
+    }
+    resolvedMaxRegistrations = n;
+  }
+
   await sql`
     UPDATE tournaments
     SET name = ${name},
@@ -46,7 +55,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
         num_rounds = ${sorted.length},
         final_end = ${finalEnd},
         num_promoted = ${promoted},
-        num_relegated = ${relegated}
+        num_relegated = ${relegated},
+        max_registrations = ${resolvedMaxRegistrations}
     WHERE id = ${tid}
   `;
 

@@ -39,7 +39,7 @@ Account/auth state: `email_verified`, `verification_token` (+ `_expires`), `rese
 Profile detail: `phone`, `gender`, `member_number`, `is_injured`, `avatar_url` (Vercel Blob URL, uploaded via `/api/upload-avatar`).
 
 ### `tournaments`
-The container for a league competition. `id`, `name`, `format` (`'single'` | `'multi'`), `status`, `num_divisions`, `num_promoted`, `num_relegated`, `num_rounds`, `round_dates` (array), `final_end`, `is_public`, `color`, `description`, `created_by`, `created_at`.
+The container for a league competition. `id`, `name`, `format` (`'single'` | `'multi'`), `status`, `num_divisions`, `num_promoted`, `num_relegated`, `num_rounds`, `round_dates` (array), `final_end`, `is_public`, `color`, `description`, `created_by`, `created_at`, `has_registration_form` (boolean, see Tournament Registration below), `max_registrations` (nullable, multi-format only - caps total registrations), `registration_questions` (jsonb, nullable - the admin-configured custom question list for the registration form, see Tournament Registration below).
 
 - A **single**-format tournament has one round and one division — this is the original "one league, one season" concept.
 - A **multi**-format tournament has multiple rounds; each round runs its own division(s), and `generateNextRound()` (`src/lib/tournament.ts`) computes standings per division, applies promotion/relegation (`computePromotionMoves`), and generates the next round's `leagues` rows.
@@ -58,6 +58,9 @@ Suggested-edit fields (a second, lighter-weight correction path alongside disput
 
 ### `disputes`
 `id`, `match_id`, `raised_by`, `reason`, `requested_score_player1`/`2`, `requested_set_scores`, `requested_tiebreak_scores`, `acknowledged_by_player1`/`2`, `resolved_by` (nullable), `resolved_at` (nullable), `status` (`open` | `resolved`).
+
+### `tournament_registrations`
+One row per player expressing interest in a tournament (see Tournament Registration below). `id`, `tournament_id`, `player_id`, `ability_level` (`'beginner'` | `'intermediate'` | `'parks_c_e'` | `'parks_1sts_b'` - always asked, fixed), `answers` (jsonb, keyed by the tournament's `registration_questions` question ids - everything besides ability level), `assigned_league_id` (nullable - set once an admin places them in a division), `created_at`, `updated_at`. Unique on `(tournament_id, player_id)`.
 
 ---
 
@@ -96,6 +99,19 @@ Login also checks `is_active` (deactivated accounts are blocked with a typed `Ac
 
 ---
 
+## Tournament Registration
+
+An optional per-tournament "registration form" (toggled on at tournament creation, `tournaments.has_registration_form`) that lets members express interest in an upcoming tournament and give an admin the info needed to place them fairly, without joining a league directly:
+
+1. When ticking "Add a registration form" on tournament creation (`CreateLeagueForm.tsx`), the admin gets an inline question builder (`RegistrationQuestionsBuilder`) pre-filled with sensible defaults (`DEFAULT_REGISTRATION_QUESTIONS` in `src/lib/registration.ts`: previous Winter League division, 3x "similar player" free text, notes). The admin can edit labels, add/remove/reorder questions, change a question's type (multiple choice / short answer / long answer), edit multiple-choice options, and mark questions required. This question set is fixed once the tournament is created - there's no later editing UI. Ability level (Beginner / Intermediate / Parks League C-E / Parks League 1sts-B) is NOT part of this builder - it's always asked on every registration form and is the one thing used to suggest a division.
+2. Any member (new or existing) sees a "Register" button on the tournament card/page while it's `upcoming` and hasn't already been placed in a division. This links to `/tournaments/register/[tournamentId]`, which renders the fixed ability-level toggle plus the tournament's `registration_questions` dynamically, alongside a read-only name/contact block pulled from their profile.
+3. Submitting does **not** join a league - it upserts a `tournament_registrations` row (`ability_level` + an `answers` jsonb keyed by question id, validated server-side against the question definitions via `validateAnswers()`). The player can keep editing it until an admin assigns them.
+4. Admins review pending registrations (ones with no `assigned_league_id`) on the tournament's admin page, alongside the existing assign-players panel, with each question's answer shown by its configured label. For multi-format tournaments, `computeSuggestedDivisions()` (`src/lib/registration.ts`) sorts pending registrants by ability level alone and suggests a division as a hint - the admin still assigns manually.
+5. Assigning a registrant via the existing `POST /api/admin/leagues/[id]/players` also sets `assigned_league_id`, which locks their registration and drops them off the pending list; removing them via `DELETE` clears it back to unassigned.
+6. Multi-format tournaments can optionally cap total registrations (`tournaments.max_registrations`, defaults to `numDivisions * maxPlayers` at creation but editable). Once hit, new registrations are rejected with "Registration is full" - no waitlist. Single-format tournaments have no cap.
+
+---
+
 ## Pages / Routes
 
 ```
@@ -108,6 +124,7 @@ Login also checks `is_active` (deactivated accounts are blocked with a typed `Ac
 /tournaments/[id]/submit              → submit a score
 /tournaments/[id]/matches/[matchId]   → match detail (+ /edit, /suggest-edit)
 /tournaments/multi/[tid]              → multi-round tournament overview across rounds
+/tournaments/register/[tournamentId]  → registration form for an upcoming tournament (see Tournament Registration)
 /profile                              → own profile (avatar, details, password)
 /players/[id]                         → view another player's profile
 /my-match-history, /my-tournament-history
@@ -118,7 +135,7 @@ Login also checks `is_active` (deactivated accounts are blocked with a typed `Ac
 /admin/users, /admin/users/[id]       → user management (roles, reset password, send reset email)
 ```
 
-API routes largely mirror this (`/api/register`, `/api/verify-email`, `/api/profile`, `/api/upload-avatar`, `/api/leagues/[id]/*`, `/api/matches`, `/api/matches/[matchId]`, `/api/disputes*`, `/api/admin/*`) plus:
+API routes largely mirror this (`/api/register`, `/api/verify-email`, `/api/profile`, `/api/upload-avatar`, `/api/leagues/[id]/*`, `/api/matches`, `/api/matches/[matchId]`, `/api/disputes*`, `/api/admin/*`, `/api/tournaments/[tournamentId]/register`) plus:
 ```
 /api/cron/complete-leagues     → auto-activate/complete single-format tournaments
 /api/cron/cleanup-unverified   → remind/warn/soft-delete unverified accounts
@@ -185,13 +202,17 @@ npm run test:watch # run tests in watch mode
   - `api` project → `node`, matches `**/__tests__/api/**/*.test.ts`
 - **Note:** Must use Jest 29, not 30 — Jest 30 is incompatible with `next/jest`
 
-### Existing tests (all passing — 44 tests, 9 suites)
+### Existing tests (all passing — 72 tests, 13 suites)
 | File | Covers |
 |---|---|
 | `__tests__/components/login.test.tsx` | Login form fields, calls signIn, redirects on success, shows error on failure, disables button while loading |
 | `__tests__/components/create-league.test.tsx` | Create-league form: fields, submits correct data to API, shows error on API failure, refreshes page on success |
 | `__tests__/components/assign-players.test.tsx` | Assigning players to a league/division |
+| `__tests__/components/tournament-registration-form.test.tsx` | Registration form: renders fields, requires ability level, submits correct payload, pre-fills from an existing registration, shows API errors |
 | `__tests__/api/promotion.test.ts` | `computePromotionMoves` — promotion/relegation math across divisions |
+| `__tests__/api/registration-ranking.test.ts` | `computeSuggestedDivisions` — ability-level ordering, even bucket split across divisions |
+| `__tests__/api/registration-questions.test.ts` | `validateRegistrationQuestions`/`validateAnswers` — question-builder validation and per-answer validation against question definitions |
+| `__tests__/api/tournament-registration.test.ts` | `POST /api/tournaments/[id]/register` — rejects when the form is disabled/closed, invalid ability level, unanswered required question, capacity reached, editing once assigned; allows editing an unassigned registration |
 | `__tests__/api/anonymize-dev-db.test.ts` | Dev-DB anonymization: refuses on missing/matching `DEV_DATABASE_URL`, scrubs profiles otherwise |
 | `__tests__/api/neon-api.test.ts` | Dev branch reset: refuses on missing/matching branch ids, restores + polls operations to completion, surfaces failed operations |
 | `__tests__/api/sync-dev-db-cron.test.ts` | `GET /api/cron/sync-dev-db` — 401 without/wrong `CRON_SECRET`, 200 + correct body on success |
@@ -215,6 +236,7 @@ These were originally listed as stretch/future items but are now built and live:
 - **Points-based scoring**: `scoring_method` + `points_config` per league, as an alternative to pure win/loss.
 - **Gender categories** for leagues/divisions.
 - **Suggested-edit flow** for match results, alongside disputes (see Score Flow above).
+- **Tournament registration form**: `tournament_registrations` table, optional per-tournament, with an admin-configurable custom question builder and admin-facing suggested-division ranking for multi-format tournaments (see Tournament Registration above).
 
 ## Stretch Features (still not built)
 - [ ] Honours on profile page (league winner / runner-up badges by season/year)
