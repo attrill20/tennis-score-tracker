@@ -428,7 +428,7 @@ export default async function DashboardPage() {
                 <RegisterButton tournamentId={reg.tournament_id as string} isRegistered />
               </div>
               <div className="relative flex items-center justify-between mt-2">
-                <span className="text-xs text-gray-400">Awaiting admin to assign you to a division</span>
+                <span className="text-xs text-gray-400">Awaiting for division to be assigned</span>
                 <p className="text-xs text-gray-400 shrink-0">
                   {reg.start_date ? new Date(reg.start_date as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
                   {' - '}
