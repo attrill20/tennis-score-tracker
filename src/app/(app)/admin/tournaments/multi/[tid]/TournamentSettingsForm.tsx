@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '@/components/DatePicker';
+import CollapsibleSection from '@/components/CollapsibleSection';
 
 export default function TournamentSettingsForm({
   tid,
@@ -26,7 +27,6 @@ export default function TournamentSettingsForm({
   initialMaxRegistrations: number | null;
 }) {
   const router = useRouter();
-  const [open, setOpen] = useState(false);
   const [name, setName] = useState(initialName);
   const [description, setDescription] = useState(initialDescription);
   const [roundDates, setRoundDates] = useState<string[]>(initialRoundDates.length ? initialRoundDates : ['']);
@@ -70,24 +70,9 @@ export default function TournamentSettingsForm({
     router.refresh();
   }
 
-  if (!open) {
-    return (
-      <button
-        onClick={() => setOpen(true)}
-        className="text-sm bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium px-4 py-2 rounded-lg transition-colors"
-      >
-        Manage tournament settings
-      </button>
-    );
-  }
-
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4 space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-gray-700">Tournament settings</h2>
-        <button onClick={() => setOpen(false)} className="text-xs text-gray-400 hover:text-gray-600">Close</button>
-      </div>
-
+    <CollapsibleSection title="Manage tournament settings">
+      <div className="space-y-4">
       <div>
         <label htmlFor="t-name" className="block text-sm font-medium text-gray-700 mb-1">Tournament name</label>
         <input
@@ -196,6 +181,7 @@ export default function TournamentSettingsForm({
       >
         {saving ? 'Saving...' : 'Save settings'}
       </button>
-    </div>
+      </div>
+    </CollapsibleSection>
   );
 }

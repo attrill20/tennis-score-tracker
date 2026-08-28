@@ -43,7 +43,7 @@ The container for a league competition. `id`, `name`, `format` (`'single'` | `'m
 
 - A **single**-format tournament has one round and one division — this is the original "one league, one season" concept.
 - A **multi**-format tournament has multiple rounds; each round runs its own division(s), and `generateNextRound()` (`src/lib/tournament.ts`) computes standings per division, applies promotion/relegation (`computePromotionMoves`), and generates the next round's `leagues` rows.
-- Single-format tournaments are auto-activated/completed by the `cron/complete-leagues` job.
+- Single-format tournaments are auto-activated/completed, and multi-format tournaments have their next round auto-generated, by the `cron/complete-leagues` job - there is no manual "generate next round now" option in the admin UI, only changing a round's start date in tournament settings.
 
 ### `leagues`
 One division within one round of a tournament. `id`, `name`, `tournament_id`, `round_number`, `division_order`, `season_start`, `season_end`, `status` (`upcoming` | `active` | `completed`), `max_players`, `scoring_method`, `points_config` (jsonb, for points-based scoring), `tiebreaker`, `num_promoted`, `num_relegated`, `join_type`, `league_type`, `gender_category`, `is_public`, `description`, `color`, `created_by`, `created_at`.
@@ -130,14 +130,14 @@ An optional per-tournament "registration form" (toggled on at tournament creatio
 /my-match-history, /my-tournament-history
 /contact                              → contact form (Nodemailer)
 /admin/tournaments (+ /new, /[id])    → create/edit tournaments and their leagues
-/admin/tournaments/multi/[tid]        → manage a multi-round tournament, trigger next round
+/admin/tournaments/multi/[tid]        → manage a multi-round tournament (next round always generates automatically via cron/complete-leagues - no manual trigger)
 /admin/disputes                       → review and resolve disputes
 /admin/users, /admin/users/[id]       → user management (roles, reset password, send reset email)
 ```
 
 API routes largely mirror this (`/api/register`, `/api/verify-email`, `/api/profile`, `/api/upload-avatar`, `/api/leagues/[id]/*`, `/api/matches`, `/api/matches/[matchId]`, `/api/disputes*`, `/api/admin/*`, `/api/tournaments/[tournamentId]/register`) plus:
 ```
-/api/cron/complete-leagues     → auto-activate/complete single-format tournaments
+/api/cron/complete-leagues     → auto-activate/complete single-format tournaments, and auto-generate the next round for multi-format ones
 /api/cron/cleanup-unverified   → remind/warn/soft-delete unverified accounts
 /api/cron/sync-dev-db          → weekly: reset the dev DB branch from prod and anonymize it (see below)
 /api/cron/backup-prod-db       → nightly: dump all prod tables to a private Vercel Blob (see below)

@@ -2,10 +2,10 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import GenerateRoundButton from './GenerateRoundButton';
 import TournamentSettingsForm from './TournamentSettingsForm';
 import DeleteTournamentButton from './DeleteTournamentButton';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
+import CollapsibleSection from '@/components/CollapsibleSection';
 import { computeSuggestedDivisions, type RegistrationQuestion } from '@/lib/registration';
 
 type Tournament = {
@@ -107,10 +107,6 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
       <div>
         <Link href="/admin/tournaments" className="text-sm text-green-700 hover:underline">&larr; All tournaments</Link>
         <h1 className="text-2xl font-bold text-gray-800 mt-2">{tournament.name}</h1>
-        <p className="text-sm text-gray-400 mt-1">
-          Multi-league tournament - {tournament.num_divisions} divisions, promote {tournament.num_promoted} / relegate {tournament.num_relegated}.
-          Round {String(current_round)} of {tournament.num_rounds}.
-        </p>
         <Link href={`/tournaments/multi/${tournament.id}`} className="inline-block mt-2 text-xs text-green-700 hover:underline">
           View public page
         </Link>
@@ -128,30 +124,11 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
         initialMaxRegistrations={tournament.max_registrations}
       />
 
-      {tournament.has_registration_form && (
-        <RegistrationsPanel
-          registrations={pendingRegistrations}
-          registrationCount={registrationCount}
-          maxRegistrations={tournament.max_registrations}
-          divisions={divisions.map((d) => ({ id: d.id, name: d.name, order: d.division_order }))}
-          questions={registrationQuestions}
-        />
-      )}
-
-      {Number(current_round) < tournament.num_rounds && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <h2 className="text-base font-semibold text-gray-700 mb-1">Next round</h2>
-          <p className="text-sm text-gray-400 mb-3">
-            Round {Number(current_round) + 1}{' '}generates automatically on its scheduled start date. You can also trigger it now,
-            then adjust each division&apos;s players below.
-          </p>
-          <GenerateRoundButton tid={tournament.id} nextRound={Number(current_round) + 1} />
-        </div>
-      )}
-
-      <div>
-        <h2 className="text-base font-semibold text-gray-700 mb-3">Round {String(current_round)} divisions</h2>
-        <div className="bg-white rounded-xl border border-gray-200 divide-y divide-gray-100">
+      <CollapsibleSection
+        title={`Round ${String(current_round)} divisions`}
+        meta={<span className="text-xs text-gray-400">{divisions.length} divisions</span>}
+      >
+        <div className="-m-4 divide-y divide-gray-100">
           {divisions.map((d) => (
             <div key={d.id} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
@@ -165,15 +142,24 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
             </div>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
 
-      <div className="bg-white rounded-xl border border-red-200 p-4">
-        <h2 className="text-base font-semibold text-red-700 mb-1">Danger zone</h2>
+      {tournament.has_registration_form && (
+        <RegistrationsPanel
+          registrations={pendingRegistrations}
+          registrationCount={registrationCount}
+          maxRegistrations={tournament.max_registrations}
+          divisions={divisions.map((d) => ({ id: d.id, name: d.name, order: d.division_order }))}
+          questions={registrationQuestions}
+        />
+      )}
+
+      <CollapsibleSection title="Danger zone" titleClassName="text-red-700" borderClassName="border-red-200">
         <p className="text-sm text-gray-400 mb-3">
           Deleting the tournament removes every division and round along with all of their matches, players and disputes. This cannot be undone.
         </p>
         <DeleteTournamentButton tid={tournament.id} tournamentName={tournament.name} />
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }

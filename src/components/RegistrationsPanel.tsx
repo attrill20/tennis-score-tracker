@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import CollapsibleSection from '@/components/CollapsibleSection';
 import { ABILITY_LEVEL_LABELS, type AbilityLevel, type RegistrationQuestion } from '@/lib/registration';
 
 type Registration = {
@@ -59,14 +60,14 @@ export default function RegistrationsPanel({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-4">
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-gray-700">Registrations</h2>
+    <CollapsibleSection
+      title="Registrations"
+      meta={
         <span className="text-xs text-gray-400">
           {registrationCount}{maxRegistrations !== null ? ` / ${maxRegistrations}` : ''} registered
         </span>
-      </div>
-
+      }
+    >
       {registrations.length === 0 ? (
         <p className="text-sm text-gray-400">No pending registrations to assign</p>
       ) : (
@@ -131,6 +132,6 @@ export default function RegistrationsPanel({
       )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg mt-3">{error}</p>}
-    </div>
+    </CollapsibleSection>
   );
 }
