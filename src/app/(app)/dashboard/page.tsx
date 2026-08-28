@@ -9,12 +9,13 @@ import NewMatchNotification from '@/components/NewMatchNotification';
 import LeagueNotification from '@/components/LeagueNotification';
 import WelcomeNotification from '@/components/WelcomeNotification';
 import ArchiveLeagueButton from '@/app/(app)/tournaments/ArchiveLeagueButton';
+import RegisterButton from '@/components/RegisterButton';
 
 export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [leagues, profileRows] = await Promise.all([
+  const [leagues, profileRows, pendingRegistrations] = await Promise.all([
     sql`
       SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, l.max_players, l.points_config, lp.final_position,
         lp.started_seen, lp.ended_seen,
@@ -31,6 +32,15 @@ export default async function DashboardPage() {
         l.season_start DESC
     `,
     sql`SELECT is_injured, welcome_seen FROM profiles WHERE id = ${userId}`,
+    sql`
+      SELECT r.id, r.tournament_id, t.name AS tournament_name, t.format AS tournament_format, t.color AS tournament_color,
+        COALESCE(t.round_dates[1], (SELECT l.season_start FROM leagues l WHERE l.tournament_id = t.id AND l.round_number = 1 LIMIT 1))::text AS start_date,
+        t.final_end::text AS end_date
+      FROM tournament_registrations r
+      JOIN tournaments t ON t.id = r.tournament_id
+      WHERE r.player_id = ${userId} AND r.assigned_league_id IS NULL
+      ORDER BY r.created_at DESC
+    `,
   ]);
   const isInjured = (profileRows[0]?.is_injured as boolean) ?? false;
   const showWelcome = !(profileRows[0]?.welcome_seen as boolean);
@@ -401,7 +411,7 @@ export default async function DashboardPage() {
 
       <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">My Tournaments</h2>
 
-      {leagues.length === 0 ? (
+      {leagues.length === 0 && pendingRegistrations.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
           <p className="text-sm sm:text-base">You haven&apos;t been added to any tournaments yet</p>
           <p className="text-sm mt-1">
@@ -410,6 +420,23 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-3">
+          {pendingRegistrations.map((reg) => (
+            <div key={reg.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(reg.tournament_id as string, reg.tournament_color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
+              <Link href={`/tournaments/register/${reg.tournament_id as string}`} className="absolute inset-0 rounded-xl z-10" aria-label={reg.tournament_name as string} />
+              <div className="relative flex items-center justify-between gap-2">
+                <span className="font-medium text-gray-800">{reg.tournament_name as string}</span>
+                <RegisterButton tournamentId={reg.tournament_id as string} isRegistered />
+              </div>
+              <div className="relative flex items-center justify-between mt-2">
+                <span className="text-xs text-gray-400">Awaiting admin to assign you to a division</span>
+                <p className="text-xs text-gray-400 shrink-0">
+                  {reg.start_date ? new Date(reg.start_date as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
+                  {' - '}
+                  {reg.end_date ? new Date(reg.end_date as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : ''}
+                </p>
+              </div>
+            </div>
+          ))}
           {leagues.map((league) => {
             const id = league.id as string;
             const stats = leagueStats[id];

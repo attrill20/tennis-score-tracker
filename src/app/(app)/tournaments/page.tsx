@@ -55,12 +55,19 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(t.id, t.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
       <Link href={`/tournaments/multi/${t.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={t.name} />
       <div className="relative">
-        <div className="flex items-start justify-between gap-2">
-          <span className="font-medium text-gray-800">{t.name}</span>
-          <div className="flex items-center gap-2 shrink-0">
-            <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">Multi-league</span>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-gray-800">{t.name}</span>
+            {t.has_registration_form && !t.is_member && t.status === 'upcoming' && (
+              <div className="sm:hidden shrink-0">
+                <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
+            <span className="hidden sm:inline text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">Multi-league</span>
             {!t.is_public && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>}
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+            <span className={`hidden sm:inline text-xs px-2 py-1 rounded-full font-medium ${
               t.status === 'active' ? 'bg-green-100 text-green-700'
               : t.status === 'upcoming' ? 'bg-blue-100 text-blue-700'
               : 'bg-slate-100 text-slate-600'
@@ -68,7 +75,9 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
               {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
             </span>
             {t.has_registration_form && !t.is_member && t.status === 'upcoming' && (
-              <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
+              <div className="hidden sm:block shrink-0">
+                <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
+              </div>
             )}
           </div>
         </div>
@@ -101,9 +110,16 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(league.id, league.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
       <Link href={`/tournaments/${league.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name} />
       <div className="relative">
-        <div className="flex items-start justify-between gap-2">
-          <span className="font-medium text-gray-800">{league.name}</span>
-          <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="font-medium text-gray-800">{league.name}</span>
+            {league.has_registration_form && !league.is_member && league.status === 'upcoming' && league.tournament_id && (
+              <div className="sm:hidden shrink-0">
+                <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+              </div>
+            )}
+          </div>
+          <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
             {canJoin && <JoinLeagueButton leagueId={league.id} />}
             {canArchive && <ArchiveLeagueButton leagueId={league.id} />}
             {!league.is_public && (
@@ -114,7 +130,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
                 {GENDER_CATEGORY_LABELS[league.gender_category as keyof typeof GENDER_CATEGORY_LABELS]}
               </span>
             )}
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+            <span className={`hidden sm:inline text-xs px-2 py-1 rounded-full font-medium ${
               league.status === 'active'
                 ? 'bg-green-100 text-green-700'
                 : league.status === 'upcoming'
@@ -124,7 +140,9 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
               {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
             </span>
             {league.has_registration_form && !league.is_member && league.status === 'upcoming' && league.tournament_id && (
-              <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+              <div className="hidden sm:block shrink-0">
+                <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+              </div>
             )}
           </div>
         </div>
@@ -244,18 +262,21 @@ export default async function LeaguesPage() {
   );
 
   const isArchived = (l: League) => l.status === 'archived' || l.user_archived;
+  // Registering (even before an admin assigns you to a division) counts as "yours" too.
+  const isMine = (l: League) => l.is_member || l.is_registered;
+  const isMineMulti = (t: MultiTournament) => t.is_member || t.is_registered;
 
-  const myLeagues = leagues.filter((l) => l.is_member && !isArchived(l));
-  // Tournaments you're in only appear under "My Tournaments" - keep them out of the status sections.
-  const active    = leagues.filter((l) => l.status === 'active' && !isArchived(l) && !l.is_member);
-  const upcoming  = leagues.filter((l) => l.status === 'upcoming' && !isArchived(l) && !l.is_member);
-  const completed = leagues.filter((l) => l.status === 'completed' && !isArchived(l) && !l.is_member);
+  const myLeagues = leagues.filter((l) => isMine(l) && !isArchived(l));
+  // Tournaments you're in (or registered for) only appear under "My Tournaments" - keep them out of the status sections.
+  const active    = leagues.filter((l) => l.status === 'active' && !isArchived(l) && !isMine(l));
+  const upcoming  = leagues.filter((l) => l.status === 'upcoming' && !isArchived(l) && !isMine(l));
+  const completed = leagues.filter((l) => l.status === 'completed' && !isArchived(l) && !isMine(l));
   const archived  = leagues.filter(isArchived);
 
-  const myMulti        = multiTournaments.filter((t) => t.is_member);
-  const activeMulti    = multiTournaments.filter((t) => t.status === 'active' && !t.is_member);
-  const upcomingMulti  = multiTournaments.filter((t) => t.status === 'upcoming' && !t.is_member);
-  const completedMulti = multiTournaments.filter((t) => t.status === 'completed' && !t.is_member);
+  const myMulti        = multiTournaments.filter(isMineMulti);
+  const activeMulti    = multiTournaments.filter((t) => t.status === 'active' && !isMineMulti(t));
+  const upcomingMulti  = multiTournaments.filter((t) => t.status === 'upcoming' && !isMineMulti(t));
+  const completedMulti = multiTournaments.filter((t) => t.status === 'completed' && !isMineMulti(t));
 
   const archivableIds = new Set(
     leagues
