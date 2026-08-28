@@ -1,3 +1,12 @@
+export const SCORING_METHOD_LABELS: Record<string, string> = {
+  '1_set_tiebreak': '1 set only (allow tiebreaker)',
+  '1_set_no_tiebreak': '1 set only (no tiebreaker)',
+  best_of_3_tiebreak: 'Best of 3 sets (allow tiebreaker)',
+  best_of_3_no_tiebreak: 'Best of 3 sets (no tiebreaker)',
+  best_of_5_tiebreak: 'Best of 5 sets (allow tiebreaker)',
+  best_of_5_no_tiebreak: 'Best of 5 sets (no tiebreaker)',
+};
+
 export type PlayerStanding = {
   id: string;
   name: string;
@@ -39,6 +48,24 @@ export const DEFAULT_POINTS_CONFIG: PointsConfig = {
   loseDecider: 0,
   draw: 1,
 };
+
+export const CLASSIC_POINTS: PointsConfig = DEFAULT_POINTS_CONFIG;
+export const SPLIT_POINTS: PointsConfig = { winStraightSets: 5, loseStraightSets: 1, winDecider: 4, loseDecider: 2, draw: 3 };
+
+function sameConfig(a: PointsConfig, b: PointsConfig) {
+  return a.winStraightSets === b.winStraightSets
+    && a.loseStraightSets === b.loseStraightSets
+    && a.winDecider === b.winDecider
+    && a.loseDecider === b.loseDecider
+    && a.draw === b.draw;
+}
+
+export function presetForConfig(config: PointsConfig | null): 'classic' | 'split' | 'custom' {
+  if (!config) return 'classic';
+  if (sameConfig(config, CLASSIC_POINTS)) return 'classic';
+  if (sameConfig(config, SPLIT_POINTS)) return 'split';
+  return 'custom';
+}
 
 const POINTS_CONFIG_KEYS = ['winStraightSets', 'loseStraightSets', 'winDecider', 'loseDecider', 'draw'] as const;
 

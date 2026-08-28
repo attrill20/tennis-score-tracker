@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
+import { parsePointsConfig } from '@/lib/league';
+
+const VALID_SCORING = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ tid: string }> }) {
   const session = await auth();
@@ -10,11 +13,19 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
 
   const { tid } = await params;
   const body = await req.json();
-  const { name, description, roundDates, finalEnd, numPromoted, numRelegated, maxRegistrations } = body;
+  const { name, description, roundDates, finalEnd, numPromoted, numRelegated, maxRegistrations, scoringMethod, pointsConfig } = body;
 
   if (!name || typeof name !== 'string') {
     return NextResponse.json({ error: 'Tournament name is required' }, { status: 400 });
   }
+  if (!VALID_SCORING.includes(scoringMethod)) {
+    return NextResponse.json({ error: 'Invalid scoring method' }, { status: 400 });
+  }
+  const resolvedPointsConfig = parsePointsConfig(pointsConfig);
+  if (resolvedPointsConfig === 'invalid') {
+    return NextResponse.json({ error: 'Invalid points scoring configuration' }, { status: 400 });
+  }
+  const pointsConfigToStore = resolvedPointsConfig ? JSON.stringify(resolvedPointsConfig) : null;
 
   const dates: string[] = Array.isArray(roundDates) ? roundDates.filter(Boolean) : [];
   if (dates.length < 1) {
@@ -56,7 +67,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
         final_end = ${finalEnd},
         num_promoted = ${promoted},
         num_relegated = ${relegated},
-        max_registrations = ${resolvedMaxRegistrations}
+        max_registrations = ${resolvedMaxRegistrations},
+        scoring_method = ${scoringMethod},
+        points_config = ${pointsConfigToStore}
     WHERE id = ${tid}
   `;
 
@@ -71,6 +84,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
     WHERE l.tournament_id = t.id
       AND t.id = ${tid}
       AND t.round_dates[l.round_number] IS NOT NULL
+  `;
+
+  // Scoring method and points config must stay consistent across every division and round.
+  await sql`
+    UPDATE leagues
+    SET scoring_method = ${scoringMethod}, points_config = ${pointsConfigToStore}
+    WHERE tournament_id = ${tid}
   `;
 
   // Keep the tournament status in step with its first round date.

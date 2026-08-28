@@ -37,6 +37,8 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
     num_promoted: number;
     num_relegated: number;
     num_rounds: number;
+    scoring_method: string;
+    points_config: import('@/lib/league').PointsConfig | null;
   };
 
   const nextRound = completedRound + 1;
@@ -105,7 +107,7 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
     const template = divisions[d];
     const [div] = await sql`
       INSERT INTO leagues (name, season_start, season_end, status, max_players, scoring_method, num_promoted, num_relegated, tiebreaker, created_by, is_public, join_type, description, league_type, color, tournament_id, round_number, division_order, points_config, gender_category)
-      VALUES (${template.name}, ${start}, ${end}, ${status}, ${template.max_players}, ${template.scoring_method}, ${t.num_promoted}, ${t.num_relegated}, ${template.tiebreaker}, ${null}, ${template.is_public}, 'invite_only', ${null}, ${template.league_type}, ${template.color}, ${tournamentId}, ${nextRound}, ${template.division_order}, ${template.points_config ? JSON.stringify(template.points_config) : null}, ${template.gender_category})
+      VALUES (${template.name}, ${start}, ${end}, ${status}, ${template.max_players}, ${t.scoring_method}, ${t.num_promoted}, ${t.num_relegated}, ${template.tiebreaker}, ${null}, ${template.is_public}, 'invite_only', ${null}, ${template.league_type}, ${template.color}, ${tournamentId}, ${nextRound}, ${template.division_order}, ${t.points_config ? JSON.stringify(t.points_config) : null}, ${template.gender_category})
       RETURNING id
     `;
     const newDivisionId = div.id as string;

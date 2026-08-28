@@ -2,10 +2,11 @@
 
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import LeagueColorPicker from '@/components/LeagueColorPicker';
 import PointsConfigFields from '@/components/PointsConfigFields';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
-import { type PointsConfig } from '@/lib/league';
+import { SCORING_METHOD_LABELS, type PointsConfig } from '@/lib/league';
 import { SINGLES_GENDER_OPTIONS, DOUBLES_GENDER_OPTIONS, type GenderCategory } from '@/lib/genderCategory';
 
 export default function EditLeagueForm({
@@ -26,6 +27,8 @@ export default function EditLeagueForm({
   currentNumRelegated,
   currentJoinType,
   leagueType,
+  isMultiFormat,
+  manageTournamentHref,
 }: {
   leagueId: string;
   currentName: string;
@@ -44,6 +47,8 @@ export default function EditLeagueForm({
   currentNumRelegated: number;
   currentJoinType: string;
   leagueType: string;
+  isMultiFormat?: boolean;
+  manageTournamentHref?: string;
 }) {
   const router = useRouter();
   const [name, setName] = useState(currentName);
@@ -168,25 +173,42 @@ export default function EditLeagueForm({
         </div>
       </div>
 
-      <div>
-        <label htmlFor="scoringMethod" className="block text-sm font-medium text-gray-700 mb-1">Scoring method</label>
-        <select
-          id="scoringMethod"
-          name="scoringMethod"
-          value={scoringMethod}
-          onChange={(e) => { setScoringMethod(e.target.value); mark(); }}
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
-        >
-          <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
-          <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
-          <option value="best_of_3_tiebreak">Best of 3 sets (allow tiebreaker)</option>
-          <option value="best_of_3_no_tiebreak">Best of 3 sets (no tiebreaker)</option>
-          <option value="best_of_5_tiebreak">Best of 5 sets (allow tiebreaker)</option>
-          <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
-        </select>
-      </div>
+      {isMultiFormat ? (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+          <p className="text-sm font-medium text-gray-700 mb-1">Scoring method &amp; points</p>
+          <p className="text-xs text-gray-400">
+            {SCORING_METHOD_LABELS[scoringMethod] ?? scoringMethod} - set for the whole tournament and shared by every division.
+            {manageTournamentHref && (
+              <>
+                {' '}Change it in{' '}
+                <Link href={manageTournamentHref} className="text-green-700 hover:underline">Manage tournament settings</Link>.
+              </>
+            )}
+          </p>
+        </div>
+      ) : (
+        <>
+          <div>
+            <label htmlFor="scoringMethod" className="block text-sm font-medium text-gray-700 mb-1">Scoring method</label>
+            <select
+              id="scoringMethod"
+              name="scoringMethod"
+              value={scoringMethod}
+              onChange={(e) => { setScoringMethod(e.target.value); mark(); }}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            >
+              <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
+              <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
+              <option value="best_of_3_tiebreak">Best of 3 sets (allow tiebreaker)</option>
+              <option value="best_of_3_no_tiebreak">Best of 3 sets (no tiebreaker)</option>
+              <option value="best_of_5_tiebreak">Best of 5 sets (allow tiebreaker)</option>
+              <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
+            </select>
+          </div>
 
-      <PointsConfigFields value={pointsConfig} onChange={(v) => { setPointsConfig(v); mark(); }} />
+          <PointsConfigFields value={pointsConfig} onChange={(v) => { setPointsConfig(v); mark(); }} />
+        </>
+      )}
 
       <div>
         <label htmlFor="maxPlayers" className="block text-sm font-medium text-gray-700 mb-1">

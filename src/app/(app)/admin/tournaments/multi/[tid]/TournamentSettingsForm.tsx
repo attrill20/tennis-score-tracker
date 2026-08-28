@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import DatePicker from '@/components/DatePicker';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import PointsConfigFields from '@/components/PointsConfigFields';
+import { type PointsConfig } from '@/lib/league';
 
 export default function TournamentSettingsForm({
   tid,
@@ -15,6 +17,8 @@ export default function TournamentSettingsForm({
   initialRelegated,
   hasRegistrationForm,
   initialMaxRegistrations,
+  initialScoringMethod,
+  initialPointsConfig,
 }: {
   tid: string;
   initialName: string;
@@ -25,6 +29,8 @@ export default function TournamentSettingsForm({
   initialRelegated: number;
   hasRegistrationForm: boolean;
   initialMaxRegistrations: number | null;
+  initialScoringMethod: string;
+  initialPointsConfig: PointsConfig | null;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -34,6 +40,8 @@ export default function TournamentSettingsForm({
   const [numPromoted, setNumPromoted] = useState(initialPromoted);
   const [numRelegated, setNumRelegated] = useState(initialRelegated);
   const [maxRegistrations, setMaxRegistrations] = useState(initialMaxRegistrations !== null ? String(initialMaxRegistrations) : '');
+  const [scoringMethod, setScoringMethod] = useState(initialScoringMethod);
+  const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(initialPointsConfig);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -58,6 +66,7 @@ export default function TournamentSettingsForm({
       body: JSON.stringify({
         name, description, roundDates: roundDates.filter(Boolean), finalEnd, numPromoted, numRelegated,
         maxRegistrations: maxRegistrations !== '' ? Number(maxRegistrations) : null,
+        scoringMethod, pointsConfig,
       }),
     });
     const data = await res.json();
@@ -125,6 +134,27 @@ export default function TournamentSettingsForm({
         <label htmlFor="t-final" className="block text-sm font-medium text-gray-700 mb-1">Final finishing date</label>
         <DatePicker id="t-final" value={finalEnd} onChange={setFinalEnd} />
       </div>
+
+      <div>
+        <label htmlFor="t-scoringMethod" className="block text-sm font-medium text-gray-700 mb-1">Scoring method</label>
+        <p className="text-xs text-gray-400 mb-2">Applies to every division in every round</p>
+        <select
+          id="t-scoringMethod"
+          name="scoringMethod"
+          value={scoringMethod}
+          onChange={(e) => setScoringMethod(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="1_set_tiebreak">1 set only (allow tiebreaker)</option>
+          <option value="1_set_no_tiebreak">1 set only (no tiebreaker)</option>
+          <option value="best_of_3_tiebreak">Best of 3 sets (allow tiebreaker)</option>
+          <option value="best_of_3_no_tiebreak">Best of 3 sets (no tiebreaker)</option>
+          <option value="best_of_5_tiebreak">Best of 5 sets (allow tiebreaker)</option>
+          <option value="best_of_5_no_tiebreak">Best of 5 sets (no tiebreaker)</option>
+        </select>
+      </div>
+
+      <PointsConfigFields value={pointsConfig} onChange={setPointsConfig} />
 
       <div className="grid grid-cols-2 gap-3">
         <div>

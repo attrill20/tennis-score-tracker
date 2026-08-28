@@ -61,10 +61,11 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
   const leagueType = (league.league_type as string) ?? 'singles';
 
   const [tournamentRow] = league.tournament_id
-    ? await sql`SELECT has_registration_form, registration_questions FROM tournaments WHERE id = ${league.tournament_id}`
+    ? await sql`SELECT format, has_registration_form, registration_questions FROM tournaments WHERE id = ${league.tournament_id}`
     : [];
   const hasRegistrationForm = (tournamentRow?.has_registration_form as boolean) ?? false;
   const registrationQuestions = (tournamentRow?.registration_questions as import('@/lib/registration').RegistrationQuestion[] | null) ?? [];
+  const isMultiFormat = tournamentRow?.format === 'multi';
 
   const pendingRegistrations = hasRegistrationForm
     ? (await sql`
@@ -114,6 +115,8 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         currentNumRelegated={Number(league.num_relegated ?? 0)}
         currentJoinType={(league.join_type as string) ?? 'invite_only'}
         leagueType={leagueType}
+        isMultiFormat={isMultiFormat}
+        manageTournamentHref={isMultiFormat ? `/admin/tournaments/multi/${league.tournament_id as string}` : undefined}
       />
 
       {hasRegistrationForm && (

@@ -1,30 +1,12 @@
 'use client';
 
-import { type PointsConfig } from '@/lib/league';
-
-export const CLASSIC_POINTS: PointsConfig = { winStraightSets: 3, loseStraightSets: 0, winDecider: 3, loseDecider: 0, draw: 1 };
-export const SPLIT_POINTS: PointsConfig = { winStraightSets: 5, loseStraightSets: 1, winDecider: 4, loseDecider: 2, draw: 3 };
+import { type PointsConfig, CLASSIC_POINTS, SPLIT_POINTS, presetForConfig } from '@/lib/league';
 
 const PRESETS = [
   ['classic', 'Classic', 'Win 3 / draw 1 / loss 0'],
   ['split', 'Split', '5-1 / 4-2 / 3-3'],
   ['custom', 'Custom', 'Set your own'],
 ] as const;
-
-function sameConfig(a: PointsConfig, b: PointsConfig) {
-  return a.winStraightSets === b.winStraightSets
-    && a.loseStraightSets === b.loseStraightSets
-    && a.winDecider === b.winDecider
-    && a.loseDecider === b.loseDecider
-    && a.draw === b.draw;
-}
-
-function presetForConfig(config: PointsConfig | null): (typeof PRESETS)[number][0] {
-  if (!config) return 'classic';
-  if (sameConfig(config, CLASSIC_POINTS)) return 'classic';
-  if (sameConfig(config, SPLIT_POINTS)) return 'split';
-  return 'custom';
-}
 
 export default function PointsConfigFields({
   value,

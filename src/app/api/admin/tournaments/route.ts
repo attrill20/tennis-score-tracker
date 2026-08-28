@@ -116,8 +116,8 @@ export async function POST(req: NextRequest) {
     const sortedRounds = [...roundDates].sort();
 
     const [{ id: tournamentId }] = await sql`
-      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, round_dates, is_public, color, description, created_by, has_registration_form, max_registrations, registration_questions)
-      VALUES (${name}, 'multi', ${statusForStart(sortedRounds[0])}, ${numDivisions}, ${promoted}, ${relegated}, ${sortedRounds.length}, ${finalEnd}, ${sortedRounds}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id}, ${resolvedHasRegistrationForm}, ${resolvedMaxRegistrations}, ${registrationQuestionsToStore})
+      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, round_dates, is_public, color, description, created_by, has_registration_form, max_registrations, registration_questions, scoring_method, points_config)
+      VALUES (${name}, 'multi', ${statusForStart(sortedRounds[0])}, ${numDivisions}, ${promoted}, ${relegated}, ${sortedRounds.length}, ${finalEnd}, ${sortedRounds}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id}, ${resolvedHasRegistrationForm}, ${resolvedMaxRegistrations}, ${registrationQuestionsToStore}, ${scoringMethod}, ${pointsConfigToStore})
       RETURNING id
     `;
 

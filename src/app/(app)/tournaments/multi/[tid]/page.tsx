@@ -3,7 +3,9 @@ import sql from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import { leagueBorderColor } from '@/lib/leagueColor';
+import { SCORING_METHOD_LABELS, DEFAULT_POINTS_CONFIG, presetForConfig, type PointsConfig } from '@/lib/league';
 import RegisterButton from '@/components/RegisterButton';
+import CollapsibleSection from '@/components/CollapsibleSection';
 
 type Tournament = {
   id: string;
@@ -32,6 +34,8 @@ type Division = {
   season_end: string;
   color: string | null;
   max_players: number;
+  scoring_method: string;
+  points_config: PointsConfig | null;
   player_count: string;
   matches_played: string;
 };
@@ -39,6 +43,30 @@ type Division = {
 function fmt(d: string | null) {
   if (!d) return '-';
   return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function pointsTypeName(config: PointsConfig | null): string {
+  const preset = presetForConfig(config);
+  return preset === 'classic' ? 'Classic' : preset === 'split' ? 'Split' : 'Custom';
+}
+
+function pointsBreakdown(config: PointsConfig | null): { label: string; value: number }[] {
+  const c = config ?? DEFAULT_POINTS_CONFIG;
+  const simple = presetForConfig(config) === 'classic';
+  const rows = simple
+    ? [
+        { label: 'Win', value: c.winStraightSets },
+        { label: 'Draw', value: c.draw },
+        { label: 'Loss', value: c.loseStraightSets },
+      ]
+    : [
+        { label: 'Straight-sets win', value: c.winStraightSets },
+        { label: 'Straight-sets loss', value: c.loseStraightSets },
+        { label: 'Deciding-set win', value: c.winDecider },
+        { label: 'Deciding-set loss', value: c.loseDecider },
+        { label: 'Unfinished', value: c.draw },
+      ];
+  return rows.sort((a, b) => b.value - a.value);
 }
 
 export default async function MultiTournamentPage({ params }: { params: Promise<{ tid: string }> }) {
@@ -66,7 +94,7 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
 
   const divisions = (await sql`
     SELECT
-      l.id, l.name, l.status, l.division_order, l.round_number, l.season_start, l.season_end, l.color, l.max_players,
+      l.id, l.name, l.status, l.division_order, l.round_number, l.season_start, l.season_end, l.color, l.max_players, l.scoring_method, l.points_config,
       (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count,
       (SELECT COUNT(*) FROM matches m WHERE m.league_id = l.id) AS matches_played
     FROM leagues l
@@ -154,16 +182,35 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
           </div>
         </div>
         {tournament.description && <p className="text-sm text-gray-500 mt-2">{tournament.description}</p>}
-        <div className="text-sm text-gray-400 mt-2 space-y-1">
-          <p><span className="font-semibold text-gray-500">Format:</span> Multi-league, {tournament.num_divisions} divisions</p>
-          <p><span className="font-semibold text-gray-500">Promotion/Relegation:</span> {tournament.num_promoted} promoted / {tournament.num_relegated} relegated each round</p>
-          <p><span className="font-semibold text-gray-500">Round:</span> {String(current_round)} of {tournament.num_rounds}</p>
-          <p><span className="font-semibold text-gray-500">Dates:</span> {fmt(roundSchedule[0]?.start_date ?? null)} - {fmt(roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end)}</p>
-          {tournament.has_registration_form && (
-            <p><span className="font-semibold text-gray-500">Registered:</span> {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</p>
-          )}
-        </div>
       </div>
+
+      <CollapsibleSection
+        title="Tournament Details"
+        meta={<span className="text-xs text-gray-400">{fmt(roundSchedule[0]?.start_date ?? null)} - {fmt(roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end)}</span>}
+      >
+        <div className="text-sm text-gray-400 space-y-1">
+          <p><span className="font-semibold text-gray-500">Round:</span> {String(current_round)} of {tournament.num_rounds}</p>
+          <p><span className="font-semibold text-gray-500">Format:</span> Multi-league, {tournament.num_divisions} divisions</p>
+          <p><span className="font-semibold text-gray-500">Promotion/Relegation:</span> {tournament.num_promoted} promoted / {tournament.num_relegated} relegated<span className="hidden sm:inline"> each round</span></p>
+          <p><span className="font-semibold text-gray-500">Scoring System:</span> {SCORING_METHOD_LABELS[divisions[0]?.scoring_method] ?? divisions[0]?.scoring_method}</p>
+          <div className="sm:flex sm:items-center sm:gap-2">
+            <p><span className="font-semibold text-gray-500">Points:</span> {pointsTypeName(divisions[0]?.points_config ?? null)} -</p>
+            <div className="flex flex-wrap gap-1.5 mt-1 sm:mt-0">
+              {pointsBreakdown(divisions[0]?.points_config ?? null).map((p) => (
+                <span key={p.label} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full font-medium">
+                  {p.label}: {p.value}
+                </span>
+              ))}
+            </div>
+          </div>
+          {tournament.status === 'upcoming'
+            ? tournament.has_registration_form && (
+                <p><span className="font-semibold text-gray-500">Registered:</span> {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</p>
+              )
+            : <p><span className="font-semibold text-gray-500">Players:</span> {divisions.reduce((sum, d) => sum + Number(d.player_count), 0)}</p>
+          }
+        </div>
+      </CollapsibleSection>
 
       <div>
         <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">

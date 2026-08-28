@@ -7,6 +7,7 @@ import DeleteTournamentButton from './DeleteTournamentButton';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import { computeSuggestedDivisions, type RegistrationQuestion } from '@/lib/registration';
+import { type PointsConfig } from '@/lib/league';
 
 type Tournament = {
   id: string;
@@ -24,6 +25,8 @@ type Tournament = {
   has_registration_form: boolean;
   max_registrations: number | null;
   registration_questions: RegistrationQuestion[] | null;
+  scoring_method: string;
+  points_config: PointsConfig | null;
 };
 
 type Division = {
@@ -122,6 +125,8 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
         initialRelegated={tournament.num_relegated}
         hasRegistrationForm={tournament.has_registration_form}
         initialMaxRegistrations={tournament.max_registrations}
+        initialScoringMethod={tournament.scoring_method}
+        initialPointsConfig={tournament.points_config}
       />
 
       <CollapsibleSection
