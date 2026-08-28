@@ -15,7 +15,14 @@ type Row = {
   first_division_id: string | null;
   has_registration_form: boolean;
   registration_count: string;
+  start_date: string | null;
+  end_date: string | null;
 };
+
+function fmt(d: string | null) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
+}
 
 export default async function AdminLeaguesPage() {
   const session = await auth();
@@ -31,7 +38,9 @@ export default async function AdminLeaguesPage() {
       (SELECT COUNT(*) FROM matches m JOIN leagues l ON l.id = m.league_id WHERE l.tournament_id = t.id) AS matches_played,
       (SELECT l.id FROM leagues l WHERE l.tournament_id = t.id ORDER BY l.round_number DESC, l.division_order ASC LIMIT 1) AS first_division_id,
       t.has_registration_form,
-      (SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = t.id) AS registration_count
+      (SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = t.id) AS registration_count,
+      COALESCE(t.round_dates[1], (SELECT l.season_start FROM leagues l WHERE l.tournament_id = t.id AND l.round_number = 1 LIMIT 1))::text AS start_date,
+      t.final_end::text AS end_date
     FROM tournaments t
     WHERE EXISTS (SELECT 1 FROM leagues l WHERE l.tournament_id = t.id)
     ORDER BY t.created_at DESC
@@ -61,19 +70,25 @@ export default async function AdminLeaguesPage() {
               const viewHref = isMulti ? `/tournaments/multi/${t.id}` : `/tournaments/${t.first_division_id}`;
               const manageHref = isMulti ? `/admin/tournaments/multi/${t.id}` : `/admin/tournaments/${t.first_division_id}`;
               return (
-                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2 py-2 border-b border-gray-100 last:border-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <a href={manageHref} className="text-sm text-gray-800 hover:text-green-700 hover:underline truncate">{t.name}</a>
-                    {isMulti && (
-                      <span className="hidden sm:inline-block shrink-0 text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">{Number(t.division_count)}-division</span>
-                    )}
-                    <span className={`hidden sm:inline-block shrink-0 text-xs px-2 py-0.5 rounded-full ${
-                      t.status === 'active' ? 'bg-green-100 text-green-700'
-                      : t.status === 'upcoming' ? 'bg-blue-100 text-blue-700'
-                      : 'bg-slate-100 text-slate-600'
-                    }`}>{t.status.charAt(0).toUpperCase() + t.status.slice(1)}</span>
+                <div key={t.id} className="flex flex-col gap-1.5 py-2 border-b border-gray-100 last:border-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <a href={manageHref} className="text-sm text-gray-800 hover:text-green-700 hover:underline truncate">{t.name}</a>
+                      {isMulti && (
+                        <span className="hidden sm:inline-block shrink-0 text-xs px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-600">{Number(t.division_count)}-division</span>
+                      )}
+                      <span className={`hidden sm:inline-block shrink-0 text-xs px-2 py-0.5 rounded-full ${
+                        t.status === 'active' ? 'bg-green-100 text-green-700'
+                        : t.status === 'upcoming' ? 'bg-blue-100 text-blue-700'
+                        : 'bg-slate-100 text-slate-600'
+                      }`}>{t.status.charAt(0).toUpperCase() + t.status.slice(1)}</span>
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <a href={viewHref} className="text-xs text-green-700 hover:underline">View</a>
+                      <a href={manageHref} className="text-xs text-blue-600 hover:underline">Manage</a>
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between sm:justify-end gap-3">
+                  <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center flex-wrap gap-3">
                       <span className="text-xs text-gray-400">
                         {t.status === 'upcoming' && t.has_registration_form
@@ -82,10 +97,7 @@ export default async function AdminLeaguesPage() {
                       </span>
                       <span className="text-xs text-gray-400">Played: {Number(t.matches_played)}</span>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0">
-                      <a href={viewHref} className="text-xs text-green-700 hover:underline">View</a>
-                      <a href={manageHref} className="text-xs text-blue-600 hover:underline">Manage</a>
-                    </div>
+                    <p className="text-xs text-gray-400 shrink-0">{fmt(t.start_date)} - {fmt(t.end_date)}</p>
                   </div>
                 </div>
               );
