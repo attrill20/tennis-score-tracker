@@ -8,9 +8,9 @@ describe('computeSuggestedDivisions', () => {
   it('sorts strongest ability level into the top division', () => {
     const regs = [
       reg('beginner-1', 'beginner'),
-      reg('top-1', 'parks_1sts_b'),
+      reg('top-1', 'parks_thursdays'),
       reg('mid-1', 'intermediate'),
-      reg('upper-mid-1', 'parks_c_e'),
+      reg('upper-mid-1', 'parks_tuesdays'),
     ];
 
     const result = computeSuggestedDivisions(regs, 4);

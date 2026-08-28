@@ -35,7 +35,8 @@ export default async function DashboardPage() {
     sql`
       SELECT r.id, r.tournament_id, t.name AS tournament_name, t.format AS tournament_format, t.color AS tournament_color,
         COALESCE(t.round_dates[1], (SELECT l.season_start FROM leagues l WHERE l.tournament_id = t.id AND l.round_number = 1 LIMIT 1))::text AS start_date,
-        t.final_end::text AS end_date
+        t.final_end::text AS end_date,
+        (SELECT l2.id FROM leagues l2 WHERE l2.tournament_id = t.id AND l2.round_number = 1 LIMIT 1) AS round1_league_id
       FROM tournament_registrations r
       JOIN tournaments t ON t.id = r.tournament_id
       WHERE r.player_id = ${userId} AND r.assigned_league_id IS NULL
@@ -420,9 +421,13 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {pendingRegistrations.map((reg) => (
+          {pendingRegistrations.map((reg) => {
+            const tournamentHref = reg.tournament_format === 'multi'
+              ? `/tournaments/multi/${reg.tournament_id as string}`
+              : `/tournaments/${reg.round1_league_id as string}`;
+            return (
             <div key={reg.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(reg.tournament_id as string, reg.tournament_color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-              <Link href={`/tournaments/register/${reg.tournament_id as string}`} className="absolute inset-0 rounded-xl z-10" aria-label={reg.tournament_name as string} />
+              <Link href={tournamentHref} className="absolute inset-0 rounded-xl z-10" aria-label={reg.tournament_name as string} />
               <div className="relative flex items-center justify-between gap-2">
                 <span className="font-medium text-gray-800">{reg.tournament_name as string}</span>
                 <RegisterButton tournamentId={reg.tournament_id as string} isRegistered />
@@ -436,7 +441,8 @@ export default async function DashboardPage() {
                 </p>
               </div>
             </div>
-          ))}
+            );
+          })}
           {leagues.map((league) => {
             const id = league.id as string;
             const stats = leagueStats[id];

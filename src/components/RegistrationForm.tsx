@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { ABILITY_LEVELS, type AbilityLevel, type RegistrationQuestion } from '@/lib/registration';
 
 type Profile = { fullName: string; phone: string | null; email: string };
@@ -64,22 +65,26 @@ export default function RegistrationForm({
     <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-xl border border-gray-200 p-5">
       <div>
         <p className="text-xl font-semibold text-gray-800 mb-2">Your Details</p>
-        <p className="text-sm text-gray-600"><span className="font-semibold">Name:</span> {profile.fullName}</p>
-        <p className="text-sm text-gray-600"><span className="font-semibold">Email:</span> {profile.email}</p>
-        {profile.phone && <p className="text-sm text-gray-600"><span className="font-semibold">Phone:</span> {profile.phone}</p>}
-        <p className="text-xs text-gray-400 mt-1">To change these, update your profile</p>
+        <p className="text-xs sm:text-sm text-gray-400 mb-2">
+          These details will be shared with other players in your division, they can be updated within your <Link href="/profile" className="text-green-700 hover:underline">Profile</Link> page.
+        </p>
+        <p className="text-sm sm:text-base text-gray-600"><span className="font-semibold">Name:</span> {profile.fullName}</p>
+        {profile.phone
+          ? <p className="text-sm sm:text-base text-gray-600"><span className="font-semibold">Phone:</span> {profile.phone}</p>
+          : <p className="text-sm sm:text-base text-gray-600"><span className="font-semibold">Email:</span> {profile.email}</p>
+        }
       </div>
 
       <div>
         <p className="text-xl font-semibold text-gray-800 mb-2">Your Ability Level</p>
         <label className="block text-sm font-medium text-gray-700 mb-2">My approximate ability level <span className="text-red-500">*</span></label>
-        <div className="flex flex-wrap gap-1.5 sm:gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1.5 sm:gap-2">
           {ABILITY_LEVELS.map(([val, label]) => (
             <button
               key={val}
               type="button"
               onClick={() => setAbilityLevel(val)}
-              className={`py-1.5 px-2 sm:py-2 sm:px-3 rounded-lg border text-xs sm:text-sm font-medium transition-colors ${
+              className={`min-w-0 min-h-[44px] flex items-center justify-center text-center break-keep break-words py-2 px-1 sm:py-2 sm:px-3 rounded-lg border text-xs leading-tight sm:text-sm font-medium transition-colors ${
                 abilityLevel === val
                   ? 'bg-green-900 border-green-900 text-white'
                   : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
@@ -94,17 +99,20 @@ export default function RegistrationForm({
       {questions.map((q) => (
         <div key={q.id}>
           <label htmlFor={q.type !== 'single_choice' ? `q-${q.id}` : undefined} className="block text-sm font-medium text-gray-700 mb-2">
-            {q.label} {!q.required && <span className="text-gray-400 font-normal">(optional)</span>}
+            {q.label}:
           </label>
 
           {q.type === 'single_choice' && (
-            <div className="flex flex-wrap gap-2">
+            <div
+              className="grid gap-1 sm:gap-2"
+              style={{ gridTemplateColumns: `repeat(${(q.options ?? []).length}, minmax(0, 1fr))` }}
+            >
               {(q.options ?? []).map((opt) => (
                 <button
                   key={opt}
                   type="button"
                   onClick={() => setAnswer(q.id, answers[q.id] === opt ? '' : opt)}
-                  className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+                  className={`min-w-0 min-h-[44px] flex items-center justify-center text-center break-keep break-words py-1 px-1 sm:py-2 sm:px-3 rounded-lg border text-[11px] leading-tight sm:text-sm font-medium transition-colors ${
                     answers[q.id] === opt
                       ? 'bg-green-900 border-green-900 text-white'
                       : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
@@ -123,6 +131,7 @@ export default function RegistrationForm({
               type="text"
               value={answers[q.id] ?? ''}
               onChange={(e) => setAnswer(q.id, e.target.value)}
+              placeholder={q.required ? undefined : 'Optional field'}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
           )}
@@ -134,6 +143,7 @@ export default function RegistrationForm({
               value={answers[q.id] ?? ''}
               onChange={(e) => setAnswer(q.id, e.target.value)}
               rows={3}
+              placeholder={q.required ? undefined : 'Optional field'}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm resize-none"
             />
           )}

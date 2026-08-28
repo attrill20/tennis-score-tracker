@@ -1,12 +1,13 @@
-export type AbilityLevel = 'beginner' | 'improver' | 'intermediate' | 'parks_c_e' | 'parks_1sts_b';
+export type AbilityLevel = 'beginner' | 'improver' | 'intermediate' | 'parks_tuesdays' | 'parks_wednesdays' | 'parks_thursdays';
 
 // Ordered weakest -> strongest so array index doubles as a rank.
 export const ABILITY_LEVELS: [AbilityLevel, string][] = [
   ['beginner', 'Beginner'],
   ['improver', 'Improver'],
   ['intermediate', 'Intermediate'],
-  ['parks_c_e', 'Parks League C-E'],
-  ['parks_1sts_b', 'Parks League 1sts-B'],
+  ['parks_tuesdays', 'Parks League Tuesdays'],
+  ['parks_wednesdays', 'Parks League Wednesdays'],
+  ['parks_thursdays', 'Parks League Thursdays'],
 ];
 
 export const ABILITY_LEVEL_LABELS: Record<AbilityLevel, string> = Object.fromEntries(ABILITY_LEVELS) as Record<AbilityLevel, string>;
@@ -72,7 +73,7 @@ export const DEFAULT_REGISTRATION_QUESTIONS: RegistrationQuestion[] = [
   {
     id: 'previous_division',
     type: 'single_choice',
-    label: 'If you played Winter League last season, what was your finishing division?',
+    label: 'If you played Winter League last season, which division did you finish in',
     options: ['10', '9', '8', '7', '6', '5', '4', '3', '2', '1'],
     required: false,
   },

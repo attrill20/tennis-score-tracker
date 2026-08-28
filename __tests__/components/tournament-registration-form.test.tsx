@@ -28,15 +28,23 @@ describe('RegistrationForm', () => {
     render(<RegistrationForm tournamentId="t-1" profile={profile} questions={questions} initial={null} redirectHref={redirectHref} />);
 
     expect(screen.getByText(/Alice Smith/)).toBeInTheDocument();
-    expect(screen.getByText(/alice@example.com/)).toBeInTheDocument();
+    expect(screen.getByText(/07700 900000/)).toBeInTheDocument();
+    expect(screen.queryByText(/alice@example.com/)).not.toBeInTheDocument();
 
     expect(screen.getByRole('button', { name: 'Beginner' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Parks League 1sts-B' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Parks League Thursdays' })).toBeInTheDocument();
 
-    expect(screen.getByText('Previous division')).toBeInTheDocument();
+    expect(screen.getByText(/Previous division/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '2' })).toBeInTheDocument();
     expect(screen.getByLabelText(/similar player/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/any other notes/i)).toBeInTheDocument();
+  });
+
+  it('falls back to showing email when the player has no phone number on file', () => {
+    render(<RegistrationForm tournamentId="t-1" profile={{ ...profile, phone: null }} questions={questions} initial={null} redirectHref={redirectHref} />);
+
+    expect(screen.getByText(/alice@example.com/)).toBeInTheDocument();
+    expect(screen.queryByText(/07700 900000/)).not.toBeInTheDocument();
   });
 
   it('requires an ability level before submitting', async () => {
@@ -55,7 +63,7 @@ describe('RegistrationForm', () => {
 
     render(<RegistrationForm tournamentId="t-1" profile={profile} questions={questions} initial={null} redirectHref={redirectHref} />);
 
-    fireEvent.click(screen.getByRole('button', { name: 'Parks League C-E' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Parks League Tuesdays' }));
     fireEvent.click(screen.getByRole('button', { name: '3' }));
     await userEvent.type(screen.getByLabelText(/similar player/i), 'Bob Jones');
     await userEvent.type(screen.getByLabelText(/any other notes/i), 'Happy to play any day');
@@ -65,7 +73,7 @@ describe('RegistrationForm', () => {
       expect(global.fetch).toHaveBeenCalledWith('/api/tournaments/t-1/register', expect.objectContaining({ method: 'POST' }));
     });
     const body = JSON.parse((global.fetch as jest.Mock).mock.calls[0][1].body);
-    expect(body.abilityLevel).toBe('parks_c_e');
+    expect(body.abilityLevel).toBe('parks_tuesdays');
     expect(body.answers).toEqual({
       previous_division: '3',
       similar_player_1: 'Bob Jones',

@@ -56,7 +56,7 @@ export default async function TournamentRegisterPage({ params }: { params: Promi
       ) : (
         <>
           <p className="text-sm text-gray-400 mb-4">
-            Tell us a bit about your tennis so we can place you in the right division. You can edit this until an admin assigns you to your starting division.
+            Please complete this registration form with as much detail as possible about your current tennis ability so we can place you in the most suitable division. You can edit this form up until the tournament start date.
           </p>
           <RegistrationForm
             tournamentId={tournament.id as string}
