@@ -255,3 +255,4 @@ These were originally listed as stretch/future items but are now built and live:
 - Promotion/relegation is calculated at round end but admins can override before it's finalised
 - Email uniqueness is enforced case-insensitively at the database level
 - Never use em dashes (—) or en dashes (–) anywhere in the UI — always use regular hyphens (-)
+- This app is used primarily as a mobile app. When building or changing UI, design and check the mobile layout first (narrow width, touch-sized targets) and only then adapt up to desktop with responsive classes - not the other way around.

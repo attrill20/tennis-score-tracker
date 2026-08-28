@@ -37,7 +37,7 @@ export default async function TournamentRegisterPage({ params }: { params: Promi
   const backHref = tournament.format === 'multi' ? `/tournaments/multi/${tournament.id}` : '/tournaments';
 
   return (
-    <div className="max-w-xl mx-auto">
+    <div>
       <Link href={backHref} className="text-sm text-green-700 hover:underline">&larr; Back to {tournament.name as string}</Link>
       <h1 className="text-2xl font-bold text-gray-800 mt-2 mb-1">Register for {tournament.name as string}</h1>
 

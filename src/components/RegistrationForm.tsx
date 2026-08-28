@@ -73,13 +73,13 @@ export default function RegistrationForm({
       <div>
         <p className="text-xl font-semibold text-gray-800 mb-2">Your Ability Level</p>
         <label className="block text-sm font-medium text-gray-700 mb-2">My approximate ability level <span className="text-red-500">*</span></label>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {ABILITY_LEVELS.map(([val, label]) => (
             <button
               key={val}
               type="button"
               onClick={() => setAbilityLevel(val)}
-              className={`py-2 px-3 rounded-lg border text-sm font-medium transition-colors ${
+              className={`py-1.5 px-2 sm:py-2 sm:px-3 rounded-lg border text-xs sm:text-sm font-medium transition-colors ${
                 abilityLevel === val
                   ? 'bg-green-900 border-green-900 text-white'
                   : 'border-gray-300 text-gray-500 hover:border-green-900 hover:text-green-900'
