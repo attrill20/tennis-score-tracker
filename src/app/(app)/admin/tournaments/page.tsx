@@ -13,6 +13,8 @@ type Row = {
   player_count: string;
   matches_played: string;
   first_division_id: string | null;
+  has_registration_form: boolean;
+  registration_count: string;
 };
 
 export default async function AdminLeaguesPage() {
@@ -27,7 +29,9 @@ export default async function AdminLeaguesPage() {
       (SELECT COUNT(*) FROM leagues WHERE tournament_id = t.id) AS division_count,
       (SELECT COUNT(*) FROM league_players lp JOIN leagues l ON l.id = lp.league_id WHERE l.tournament_id = t.id) AS player_count,
       (SELECT COUNT(*) FROM matches m JOIN leagues l ON l.id = m.league_id WHERE l.tournament_id = t.id) AS matches_played,
-      (SELECT l.id FROM leagues l WHERE l.tournament_id = t.id ORDER BY l.round_number DESC, l.division_order ASC LIMIT 1) AS first_division_id
+      (SELECT l.id FROM leagues l WHERE l.tournament_id = t.id ORDER BY l.round_number DESC, l.division_order ASC LIMIT 1) AS first_division_id,
+      t.has_registration_form,
+      (SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = t.id) AS registration_count
     FROM tournaments t
     WHERE EXISTS (SELECT 1 FROM leagues l WHERE l.tournament_id = t.id)
     ORDER BY t.created_at DESC
@@ -70,8 +74,12 @@ export default async function AdminLeaguesPage() {
                     }`}>{t.status.charAt(0).toUpperCase() + t.status.slice(1)}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-xs text-gray-400">{Number(t.player_count)} players</span>
-                    <span className="text-xs text-gray-400">{Number(t.matches_played)} games played</span>
+                    <span className="text-xs text-gray-400">
+                      {t.status === 'upcoming' && t.has_registration_form
+                        ? `Registered: ${Number(t.registration_count)}`
+                        : `Players: ${Number(t.player_count)}`}
+                    </span>
+                    <span className="text-xs text-gray-400">Played: {Number(t.matches_played)}</span>
                     <a href={viewHref} className="text-xs text-green-700 hover:underline">View</a>
                     <a href={manageHref} className="text-xs text-blue-600 hover:underline">Manage</a>
                   </div>
