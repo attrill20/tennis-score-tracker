@@ -248,6 +248,21 @@ These were originally listed as stretch/future items but are now built and live:
 
 ---
 
+## UI Styling Conventions
+
+This app is used primarily as a mobile app - always design and check the mobile layout first (narrow width, touch-sized targets), then adapt up to desktop with `sm:` classes, not the other way round. Patterns established across the app that new/changed UI should follow by default:
+
+- **Card/row headers (a title plus badges/actions)**: stack vertically on mobile, side-by-side on desktop - `flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 sm:gap-2`. Keep the primary identifier (name) and core action links/buttons visible on both; secondary/decorative badges (status pills, type tags like "Multi-league") can be hidden on mobile with `hidden sm:inline-block` if space is tight - see `LeagueCard`/`MultiTournamentCard` in `src/app/(app)/tournaments/page.tsx` and the row in `src/app/(app)/admin/tournaments/page.tsx`.
+- **Within a stacked row's second line**, if it holds both info (stats) and actions (links/buttons), split them apart with `justify-between` on mobile so stats sit left and actions sit right, then collapse back to grouped-right with `sm:justify-end` on desktop (two inner `div`s, not one flat list) - see the stats/View/Manage row in `src/app/(app)/admin/tournaments/page.tsx`.
+- **Page headers (H1 + subtitle + a primary action button)**: keep the title and subtitle each on one line (`whitespace-nowrap`) rather than letting them wrap; stack the button below on mobile, right-aligned (`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3` on the container, `self-end sm:self-auto` on the button), returning to a single row with the button on the right on desktop - see the header in `src/app/(app)/admin/tournaments/page.tsx`.
+- **Equal-width option/button groups that must never wrap onto extra rows** (e.g. the ability-level toggle): use a CSS grid sized to the exact option count (`grid-cols-N`, or an inline `style={{ gridTemplateColumns: 'repeat(N, minmax(0, 1fr))' }}` when N is dynamic) rather than `flex-wrap`. Let text wrap *within* a button instead (`break-words break-keep`, `flex items-center justify-center text-center` to center both axes, `min-h-[44px]` for a consistent touch target) rather than the row wrapping or text overflowing the button - see `RegistrationForm.tsx`.
+- **Text sizing**: default to the smaller mobile size and bump up with `sm:` (e.g. `text-xs sm:text-sm`, `text-sm sm:text-base`) - never the reverse.
+- **Collapsible sections**: use the shared `CollapsibleSection` component (`src/components/CollapsibleSection.tsx`) for admin panels that don't need to be visible at a glance (settings forms, danger zones, long lists) - collapsed by default, a chevron that flips on open, and an optional `meta` node next to the title (e.g. "12 registered", "4 divisions").
+- **Labeled stats**: short stat displays use a `Label: value` format (e.g. `Players: 4`, `Played: 12`, `Registered: 17`), not free-form phrasing (`4 players`) - keep this consistent wherever a row/card shows counts.
+- **No trailing full stops** on short UI status/notice/empty-state messages ("Registration saved", "No players assigned yet") - reserve normal sentence punctuation for longer explanatory or legal-style paragraphs (e.g. the delete-account warning, multi-sentence form hints).
+
+---
+
 ## Notes
 
 - Auth is fully custom: NextAuth v5 (beta) Credentials provider + JWT sessions, bcryptjs password hashing (`src/auth.ts`). No Supabase, no RLS — access control is enforced in API route handlers (role checks against the session), not database policies.
@@ -255,4 +270,4 @@ These were originally listed as stretch/future items but are now built and live:
 - Promotion/relegation is calculated at round end but admins can override before it's finalised
 - Email uniqueness is enforced case-insensitively at the database level
 - Never use em dashes (—) or en dashes (–) anywhere in the UI — always use regular hyphens (-)
-- This app is used primarily as a mobile app. When building or changing UI, design and check the mobile layout first (narrow width, touch-sized targets) and only then adapt up to desktop with responsive classes - not the other way around.
+- This app is used primarily as a mobile app - see "UI Styling Conventions" below for the specific patterns this implies.
