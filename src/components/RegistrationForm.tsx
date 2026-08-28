@@ -67,7 +67,7 @@ export default function RegistrationForm({
         <p className="text-sm text-gray-600"><span className="font-semibold">Name:</span> {profile.fullName}</p>
         <p className="text-sm text-gray-600"><span className="font-semibold">Email:</span> {profile.email}</p>
         {profile.phone && <p className="text-sm text-gray-600"><span className="font-semibold">Phone:</span> {profile.phone}</p>}
-        <p className="text-xs text-gray-400 mt-1">To change these, update your profile.</p>
+        <p className="text-xs text-gray-400 mt-1">To change these, update your profile</p>
       </div>
 
       <div>
@@ -141,7 +141,7 @@ export default function RegistrationForm({
       ))}
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-      {saved && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Registration saved.</p>}
+      {saved && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Registration saved</p>}
 
       <button
         type="submit"

@@ -53,7 +53,7 @@ export default function AdminSetPasswordForm({ userId }: { userId: string }) {
       >
         {loading ? 'Setting...' : 'Set password'}
       </button>
-      {success && <p className="text-sm text-green-700 sm:self-center">Password updated.</p>}
+      {success && <p className="text-sm text-green-700 sm:self-center">Password updated</p>}
       {error && <p className="text-sm text-red-600 sm:self-center">{error}</p>}
     </form>
   );

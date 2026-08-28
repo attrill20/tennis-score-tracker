@@ -128,14 +128,14 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         )}
 
         {!showContactDetails && !player.is_injured && (
-          <p className="text-sm text-gray-400">Join a shared tournament to see contact details.</p>
+          <p className="text-sm text-gray-400">Join a shared tournament to see contact details</p>
         )}
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6 mt-4 space-y-2">
         <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">Head to Head Record</h2>
         {timesPlayed === 0 ? (
-          <p className="text-sm text-gray-400">You haven&apos;t played each other yet.</p>
+          <p className="text-sm text-gray-400">You haven&apos;t played each other yet</p>
         ) : (
           <div>
             <div className="flex justify-between text-sm mb-2">

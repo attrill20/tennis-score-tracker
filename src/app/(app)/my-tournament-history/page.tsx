@@ -66,7 +66,7 @@ export default async function MyTournamentsPage() {
 
       {tournamentHistory.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          <p>You haven&apos;t joined any tournaments yet.</p>
+          <p>You haven&apos;t joined any tournaments yet</p>
         </div>
       ) : (
         <div className="space-y-2">

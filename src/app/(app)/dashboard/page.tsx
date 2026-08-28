@@ -403,8 +403,10 @@ export default async function DashboardPage() {
 
       {leagues.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          <p>You haven't been added to any tournaments yet.</p>
-          <p className="text-sm mt-1">Contact an admin to get assigned.</p>
+          <p className="text-sm sm:text-base">You haven&apos;t been added to any tournaments yet</p>
+          <p className="text-sm mt-1">
+            Register on the <Link href="/tournaments" className="text-green-700 hover:underline">Tournaments</Link> page
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -511,7 +513,7 @@ export default async function DashboardPage() {
 
       {recentMatches.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          <p>No games played yet.</p>
+          <p>No games played yet</p>
         </div>
       ) : (
         <div className="space-y-2">

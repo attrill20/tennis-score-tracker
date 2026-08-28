@@ -173,7 +173,7 @@ export default function AssignPlayersForm({ leagues, members }: { leagues: Leagu
               {loadingLeague ? (
                 <p className="text-sm text-gray-400 py-2">Loading...</p>
               ) : pairs.length === 0 ? (
-                <p className="text-sm text-gray-400">No pairs added yet.</p>
+                <p className="text-sm text-gray-400">No pairs added yet</p>
               ) : (
                 <div className="border border-gray-200 rounded-lg overflow-hidden">
                   {pairs.map((pair, i) => {

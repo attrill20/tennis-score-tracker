@@ -147,7 +147,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
         <h2 className="text-base font-semibold text-gray-700 mb-1">Promotion & relegation</h2>
-        <p className="text-xs text-gray-400 mb-4">Auto-calculated from standings. Adjust before confirming.</p>
+        <p className="text-xs text-gray-400 mb-4">Auto-calculated from standings. Adjust before confirming</p>
         <PromotionForm leagueId={id} standings={standings} />
       </div>
 

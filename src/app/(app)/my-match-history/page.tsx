@@ -106,7 +106,7 @@ export default async function MatchesPage() {
 
       {matches.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-8 text-center text-gray-400">
-          <p>No games played yet.</p>
+          <p>No games played yet</p>
         </div>
       ) : (
         <div className="space-y-2">

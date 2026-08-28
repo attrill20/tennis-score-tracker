@@ -68,7 +68,7 @@ export default function RegistrationsPanel({
       </div>
 
       {registrations.length === 0 ? (
-        <p className="text-sm text-gray-400">No pending registrations to assign.</p>
+        <p className="text-sm text-gray-400">No pending registrations to assign</p>
       ) : (
         <div className="space-y-3">
           {registrations.map((r) => {

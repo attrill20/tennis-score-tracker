@@ -18,7 +18,7 @@ function ResetPasswordForm() {
   if (!token) {
     return (
       <div className="bg-white rounded-2xl shadow-sm border border-green-900/20 p-8 text-center">
-        <p className="text-sm text-red-600 mb-4">This reset link is invalid or has expired.</p>
+        <p className="text-sm text-red-600 mb-4">This reset link is invalid or has expired</p>
         <Link href="/forgot-password" className="text-sm text-green-900 font-medium hover:underline">
           Request a new link
         </Link>

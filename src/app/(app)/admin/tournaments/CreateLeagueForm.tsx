@@ -301,7 +301,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Round start dates</label>
-            <p className="text-xs text-gray-400 mb-2">Each date starts a fresh round. After each round, players are promoted/relegated between divisions.</p>
+            <p className="text-xs text-gray-400 mb-2">Each date starts a fresh round. After each round, players are promoted/relegated between divisions</p>
             <div className="space-y-2">
               {roundDates.map((d, i) => (
                 <div key={i} className="flex items-center gap-2">
@@ -461,7 +461,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
               placeholder="Unlimited"
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
             />
-            <p className="text-xs text-gray-400 mt-1">Registration closes automatically once this many members have registered. Leave blank for no limit.</p>
+            <p className="text-xs text-gray-400 mt-1">Registration closes automatically once this many members have registered. Leave blank for no limit</p>
           </div>
         )}
       </div>
@@ -522,7 +522,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             <option value="open_invite">Open invite - members can sign up themselves</option>
           </select>
           {joinType === 'open_invite' && (
-            <p className="text-xs text-gray-400 mt-1">You can still pre-assign players via the assign players form. Others can join up to the max.</p>
+            <p className="text-xs text-gray-400 mt-1">You can still pre-assign players via the assign players form. Others can join up to the max</p>
           )}
         </div>
       )}

@@ -42,7 +42,7 @@ export default function ContactForm({ isLoggedIn }: { isLoggedIn: boolean }) {
         <div className="bg-white rounded-xl border border-green-200 p-8 text-center">
           <div className="text-4xl mb-3">&#10003;</div>
           <h2 className="text-lg font-semibold text-gray-800 mb-1">Message sent</h2>
-          <p className="text-sm text-gray-500">We'll get back to you as soon as possible.</p>
+          <p className="text-sm text-gray-500">We&apos;ll get back to you as soon as possible</p>
           <button
             onClick={() => { setSuccess(false); setEmail(''); setSubject(''); setMessage(''); }}
             className="mt-4 text-sm text-green-700 hover:underline"

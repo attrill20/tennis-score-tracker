@@ -132,7 +132,7 @@ export default async function AdminUsersPage({
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Admin - Users</h1>
-        <p className="text-sm text-gray-400">Manage member roles. Only super admins can access this page.</p>
+        <p className="text-sm text-gray-400">Manage member roles. Only super admins can access this page</p>
       </div>
 
       <SearchInput initialSearch={search} sortCol={sortCol} sortOrder={sortOrder} />

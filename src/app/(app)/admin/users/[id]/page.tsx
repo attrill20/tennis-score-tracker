@@ -46,7 +46,7 @@ export default async function AdminUserEditPage({ params }: { params: Promise<{ 
 
       {isSuperAdmin ? (
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <p className="text-sm text-gray-500">Super admin accounts cannot be edited here.</p>
+          <p className="text-sm text-gray-500">Super admin accounts cannot be edited here</p>
         </div>
       ) : (
         <EditUserForm

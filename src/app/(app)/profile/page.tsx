@@ -76,7 +76,7 @@ export default async function ProfilePage() {
           <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">My Overall Stats</h2>
             {!hasSingles && !hasDoubles ? (
-              <p className="text-sm text-gray-400">No matches played yet.</p>
+              <p className="text-sm text-gray-400">No matches played yet</p>
             ) : (
               <>
                 {hasSingles && (

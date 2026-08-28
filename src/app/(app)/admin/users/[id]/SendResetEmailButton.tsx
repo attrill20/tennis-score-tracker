@@ -33,7 +33,7 @@ export default function SendResetEmailButton({ userId }: { userId: string }) {
       >
         {loading ? 'Sending...' : 'Send reset password email'}
       </button>
-      {sent && <p className="text-sm text-green-700 mt-2">Reset password email sent.</p>}
+      {sent && <p className="text-sm text-green-700 mt-2">Reset password email sent</p>}
       {error && <p className="text-sm text-red-600 mt-2">{error}</p>}
     </div>
   );

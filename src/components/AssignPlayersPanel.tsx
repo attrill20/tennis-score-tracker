@@ -198,7 +198,7 @@ export default function AssignPlayersPanel({
         {loading ? (
           <p className="text-sm text-gray-400 py-1">Loading...</p>
         ) : pairs.length === 0 ? (
-          <p className="text-sm text-gray-400">No pairs added yet.</p>
+          <p className="text-sm text-gray-400">No pairs added yet</p>
         ) : (
           <div className="border border-gray-200 rounded-lg overflow-hidden">
             {pairs.map((pair, i) => {
@@ -321,7 +321,7 @@ export default function AssignPlayersPanel({
       {loading ? (
         <p className="text-sm text-gray-400 py-1">Loading...</p>
       ) : selected.length === 0 ? (
-        <p className="text-sm text-gray-400">No players assigned yet.</p>
+        <p className="text-sm text-gray-400">No players assigned yet</p>
       ) : (
         <div className="border border-gray-200 rounded-lg overflow-hidden">
           {selected.map((id, i) => {

@@ -214,7 +214,7 @@ export default function RegisterPage() {
             className={inputClass}
             placeholder="you@example.com"
           />
-          <p className="text-xs text-gray-400 mt-1">Displayed as primary contact method if no phone number entered.</p>
+          <p className="text-xs text-gray-400 mt-1">Displayed as primary contact method if no phone number entered</p>
           {emailWarning && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{emailWarning}</p>
           )}
@@ -233,7 +233,7 @@ export default function RegisterPage() {
             className={inputClass}
             placeholder="Optional field"
           />
-          <p className="text-xs text-gray-400 mt-1">Only displayed to other players in your league to arrange matches.</p>
+          <p className="text-xs text-gray-400 mt-1">Only displayed to other players in your league to arrange matches</p>
           {phoneWarning && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{phoneWarning}</p>
           )}

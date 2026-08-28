@@ -115,7 +115,7 @@ export default function TournamentSettingsForm({
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Round start dates</label>
-        <p className="text-xs text-gray-400 mb-2">Changing these updates the start and end dates of every division in each round.</p>
+        <p className="text-xs text-gray-400 mb-2">Changing these updates the start and end dates of every division in each round</p>
         <div className="space-y-2">
           {roundDates.map((d, i) => (
             <div key={i} className="flex items-center gap-2">
@@ -187,7 +187,7 @@ export default function TournamentSettingsForm({
       )}
 
       {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-      {saved && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Settings saved.</p>}
+      {saved && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Settings saved</p>}
 
       <button
         onClick={save}
