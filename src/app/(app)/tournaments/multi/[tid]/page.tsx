@@ -131,23 +131,9 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
       <div>
         <Link href="/tournaments" className="text-sm text-green-700 hover:underline">&larr; All tournaments</Link>
         <div className="flex items-start justify-between gap-3 mt-2">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-800">{tournament.name}</h1>
-            {tournament.description && <p className="text-sm text-gray-500 mt-1">{tournament.description}</p>}
-            <p className="text-sm text-gray-400 mt-2">
-              Multi-league tournament - {tournament.num_divisions} divisions, promote {tournament.num_promoted} / relegate {tournament.num_relegated} each round. Round {String(current_round)} of {tournament.num_rounds}.
-            </p>
-            <p className="text-sm text-gray-400 mt-1">
-              {fmt(roundSchedule[0]?.start_date ?? null)} - {fmt(roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end)}
-            </p>
-            {tournament.has_registration_form && (
-              <p className="text-sm text-gray-400 mt-1">
-                Registered: {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}
-              </p>
-            )}
-          </div>
-          <div className="flex flex-col items-end gap-2 shrink-0">
-            <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+          <h1 className="text-2xl font-bold text-gray-800">{tournament.name}</h1>
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center shrink-0">
+            <span className={`hidden sm:inline-flex text-xs px-2 py-1 rounded-full font-medium ${
               tournament.status === 'active' ? 'bg-green-100 text-green-700'
               : tournament.status === 'upcoming' ? 'bg-blue-100 text-blue-700'
               : 'bg-slate-100 text-slate-600'
@@ -162,10 +148,20 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
                 href={`/admin/tournaments/multi/${tournament.id}`}
                 className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
               >
-                Manage tournament
+                Manage
               </Link>
             )}
           </div>
+        </div>
+        {tournament.description && <p className="text-sm text-gray-500 mt-2">{tournament.description}</p>}
+        <div className="text-sm text-gray-400 mt-2 space-y-1">
+          <p><span className="font-semibold text-gray-500">Format:</span> Multi-league, {tournament.num_divisions} divisions</p>
+          <p><span className="font-semibold text-gray-500">Promotion/Relegation:</span> {tournament.num_promoted} promoted / {tournament.num_relegated} relegated each round</p>
+          <p><span className="font-semibold text-gray-500">Round:</span> {String(current_round)} of {tournament.num_rounds}</p>
+          <p><span className="font-semibold text-gray-500">Dates:</span> {fmt(roundSchedule[0]?.start_date ?? null)} - {fmt(roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end)}</p>
+          {tournament.has_registration_form && (
+            <p><span className="font-semibold text-gray-500">Registered:</span> {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</p>
+          )}
         </div>
       </div>
 
