@@ -53,7 +53,7 @@ export default function RegistrationQuestionsBuilder({
   return (
     <div className="space-y-3">
       <p className="text-xs text-gray-400">
-        Ability level (Beginner / Intermediate / Parks League C-E / Parks League 1sts-B) is always asked and is what suggests a division. Add, edit, remove or reorder any other questions below.
+        Ability level (Beginner / Improver / Intermediate / Parks League C-E / Parks League 1sts-B) is always asked and is what suggests a division. Add, edit, remove or reorder any other questions below.
       </p>
 
       {questions.map((q, i) => (

@@ -21,6 +21,20 @@ describe('computeSuggestedDivisions', () => {
     expect(result.get('beginner-1')).toBe(4);
   });
 
+  it('ranks improver between beginner and intermediate', () => {
+    const regs = [
+      reg('beginner-1', 'beginner'),
+      reg('improver-1', 'improver'),
+      reg('intermediate-1', 'intermediate'),
+    ];
+
+    const result = computeSuggestedDivisions(regs, 3);
+
+    expect(result.get('intermediate-1')).toBe(1);
+    expect(result.get('improver-1')).toBe(2);
+    expect(result.get('beginner-1')).toBe(3);
+  });
+
   it('splits into roughly-equal groups, giving earlier divisions the extra when uneven', () => {
     const regs = Array.from({ length: 7 }, (_, i) => reg(`p${i}`, 'intermediate'));
 

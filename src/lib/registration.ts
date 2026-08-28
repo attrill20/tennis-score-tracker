@@ -1,8 +1,9 @@
-export type AbilityLevel = 'beginner' | 'intermediate' | 'parks_c_e' | 'parks_1sts_b';
+export type AbilityLevel = 'beginner' | 'improver' | 'intermediate' | 'parks_c_e' | 'parks_1sts_b';
 
 // Ordered weakest -> strongest so array index doubles as a rank.
 export const ABILITY_LEVELS: [AbilityLevel, string][] = [
   ['beginner', 'Beginner'],
+  ['improver', 'Improver'],
   ['intermediate', 'Intermediate'],
   ['parks_c_e', 'Parks League C-E'],
   ['parks_1sts_b', 'Parks League 1sts-B'],
