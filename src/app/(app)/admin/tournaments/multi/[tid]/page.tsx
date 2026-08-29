@@ -5,6 +5,7 @@ import Link from 'next/link';
 import TournamentSettingsForm from './TournamentSettingsForm';
 import DeleteTournamentButton from './DeleteTournamentButton';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
+import AssignDivisionsPanel from '@/components/AssignDivisionsPanel';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import { computeSuggestedDivisions, type RegistrationQuestion } from '@/lib/registration';
 import { type PointsConfig } from '@/lib/league';
@@ -36,6 +37,7 @@ type Division = {
   division_order: number;
   round_number: number;
   player_count: string;
+  draft_count: string;
 };
 
 export default async function AdminMultiTournamentPage({ params }: { params: Promise<{ tid: string }> }) {
@@ -59,11 +61,13 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
   const divisions = (await sql`
     SELECT
       l.id, l.name, l.status, l.division_order, l.round_number,
-      (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
+      (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count,
+      (SELECT COUNT(*) FROM league_player_drafts WHERE league_id = l.id) AS draft_count
     FROM leagues l
     WHERE l.tournament_id = ${tid} AND l.round_number = ${current_round}
     ORDER BY l.division_order ASC
   `) as unknown as Division[];
+  const isCurrentRoundUpcoming = divisions.length > 0 && divisions[0].status === 'upcoming';
 
   let registrationCount = 0;
   let pendingRegistrations: {
@@ -89,6 +93,7 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
       rows.map((r) => ({
         id: r.id as string,
         ability_level: r.ability_level as import('@/lib/registration').AbilityLevel,
+        previous_division: (r.answers as Record<string, string> | null)?.previous_division ?? null,
       })),
       tournament.num_divisions
     );
@@ -138,7 +143,11 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
             <div key={d.id} className="flex items-center justify-between px-4 py-3">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-gray-800">{d.name}</span>
-                <span className="text-xs text-gray-400">{Number(d.player_count)} players</span>
+                <span className="text-xs text-gray-400">
+                  {d.status === 'upcoming'
+                    ? `${Number(d.draft_count)} drafted`
+                    : `${Number(d.player_count)} players`}
+                </span>
               </div>
               <div className="flex items-center gap-3">
                 <Link href={`/tournaments/${d.id}`} className="text-xs text-green-700 hover:underline">View</Link>
@@ -148,6 +157,10 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
           ))}
         </div>
       </CollapsibleSection>
+
+      {isCurrentRoundUpcoming && (
+        <AssignDivisionsPanel tournamentId={tournament.id} />
+      )}
 
       {tournament.has_registration_form && (
         <RegistrationsPanel

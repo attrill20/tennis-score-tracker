@@ -113,13 +113,24 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
     const newDivisionId = div.id as string;
     createdIds.push(newDivisionId);
 
+    // While the new round is still upcoming, stage memberships as drafts so they stay
+    // invisible until the round actually activates (see src/lib/divisionDrafts.ts).
+    const targetTable = status === 'upcoming' ? 'league_player_drafts' : 'league_players';
     for (const playerId of nextMembership[d]) {
       if (deletedIds.has(playerId)) continue;
-      await sql`
-        INSERT INTO league_players (league_id, player_id)
-        VALUES (${newDivisionId}, ${playerId})
-        ON CONFLICT (league_id, player_id) DO NOTHING
-      `;
+      if (targetTable === 'league_player_drafts') {
+        await sql`
+          INSERT INTO league_player_drafts (league_id, player_id)
+          VALUES (${newDivisionId}, ${playerId})
+          ON CONFLICT (league_id, player_id) DO NOTHING
+        `;
+      } else {
+        await sql`
+          INSERT INTO league_players (league_id, player_id)
+          VALUES (${newDivisionId}, ${playerId})
+          ON CONFLICT (league_id, player_id) DO NOTHING
+        `;
+      }
     }
   }
 

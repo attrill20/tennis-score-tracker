@@ -20,13 +20,47 @@ function abilityRank(level: AbilityLevel): number {
   return ABILITY_LEVELS.findIndex(([v]) => v === level);
 }
 
-export type RegistrationForRanking = { id: string; ability_level: AbilityLevel };
+export type RegistrationForRanking = {
+  id: string;
+  ability_level: AbilityLevel;
+  // Answer to the DEFAULT_REGISTRATION_QUESTIONS 'previous_division' question below, if the
+  // tournament asked it and the player answered - a lower number is a stronger recent finish.
+  previous_division?: string | null;
+};
+
+/** Parses a 'previous_division' answer into a division number, clamped into range - or null if absent/invalid. */
+function parsePreviousDivision(value: string | null | undefined, numDivisions: number): number | null {
+  const n = value ? parseInt(value, 10) : NaN;
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.min(numDivisions, n);
+}
+
+/** Scales the fixed 6-level ability spectrum proportionally onto however many divisions this tournament has. */
+function abilityToDivision(level: AbilityLevel, numDivisions: number): number {
+  if (numDivisions <= 1) return 1;
+  const maxRank = ABILITY_LEVELS.length - 1;
+  const rank = abilityRank(level);
+  // rank 0 (beginner, weakest) -> bottom division; maxRank (strongest) -> division 1 (top).
+  const scaled = Math.round(((maxRank - rank) / maxRank) * (numDivisions - 1)) + 1;
+  return Math.min(numDivisions, Math.max(1, scaled));
+}
 
 /**
- * Suggests which division each pending registration might best fit, purely as a hint for
- * the admin doing the actual assignment. Ability level is the one question every registration
- * form always asks, so it's the only thing this ranks on - sorts strongest-first, then splits
- * the sorted list into `numDivisions` roughly-equal groups.
+ * Suggests each registration's best-fit division purely on its own merits - the division their
+ * ability intrinsically suggests they belong in - regardless of how many other people have
+ * registered so far or how full divisions currently are. A lightly-subscribed round should still
+ * place a beginner near the bottom and a strong player at the top, leaving gaps in between for
+ * admins to fill in manually, rather than clustering everyone into whichever divisions happen to
+ * have registrants purely because there's room.
+ *
+ * When available, the 'previous_division' answer (which division they actually finished in last
+ * season, if the tournament asked) is used directly as their target - a far more precise signal
+ * than the coarse 6-level `ability_level`. Otherwise ability_level is scaled proportionally
+ * across however many divisions this tournament has.
+ *
+ * This never checks division capacity - it's a best-fit suggestion, not a bin-packing solver. If
+ * several registrants land on the same division, the admin resolves that by hand (drag-and-drop,
+ * or the "+ Add player" picker) same as any other manual adjustment.
  *
  * Pure and side-effect free so it can be unit tested without a database.
  */
@@ -34,22 +68,12 @@ export function computeSuggestedDivisions(
   registrations: RegistrationForRanking[],
   numDivisions: number
 ): Map<string, number> {
-  const sorted = [...registrations].sort((a, b) => abilityRank(b.ability_level) - abilityRank(a.ability_level));
-
   const result = new Map<string, number>();
-  const n = sorted.length;
-  if (n === 0 || numDivisions < 1) return result;
+  if (numDivisions < 1) return result;
 
-  const baseSize = Math.floor(n / numDivisions);
-  const remainder = n % numDivisions;
-
-  let index = 0;
-  for (let division = 1; division <= numDivisions && index < n; division++) {
-    // Earlier divisions absorb the one extra registrant each when it doesn't divide evenly.
-    const size = baseSize + (division <= remainder ? 1 : 0);
-    for (let i = 0; i < size && index < n; i++, index++) {
-      result.set(sorted[index].id, division);
-    }
+  for (const r of registrations) {
+    const division = parsePreviousDivision(r.previous_division, numDivisions) ?? abilityToDivision(r.ability_level, numDivisions);
+    result.set(r.id, division);
   }
 
   return result;

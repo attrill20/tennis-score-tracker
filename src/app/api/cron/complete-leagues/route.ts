@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import sql from '@/lib/db';
 import { generateNextRound } from '@/lib/tournament';
+import { materializeDraftsForLeagues } from '@/lib/divisionDrafts';
 
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get('authorization');
@@ -62,7 +63,7 @@ export async function GET(req: NextRequest) {
     RETURNING t.id, t.name
   `;
   // Keep current-round divisions active while their tournament is active.
-  await sql`
+  const keptActive = await sql`
     UPDATE leagues l
     SET status = 'active'
     FROM tournaments t
@@ -70,7 +71,15 @@ export async function GET(req: NextRequest) {
       AND t.status = 'active'
       AND l.status = 'upcoming'
       AND l.round_number = (SELECT MAX(round_number) FROM leagues WHERE tournament_id = t.id)
+    RETURNING l.id
   `;
+
+  // Materialize any draft assignments for every division that just went active - this is
+  // the only moment they become real (and therefore visible) league_players rows.
+  await materializeDraftsForLeagues([
+    ...activated.map((r) => r.id as string),
+    ...keptActive.map((r) => r.id as string),
+  ]);
 
   // ── Multi-league tournaments: generate the next round once its start date arrives ──
   // Postgres arrays are 1-indexed: the next round after `cr` is round cr+1, dated round_dates[cr+1].
