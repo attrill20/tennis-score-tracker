@@ -2,12 +2,117 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { suggestPlaceholderAlias } from '@/lib/placeholderAlias';
 
-type Member = { id: string; full_name: string };
+type Member = {
+  id: string;
+  full_name: string;
+  is_placeholder?: boolean;
+  placeholder_alias?: string | null;
+  placeholder_anonymized?: boolean;
+};
 type Pair = { p1Id: string; p2Id: string };
 
 function pairKey(p: Pair) {
   return [p.p1Id, p.p2Id].sort().join(':');
+}
+
+function MemberLabel({ member }: { member: Member }) {
+  if (!member.is_placeholder) return <>{member.full_name}</>;
+  return (
+    <>
+      {member.full_name}
+      <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+        Placeholder{member.placeholder_anonymized ? ` - shown as "${member.placeholder_alias}"` : ''}
+      </span>
+    </>
+  );
+}
+
+function AddPlaceholderInline({ members, onCreated }: { members: Member[]; onCreated: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [alias, setAlias] = useState('');
+  const [anonymized, setAnonymized] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  function openForm() {
+    setAlias(suggestPlaceholderAlias(members.filter((m) => m.is_placeholder).map((m) => m.placeholder_alias)));
+    setOpen(true);
+  }
+
+  async function handleCreate() {
+    if (!fullName.trim()) return;
+    if (anonymized && !alias.trim()) {
+      setError('An alias is required when anonymizing this placeholder');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const res = await fetch('/api/admin/placeholder-players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: fullName.trim(), alias: alias.trim() || null, anonymized }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error || 'Failed to create placeholder');
+      setFullName('');
+      setAlias('');
+      setAnonymized(false);
+      setOpen(false);
+      onCreated();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={openForm} className="text-xs text-green-700 hover:text-green-900 font-medium hover:underline">
+        + Add placeholder player
+      </button>
+    );
+  }
+
+  return (
+    <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
+      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">New placeholder player</p>
+      <input
+        type="text"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+        placeholder="Full name"
+        disabled={saving}
+        className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-xs disabled:opacity-40"
+      />
+      <input
+        type="text"
+        value={alias}
+        onChange={(e) => setAlias(e.target.value)}
+        placeholder="Alias (shown when anonymized)"
+        disabled={saving}
+        className="w-full px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 text-xs disabled:opacity-40"
+      />
+      <label className="flex items-center gap-2 text-xs text-gray-700">
+        <input type="checkbox" checked={anonymized} onChange={(e) => setAnonymized(e.target.checked)} disabled={saving} className="accent-green-700 w-3.5 h-3.5" />
+        Anonymize - show the alias everywhere instead of the full name
+      </label>
+      {error && <p className="text-xs text-red-600">{error}</p>}
+      <div className="flex gap-2">
+        <button type="button" onClick={() => setOpen(false)} disabled={saving}
+          className="flex-1 text-xs border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-1.5 rounded-lg transition-colors disabled:opacity-40">
+          Cancel
+        </button>
+        <button type="button" onClick={handleCreate} disabled={saving || !fullName.trim()}
+          className="flex-1 text-xs bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white font-medium py-1.5 rounded-lg transition-colors">
+          {saving ? 'Adding...' : 'Add and assign below'}
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function AssignPlayersPanel({
@@ -194,6 +299,8 @@ export default function AssignPlayersPanel({
           {saving && <span className="text-xs text-gray-400">Saving...</span>}
         </div>
 
+        <AddPlaceholderInline members={members} onCreated={() => router.refresh()} />
+
         {/* Assigned pairs */}
         {loading ? (
           <p className="text-sm text-gray-400 py-1">Loading...</p>
@@ -210,9 +317,9 @@ export default function AssignPlayersPanel({
                   className={`flex items-center justify-between px-3 py-2.5 ${i < pairs.length - 1 ? 'border-b border-gray-100' : ''}`}
                 >
                   <span className="text-sm text-gray-800">
-                    <span className="font-medium">{p1?.full_name ?? 'Unknown'}</span>
+                    <span className="font-medium">{p1 ? <MemberLabel member={p1} /> : 'Unknown'}</span>
                     <span className="text-gray-400 mx-2">+</span>
-                    <span className="font-medium">{p2?.full_name ?? 'Unknown'}</span>
+                    <span className="font-medium">{p2 ? <MemberLabel member={p2} /> : 'Unknown'}</span>
                   </span>
                   <button type="button" onClick={() => removePair(pair)} disabled={saving}
                     className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40">
@@ -257,7 +364,7 @@ export default function AssignPlayersPanel({
                       className={`w-full text-left px-2 py-2 text-xs border-b border-gray-100 last:border-0 transition-colors disabled:opacity-40 ${
                         newP1 === m.id ? 'bg-green-100 text-green-800 font-medium' : 'hover:bg-white text-gray-700'
                       }`}>
-                      {m.full_name}
+                      <MemberLabel member={m} />
                     </button>
                   ))}
                 </div>
@@ -278,7 +385,7 @@ export default function AssignPlayersPanel({
                       className={`w-full text-left px-2 py-2 text-xs border-b border-gray-100 last:border-0 transition-colors disabled:opacity-40 ${
                         newP2 === m.id ? 'bg-green-100 text-green-800 font-medium' : 'hover:bg-white text-gray-700'
                       }`}>
-                      {m.full_name}
+                      <MemberLabel member={m} />
                     </button>
                   ))}
                 </div>
@@ -317,6 +424,8 @@ export default function AssignPlayersPanel({
         {saving && <span className="text-xs text-gray-400">Saving...</span>}
       </div>
 
+      <AddPlaceholderInline members={members} onCreated={() => router.refresh()} />
+
       {/* Assigned players */}
       {loading ? (
         <p className="text-sm text-gray-400 py-1">Loading...</p>
@@ -331,7 +440,7 @@ export default function AssignPlayersPanel({
                 key={id}
                 className={`flex items-center justify-between px-3 py-2.5 ${i < selected.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <span className="text-sm font-medium text-gray-800">{member?.full_name ?? 'Unknown'}</span>
+                <span className="text-sm font-medium text-gray-800">{member ? <MemberLabel member={member} /> : 'Unknown'}</span>
                 <button
                   type="button"
                   onClick={() => togglePlayer(id)}
@@ -373,7 +482,7 @@ export default function AssignPlayersPanel({
                   key={m.id}
                   className={`flex items-center justify-between px-3 py-2.5 ${i < availableMembers.length - 1 ? 'border-b border-gray-100' : ''} ${saving ? 'opacity-60' : ''}`}
                 >
-                  <span className="text-sm text-gray-700">{m.full_name}</span>
+                  <span className="text-sm text-gray-700"><MemberLabel member={m} /></span>
                   <button
                     type="button"
                     onClick={() => togglePlayer(m.id)}

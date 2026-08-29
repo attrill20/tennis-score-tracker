@@ -40,10 +40,12 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const [players, matches] = await Promise.all([
     sql`
-      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, p.is_injured, p.avatar_url,
+      SELECT p.id,
+             CASE WHEN p.is_placeholder AND p.placeholder_anonymized THEN p.placeholder_alias ELSE (p.first_name || ' ' || p.last_name) END AS full_name,
+             p.is_injured, p.avatar_url, p.is_placeholder,
              lp.partner_id,
-             (pp.first_name || ' ' || pp.last_name) AS partner_full_name,
-             pp.avatar_url AS partner_avatar_url
+             CASE WHEN pp.is_placeholder AND pp.placeholder_anonymized THEN pp.placeholder_alias ELSE (pp.first_name || ' ' || pp.last_name) END AS partner_full_name,
+             pp.avatar_url AS partner_avatar_url, pp.is_placeholder AS partner_is_placeholder
       FROM profiles p
       JOIN league_players lp ON lp.player_id = p.id
       LEFT JOIN profiles pp ON pp.id = lp.partner_id
@@ -55,10 +57,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
              m.score_player1, m.score_player2,
              m.set_scores, m.tiebreak_scores, m.status, m.submitted_by, m.played_at,
              m.match_type, m.winner_id,
-             p1.first_name AS player1_first, (p1.first_name || ' ' || p1.last_name) AS player1_name,
-             p2.first_name AS player2_first, (p2.first_name || ' ' || p2.last_name) AS player2_name,
-             p3.first_name AS player3_first, (p3.first_name || ' ' || p3.last_name) AS player3_name,
-             p4.first_name AS player4_first, (p4.first_name || ' ' || p4.last_name) AS player4_name
+             CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE p1.first_name END AS player1_first,
+             CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+             CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE p2.first_name END AS player2_first,
+             CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
+             CASE WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias ELSE p3.first_name END AS player3_first,
+             CASE WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias ELSE (p3.first_name || ' ' || p3.last_name) END AS player3_name,
+             CASE WHEN p4.is_placeholder AND p4.placeholder_anonymized THEN p4.placeholder_alias ELSE p4.first_name END AS player4_first,
+             CASE WHEN p4.is_placeholder AND p4.placeholder_anonymized THEN p4.placeholder_alias ELSE (p4.first_name || ' ' || p4.last_name) END AS player4_name
       FROM matches m
       JOIN profiles p1 ON p1.id = m.player1_id
       JOIN profiles p2 ON p2.id = m.player2_id
@@ -83,15 +89,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   // For doubles, collapse standings into one row per pair
   type PairStanding = (typeof standings)[0] & {
     avatarUrl?: string | null;
+    isPlaceholder?: boolean;
     partnerId?: string;
     partnerName?: string;
     isPartnerInjured?: boolean;
     partnerAvatarUrl?: string | null;
+    partnerIsPlaceholder?: boolean;
   };
   let displayStandings: PairStanding[];
 
   if (isDoubles) {
-    const partnerMap: Record<string, { id: string; name: string; isInjured: boolean; avatarUrl: string | null }> = {};
+    const partnerMap: Record<string, { id: string; name: string; isInjured: boolean; avatarUrl: string | null; isPlaceholder: boolean }> = {};
     for (const p of players) {
       if (p.partner_id) {
         const partnerRow = players.find((x) => x.id === p.partner_id);
@@ -100,6 +108,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           name: p.partner_full_name as string,
           isInjured: !!(partnerRow?.is_injured),
           avatarUrl: (p.partner_avatar_url as string | null) ?? null,
+          isPlaceholder: !!p.partner_is_placeholder,
         };
       }
     }
@@ -113,17 +122,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       acc.push({
         ...s,
         avatarUrl: (playerRow?.avatar_url as string | null) ?? null,
+        isPlaceholder: !!playerRow?.is_placeholder,
         partnerId: partner?.id,
         partnerName: partner?.name,
         isPartnerInjured: partner?.isInjured,
         partnerAvatarUrl: partner?.avatarUrl ?? null,
+        partnerIsPlaceholder: partner?.isPlaceholder,
       });
       return acc;
     }, []);
   } else {
     displayStandings = standings.map((s) => {
       const playerRow = players.find((x) => x.id === s.id);
-      return { ...s, avatarUrl: (playerRow?.avatar_url as string | null) ?? null };
+      return { ...s, avatarUrl: (playerRow?.avatar_url as string | null) ?? null, isPlaceholder: !!playerRow?.is_placeholder };
     });
   }
 
@@ -242,6 +253,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   userId={userId}
                   name={s.name}
                   avatarUrl={s.avatarUrl}
+                  isPlaceholder={s.isPlaceholder}
                   isInjured={injuredIds.has(s.id)}
                   position={i + 1}
                   played={s.played}
@@ -256,6 +268,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
                   partnerName={s.partnerName}
                   isPartnerInjured={s.isPartnerInjured}
                   partnerAvatarUrl={s.partnerAvatarUrl}
+                  partnerIsPlaceholder={s.partnerIsPlaceholder}
                 />
               );
             })}

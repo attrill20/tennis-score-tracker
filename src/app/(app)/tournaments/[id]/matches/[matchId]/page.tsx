@@ -16,10 +16,14 @@ export default async function MatchPage({
 
   const matches = await sql`
     SELECT m.*,
-      p1.first_name AS player1_first, (p1.first_name || ' ' || p1.last_name) AS player1_name,
-      p2.first_name AS player2_first, (p2.first_name || ' ' || p2.last_name) AS player2_name,
-      p3.first_name AS player3_first,
-      p4.first_name AS player4_first,
+      CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE p1.first_name END AS player1_first,
+      CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+      p1.is_placeholder AS player1_is_placeholder,
+      CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE p2.first_name END AS player2_first,
+      CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
+      p2.is_placeholder AS player2_is_placeholder,
+      CASE WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias ELSE p3.first_name END AS player3_first,
+      CASE WHEN p4.is_placeholder AND p4.placeholder_anonymized THEN p4.placeholder_alias ELSE p4.first_name END AS player4_first,
       l.name AS league_name
     FROM matches m
     JOIN profiles p1 ON p1.id = m.player1_id
@@ -64,6 +68,7 @@ export default async function MatchPage({
     : isPlayer1 ? (match.player2_name as string) : (match.player1_name as string);
 
   const opponentPlayerId = isPlayer1 ? match.player2_id as string : match.player1_id as string;
+  const opponentIsPlaceholder = isPlayer1 ? !!match.player2_is_placeholder : !!match.player1_is_placeholder;
   const setScores = (match.set_scores ?? null) as [number, number][] | null;
   const tiebreakScores = (match.tiebreak_scores ?? null) as ([number, number] | null)[] | null;
   const submittedByMe = match.submitted_by === userId;
@@ -163,9 +168,15 @@ export default async function MatchPage({
             </div>
 
             <div className="flex items-center gap-3">
-              <Link href={`/players/${opponentPlayerId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>
-                {opponentName}
-              </Link>
+              {opponentIsPlaceholder ? (
+                <span className={`flex-1 text-sm font-medium truncate ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>
+                  {opponentName}
+                </span>
+              ) : (
+                <Link href={`/players/${opponentPlayerId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>
+                  {opponentName}
+                </Link>
+              )}
               {[0, 1, 2].map((i) => {
                 const entry = setScores?.[i];
                 const my = entry ? (isPlayer1 ? entry[0] : entry[1]) : null;

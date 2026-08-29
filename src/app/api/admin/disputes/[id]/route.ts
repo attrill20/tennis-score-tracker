@@ -37,8 +37,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const matchRows = await sql`
     SELECT
       m.score_player1, m.score_player2, m.league_id,
-      (p1.first_name || ' ' || p1.last_name) AS player1_name, p1.email AS player1_email,
-      (p2.first_name || ' ' || p2.last_name) AS player2_name, p2.email AS player2_email,
+      CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+      CASE WHEN p1.is_placeholder THEN NULL ELSE p1.email END AS player1_email,
+      CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
+      CASE WHEN p2.is_placeholder THEN NULL ELSE p2.email END AS player2_email,
       l.name AS league_name
     FROM matches m
     JOIN profiles p1 ON p1.id = m.player1_id
@@ -80,18 +82,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     `;
 
     await Promise.allSettled([
-      transporter.sendMail({
+      ...(match.player1_email ? [transporter.sendMail({
         from: `"QPTC Score Tracker" <${process.env.CONTACT_EMAIL}>`,
         to: match.player1_email as string,
         subject: `[QPTC] Dispute resolved - ${p1Name} vs ${p2Name}`,
         html: emailFor(p1Name, finalP1, finalP2, p2Name),
-      }),
-      transporter.sendMail({
+      })] : []),
+      ...(match.player2_email ? [transporter.sendMail({
         from: `"QPTC Score Tracker" <${process.env.CONTACT_EMAIL}>`,
         to: match.player2_email as string,
         subject: `[QPTC] Dispute resolved - ${p1Name} vs ${p2Name}`,
         html: emailFor(p2Name, finalP2, finalP1, p1Name),
-      }),
+      })] : []),
     ]);
   }
 

@@ -16,7 +16,8 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   if (leagueType === 'doubles') {
     // Look up the submitter's fixed partner for this league
     const partnerRows = await sql`
-      SELECT lp.partner_id, (pp.first_name || ' ' || pp.last_name) AS partner_full_name
+      SELECT lp.partner_id,
+        CASE WHEN pp.is_placeholder AND pp.placeholder_anonymized THEN pp.placeholder_alias ELSE (pp.first_name || ' ' || pp.last_name) END AS partner_full_name
       FROM league_players lp
       LEFT JOIN profiles pp ON pp.id = lp.partner_id
       WHERE lp.league_id = ${id} AND lp.player_id = ${session.user.id}
@@ -28,11 +29,11 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
     const pairRows = await sql`
       SELECT
         p.id AS p1_id,
-        p.first_name AS p1_first,
-        (p.first_name || ' ' || p.last_name) AS p1_full,
+        CASE WHEN p.is_placeholder AND p.placeholder_anonymized THEN p.placeholder_alias ELSE p.first_name END AS p1_first,
+        CASE WHEN p.is_placeholder AND p.placeholder_anonymized THEN p.placeholder_alias ELSE (p.first_name || ' ' || p.last_name) END AS p1_full,
         pp.id AS p2_id,
-        pp.first_name AS p2_first,
-        (pp.first_name || ' ' || pp.last_name) AS p2_full
+        CASE WHEN pp.is_placeholder AND pp.placeholder_anonymized THEN pp.placeholder_alias ELSE pp.first_name END AS p2_first,
+        CASE WHEN pp.is_placeholder AND pp.placeholder_anonymized THEN pp.placeholder_alias ELSE (pp.first_name || ' ' || pp.last_name) END AS p2_full
       FROM league_players lp
       JOIN profiles p ON p.id = lp.player_id
       LEFT JOIN profiles pp ON pp.id = lp.partner_id
@@ -69,7 +70,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   } else {
     // For singles, return league players the requesting user hasn't played yet
     players = await sql`
-      SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name
+      SELECT p.id, CASE WHEN p.is_placeholder AND p.placeholder_anonymized THEN p.placeholder_alias ELSE (p.first_name || ' ' || p.last_name) END AS full_name
       FROM profiles p
       JOIN league_players lp ON lp.player_id = p.id
       WHERE lp.league_id = ${id}

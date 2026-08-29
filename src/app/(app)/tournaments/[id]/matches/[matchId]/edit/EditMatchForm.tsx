@@ -19,6 +19,7 @@ export default function EditMatchForm({
   myName,
   opponentId,
   opponentName,
+  opponentIsPlaceholder = false,
   playedAt: initialPlayedAt,
   currentMyScore,
   currentTheirScore,
@@ -35,6 +36,7 @@ export default function EditMatchForm({
   myName: string;
   opponentId: string;
   opponentName: string;
+  opponentIsPlaceholder?: boolean;
   playedAt: string;
   currentMyScore: number;
   currentTheirScore: number;
@@ -223,7 +225,11 @@ export default function EditMatchForm({
             </div>
 
             <div className="flex items-center gap-3">
-              <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
+              {opponentIsPlaceholder ? (
+                <span className={`flex-1 text-sm font-medium truncate ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</span>
+              ) : (
+                <Link href={`/players/${opponentId}`} className={`flex-1 text-sm font-medium truncate hover:underline ${highlightTheirs ? 'text-gray-800' : 'text-gray-400'}`}>{opponentName}</Link>
+              )}
               {[0, 1, 2].map((i) => {
                 const theirTb = tiebreakScores?.[i] != null ? tiebreakScores![i]![1] : null;
                 return (

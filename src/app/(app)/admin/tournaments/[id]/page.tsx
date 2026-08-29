@@ -42,7 +42,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
       ORDER BY m.played_at DESC, m.submitted_at DESC
     `,
     sql`
-      SELECT id, (first_name || ' ' || last_name) AS full_name
+      SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized
       FROM profiles
       WHERE role != 'unverified'
         AND deleted_at IS NULL
@@ -136,7 +136,13 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         <AssignPlayersPanel
           leagueId={id}
           leagueType={leagueType}
-          members={members as { id: string; full_name: string }[]}
+          members={members as {
+            id: string;
+            full_name: string;
+            is_placeholder: boolean;
+            placeholder_alias: string | null;
+            placeholder_anonymized: boolean;
+          }[]}
           maxPlayers={Number(league.max_players ?? 8)}
         />
       </div>

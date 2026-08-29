@@ -38,6 +38,8 @@ Account/auth state: `email_verified`, `verification_token` (+ `_expires`), `rese
 
 Profile detail: `phone`, `gender`, `member_number`, `is_injured`, `avatar_url` (Vercel Blob URL, uploaded via `/api/upload-avatar`).
 
+Placeholder players (see Placeholder Players below): `is_placeholder` (boolean), `placeholder_alias` (nullable, the anonymized display label), `placeholder_anonymized` (boolean).
+
 ### `tournaments`
 The container for a league competition. `id`, `name`, `format` (`'single'` | `'multi'`), `status`, `num_divisions`, `num_promoted`, `num_relegated`, `num_rounds`, `round_dates` (array), `final_end`, `is_public`, `color`, `description`, `created_by`, `created_at`, `has_registration_form` (boolean, see Tournament Registration below), `max_registrations` (nullable, multi-format only - caps total registrations), `registration_questions` (jsonb, nullable - the admin-configured custom question list for the registration form, see Tournament Registration below), `scoring_method`/`points_config` (multi-format only - see below).
 
@@ -113,6 +115,18 @@ An optional per-tournament "registration form" (toggled on at tournament creatio
 
 ---
 
+## Placeholder Players
+
+For club members who want to play but don't want to use the app themselves. A placeholder is a `profiles` row (`is_placeholder = true`) with no real login: an internal-only generated email/password hash (never shown anywhere) so it satisfies the `NOT NULL`/unique constraints on those columns, `member_number = NULL`, and an explicit guard in `src/auth.ts` rejecting login for any `is_placeholder` row as defense-in-depth. They accrue wins/losses/match history exactly like a real player since `matches`/`league_players` just reference their profile id like any other.
+
+1. Admins manage a persistent, club-wide roster at `/admin/placeholder-players` (linked from `/admin/users`, not mixed into that page's own user list) - create (full name + an admin-typed alias + an anonymize toggle), edit, or retire. There's also a "+ Add placeholder player" inline shortcut in each league's assign-players panel (`AssignPlayersPanel.tsx`) to create one and have it show up in that same picker immediately.
+2. **Anonymize** (`placeholder_anonymized` + `placeholder_alias`) is a single global choice per placeholder, not per-viewer: when on, the alias replaces the full name everywhere a name is displayed to anyone, admins included - league tables, fixtures/results, match detail/edit pages, dashboard notifications, disputes. The one exception is admin-management pickers (the assign-players member picker, the roster page itself) where the admin always sees the real full name (tagged "Placeholder") since they need the true identity to manage them correctly.
+3. Placeholders are never clickable - no `/players/[id]` link, no contact info anywhere (they have none to begin with) - name renders as plain text wherever a real player's name would otherwise link out.
+4. **Retiring** a placeholder is a soft delete only (`deleted_at`, same convention as real profiles) - never hard-deleted, since their historical matches must keep resolving correctly forever, including from their opponents' side.
+5. **"Attribute to real account"** (from the roster page) is a merge, not an in-place account upgrade: admin picks an existing real member, and every `matches`/`league_players` row referencing the placeholder gets re-pointed to that member's id (`mergePlaceholderIntoAccount()` in `src/lib/placeholders.ts`, wrapped in a transaction), then the placeholder is retired. Refuses with a conflict error if the target member already has their own row in one of the same leagues as the placeholder.
+
+---
+
 ## Pages / Routes
 
 ```
@@ -134,6 +148,7 @@ An optional per-tournament "registration form" (toggled on at tournament creatio
 /admin/tournaments/multi/[tid]        → manage a multi-round tournament (next round always generates automatically via cron/complete-leagues - no manual trigger)
 /admin/disputes                       → review and resolve disputes
 /admin/users, /admin/users/[id]       → user management (roles, reset password, send reset email)
+/admin/placeholder-players            → manage the placeholder-player roster (see Placeholder Players)
 ```
 
 API routes largely mirror this (`/api/register`, `/api/verify-email`, `/api/profile`, `/api/upload-avatar`, `/api/leagues/[id]/*`, `/api/matches`, `/api/matches/[matchId]`, `/api/disputes*`, `/api/admin/*`, `/api/tournaments/[tournamentId]/register`) plus:
@@ -238,6 +253,7 @@ These were originally listed as stretch/future items but are now built and live:
 - **Gender categories** for leagues/divisions.
 - **Suggested-edit flow** for match results, alongside disputes (see Score Flow above).
 - **Tournament registration form**: `tournament_registrations` table, optional per-tournament, with an admin-configurable custom question builder and admin-facing suggested-division ranking for multi-format tournaments (see Tournament Registration above).
+- **Placeholder players**: `profiles.is_placeholder`/`placeholder_alias`/`placeholder_anonymized`, for members who want to play without using the app themselves - no login, optional anonymized display, merge-into-a-real-account support (see Placeholder Players above).
 
 ## Stretch Features (still not built)
 - [ ] Honours on profile page (league winner / runner-up badges by season/year)

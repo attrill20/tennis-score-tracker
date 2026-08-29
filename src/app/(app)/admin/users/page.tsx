@@ -54,6 +54,7 @@ export default async function AdminUsersPage({
   const users = await sql`
     SELECT id, title, first_name, last_name, email, role, created_at, member_number, deleted_at, avatar_url, is_active
     FROM profiles
+    WHERE is_placeholder = false
   `;
 
   let allUsers = users as User[];
@@ -133,6 +134,9 @@ export default async function AdminUsersPage({
       <div>
         <h1 className="text-2xl font-bold text-gray-800 mb-1">Admin - Users</h1>
         <p className="text-sm text-gray-400">Manage member roles. Only super admins can access this page</p>
+        <Link href="/admin/placeholder-players" className="text-sm text-green-700 hover:underline">
+          Manage placeholder players →
+        </Link>
       </div>
 
       <SearchInput initialSearch={search} sortCol={sortCol} sortOrder={sortOrder} />

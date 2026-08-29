@@ -54,10 +54,10 @@ export default async function DashboardPage() {
         m.id, m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at,
         m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
         l.name AS league_name, l.color AS league_color,
-        p1.first_name AS player1_first, p2.first_name AS player2_first,
-        p3.first_name AS player3_first, p4.first_name AS player4_first,
-        p1.last_name AS player1_last, p2.last_name AS player2_last,
-        p3.last_name AS player3_last, p4.last_name AS player4_last
+        CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+        CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
+        CASE WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias ELSE (p3.first_name || ' ' || p3.last_name) END AS player3_name,
+        CASE WHEN p4.is_placeholder AND p4.placeholder_anonymized THEN p4.placeholder_alias ELSE (p4.first_name || ' ' || p4.last_name) END AS player4_name
       FROM matches m
       JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
@@ -92,8 +92,8 @@ export default async function DashboardPage() {
     sql`
       SELECT m.id, m.league_id, m.score_player1, m.score_player2, m.player1_id, m.player2_id,
         l.name AS league_name,
-        (p1.first_name || ' ' || p1.last_name) AS player1_name,
-        (p2.first_name || ' ' || p2.last_name) AS player2_name
+        CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+        CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name
       FROM matches m
       JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
@@ -106,8 +106,8 @@ export default async function DashboardPage() {
         d.id AS dispute_id, d.acknowledged_by_player1, d.acknowledged_by_player2,
         m.id AS match_id, m.league_id, m.score_player1, m.score_player2, m.status AS match_status,
         m.player1_id, m.player2_id,
-        (p1.first_name || ' ' || p1.last_name) AS player1_name,
-        (p2.first_name || ' ' || p2.last_name) AS player2_name,
+        CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+        CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
         l.name AS league_name
       FROM disputes d
       JOIN matches m ON m.id = d.match_id
@@ -126,7 +126,9 @@ export default async function DashboardPage() {
              m.match_type, m.winner_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
              l.name AS league_name,
              (p1.first_name || ' ' || p1.last_name) AS submitter_name,
-             CASE WHEN m.player3_id IS NOT NULL THEN p3.first_name ELSE NULL END AS partner_first_name
+             CASE WHEN m.player3_id IS NULL THEN NULL
+               WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias
+               ELSE p3.first_name END AS partner_first_name
       FROM matches m
       JOIN leagues l ON l.id = m.league_id
       JOIN profiles p1 ON p1.id = m.player1_id
@@ -557,17 +559,9 @@ export default async function DashboardPage() {
             const isDoubles = !!(match.player3_id);
             const myScore = isTeam1 ? match.score_player1 as number : match.score_player2 as number;
             const theirScore = isTeam1 ? match.score_player2 as number : match.score_player1 as number;
-            const p1First = match.player1_first as string;
-            const p2First = match.player2_first as string;
-            const p3First = match.player3_first as string | null;
-            const p4First = match.player4_first as string | null;
-            const p1Last = match.player1_last as string;
-            const p2Last = match.player2_last as string;
-            const p3Last = match.player3_last as string | null;
-            const p4Last = match.player4_last as string | null;
             const opponentFullName = isDoubles
-              ? isTeam1 ? `${p2First} ${p2Last} / ${p4First} ${p4Last}` : `${p1First} ${p1Last} / ${p3First} ${p3Last}`
-              : isTeam1 ? `${p2First} ${p2Last}` : `${p1First} ${p1Last}`;
+              ? isTeam1 ? `${match.player2_name as string} / ${match.player4_name as string}` : `${match.player1_name as string} / ${match.player3_name as string}`
+              : isTeam1 ? match.player2_name as string : match.player1_name as string;
             const submittedByMe = match.submitted_by === userId;
             const canEdit = submittedByMe && match.status === 'confirmed';
             const canSuggestEdit = !submittedByMe && match.status === 'confirmed' &&

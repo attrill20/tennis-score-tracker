@@ -15,10 +15,10 @@ export default async function MatchesPage() {
       m.submitted_by, m.status, m.league_id, m.player1_id, m.player2_id, m.player3_id, m.player4_id,
       m.match_type, m.winner_id,
       l.name AS league_name, l.color AS league_color,
-      p1.first_name AS player1_first, (p1.first_name || ' ' || p1.last_name) AS player1_name,
-      p2.first_name AS player2_first, (p2.first_name || ' ' || p2.last_name) AS player2_name,
-      p3.first_name AS player3_first, p3.last_name AS player3_last,
-      p4.first_name AS player4_first, p4.last_name AS player4_last
+      CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+      CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
+      CASE WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias ELSE (p3.first_name || ' ' || p3.last_name) END AS player3_name,
+      CASE WHEN p4.is_placeholder AND p4.placeholder_anonymized THEN p4.placeholder_alias ELSE (p4.first_name || ' ' || p4.last_name) END AS player4_name
     FROM matches m
     JOIN leagues l ON l.id = m.league_id
     JOIN profiles p1 ON p1.id = m.player1_id
@@ -125,15 +125,10 @@ export default async function MatchesPage() {
             const tiebreakScores = match.tiebreak_scores as ([number, number] | null)[] | null;
 
             // Name display
-            const p3First = match.player3_first as string | null;
-            const p4First = match.player4_first as string | null;
-            const p3Last = match.player3_last as string | null;
-            const p4Last = match.player4_last as string | null;
-
             const theirFullName = isDoubles
               ? isTeam1
-                ? `${match.player2_name as string} / ${p4First ?? ''} ${p4Last ?? ''}`
-                : `${match.player1_name as string} / ${p3First ?? ''} ${p3Last ?? ''}`
+                ? `${match.player2_name as string} / ${match.player4_name as string}`
+                : `${match.player1_name as string} / ${match.player3_name as string}`
               : (isTeam1 ? (match.player2_name as string) : (match.player1_name as string));
 
             // Scores from "my team" perspective

@@ -14,10 +14,14 @@ export default async function EditMatchPage({
 
   const matches = await sql`
     SELECT m.*,
-      p1.first_name AS player1_first, (p1.first_name || ' ' || p1.last_name) AS player1_name,
-      p2.first_name AS player2_first, (p2.first_name || ' ' || p2.last_name) AS player2_name,
-      p3.first_name AS player3_first,
-      p4.first_name AS player4_first,
+      CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE p1.first_name END AS player1_first,
+      CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+      p1.is_placeholder AS player1_is_placeholder,
+      CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE p2.first_name END AS player2_first,
+      CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
+      p2.is_placeholder AS player2_is_placeholder,
+      CASE WHEN p3.is_placeholder AND p3.placeholder_anonymized THEN p3.placeholder_alias ELSE p3.first_name END AS player3_first,
+      CASE WHEN p4.is_placeholder AND p4.placeholder_anonymized THEN p4.placeholder_alias ELSE p4.first_name END AS player4_first,
       l.name AS league_name
     FROM matches m
     JOIN profiles p1 ON p1.id = m.player1_id
@@ -58,6 +62,7 @@ export default async function EditMatchPage({
     : isPlayer1 ? (match.player2_name as string) : (match.player1_name as string);
 
   const opponentId = isPlayer1 ? (match.player2_id as string) : (match.player1_id as string);
+  const opponentIsPlaceholder = isPlayer1 ? !!match.player2_is_placeholder : !!match.player1_is_placeholder;
   const currentMyScore = isPlayer1 ? match.score_player1 as number : match.score_player2 as number;
   const currentTheirScore = isPlayer1 ? match.score_player2 as number : match.score_player1 as number;
 
@@ -80,6 +85,7 @@ export default async function EditMatchPage({
       myName={myName}
       opponentId={opponentId}
       opponentName={opponentName}
+      opponentIsPlaceholder={opponentIsPlaceholder}
       playedAt={new Date(match.played_at as string).toISOString().split('T')[0]}
       currentMyScore={currentMyScore}
       currentTheirScore={currentTheirScore}

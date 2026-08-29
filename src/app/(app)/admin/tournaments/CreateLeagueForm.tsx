@@ -12,7 +12,13 @@ import { type PointsConfig } from '@/lib/league';
 import { DEFAULT_REGISTRATION_QUESTIONS, type RegistrationQuestion } from '@/lib/registration';
 import { SINGLES_GENDER_OPTIONS, DOUBLES_GENDER_OPTIONS, defaultGenderCategory, type GenderCategory } from '@/lib/genderCategory';
 
-type Member = { id: string; full_name: string };
+type Member = {
+  id: string;
+  full_name: string;
+  is_placeholder?: boolean;
+  placeholder_alias?: string | null;
+  placeholder_anonymized?: boolean;
+};
 type Division = { id: string; name: string; order: number };
 type Created = { tournamentId: string; format: 'single' | 'multi'; divisions: Division[] };
 

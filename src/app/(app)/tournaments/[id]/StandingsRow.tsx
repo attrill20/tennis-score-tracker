@@ -9,6 +9,7 @@ type Props = {
   userId: string | undefined;
   name: string;
   avatarUrl?: string | null;
+  isPlaceholder?: boolean;
   isInjured: boolean;
   position: number;
   played: number;
@@ -24,6 +25,7 @@ type Props = {
   partnerName?: string;
   isPartnerInjured?: boolean;
   partnerAvatarUrl?: string | null;
+  partnerIsPlaceholder?: boolean;
 };
 
 function InjuryBadge() {
@@ -37,9 +39,9 @@ function InjuryBadge() {
 }
 
 export default function StandingsRow({
-  playerId, userId, name, avatarUrl, isInjured, position, played, won, drawn, lost,
+  playerId, userId, name, avatarUrl, isPlaceholder, isInjured, position, played, won, drawn, lost,
   setsFor, setsAgainst, points, rowClass,
-  partnerId, partnerName, isPartnerInjured, partnerAvatarUrl,
+  partnerId, partnerName, isPartnerInjured, partnerAvatarUrl, partnerIsPlaceholder,
 }: Props) {
   const router = useRouter();
   const isDoubles = !!partnerId;
@@ -52,23 +54,31 @@ export default function StandingsRow({
           <span className="text-gray-400 mr-2">{position}</span>
           <span className="inline-flex items-center gap-1.5">
             <PlayerAvatar name={name} avatarUrl={avatarUrl} size="sm" />
-            <Link
-              href={`/players/${playerId}`}
-              className="hover:underline hover:text-green-700 transition-colors"
-            >
+            {isPlaceholder ? (
               <span className={isMe && playerId === userId ? 'font-bold' : 'font-medium'}>{name}</span>
-            </Link>
+            ) : (
+              <Link
+                href={`/players/${playerId}`}
+                className="hover:underline hover:text-green-700 transition-colors"
+              >
+                <span className={isMe && playerId === userId ? 'font-bold' : 'font-medium'}>{name}</span>
+              </Link>
+            )}
             {isInjured && <InjuryBadge />}
           </span>
           <span className="text-gray-400 mx-1.5">+</span>
           <span className="inline-flex items-center gap-1.5">
             <PlayerAvatar name={partnerName!} avatarUrl={partnerAvatarUrl} size="sm" />
-            <Link
-              href={`/players/${partnerId}`}
-              className="hover:underline hover:text-green-700 transition-colors"
-            >
+            {partnerIsPlaceholder ? (
               <span className={isMe && partnerId === userId ? 'font-bold' : 'font-medium'}>{partnerName}</span>
-            </Link>
+            ) : (
+              <Link
+                href={`/players/${partnerId}`}
+                className="hover:underline hover:text-green-700 transition-colors"
+              >
+                <span className={isMe && partnerId === userId ? 'font-bold' : 'font-medium'}>{partnerName}</span>
+              </Link>
+            )}
             {isPartnerInjured && <InjuryBadge />}
           </span>
         </td>
@@ -84,23 +94,27 @@ export default function StandingsRow({
 
   return (
     <tr
-      className={`group border-t border-gray-100 cursor-pointer hover:bg-gray-50 transition-colors ${rowClass}`}
-      onClick={() => router.push(`/players/${playerId}`)}
+      className={`group border-t border-gray-100 ${isPlaceholder ? '' : 'cursor-pointer hover:bg-gray-50 transition-colors'} ${rowClass}`}
+      onClick={isPlaceholder ? undefined : () => router.push(`/players/${playerId}`)}
     >
       <td className="px-4 py-3 text-gray-800">
         <span className="text-gray-400 mr-2">{position}</span>
         <span className="inline-flex items-center gap-1.5">
           <PlayerAvatar name={name} avatarUrl={avatarUrl} size="sm" />
-          <Link
-            href={`/players/${playerId}`}
-            className="relative group-hover:underline group-hover:text-green-700 transition-colors"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <span className={playerId === userId ? 'font-bold' : 'font-medium'}>{name}</span>
-            <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 z-20 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
-              View profile &amp; contact details
-            </span>
-          </Link>
+          {isPlaceholder ? (
+            <span className="font-medium">{name}</span>
+          ) : (
+            <Link
+              href={`/players/${playerId}`}
+              className="relative group-hover:underline group-hover:text-green-700 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span className={playerId === userId ? 'font-bold' : 'font-medium'}>{name}</span>
+              <span className="pointer-events-none absolute left-full ml-2 top-1/2 -translate-y-1/2 z-20 whitespace-nowrap rounded-md bg-gray-800 px-2 py-1 text-xs text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                View profile &amp; contact details
+              </span>
+            </Link>
+          )}
           {isInjured && <InjuryBadge />}
         </span>
       </td>

@@ -11,7 +11,7 @@ export default async function NewLeaguePage() {
   }
 
   const members = await sql`
-    SELECT id, (first_name || ' ' || last_name) AS full_name
+    SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized
     FROM profiles
     WHERE role != 'unverified'
       AND deleted_at IS NULL
@@ -29,7 +29,13 @@ export default async function NewLeaguePage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <CreateLeagueForm members={members as { id: string; full_name: string }[]} />
+        <CreateLeagueForm members={members as {
+          id: string;
+          full_name: string;
+          is_placeholder: boolean;
+          placeholder_alias: string | null;
+          placeholder_anonymized: boolean;
+        }[]} />
       </div>
     </div>
   );

@@ -16,8 +16,8 @@ export default async function AdminDisputesPage() {
         d.requested_score_player1, d.requested_score_player2, d.requested_set_scores, d.requested_tiebreak_scores,
         m.score_player1, m.score_player2, m.set_scores, m.tiebreak_scores, m.played_at, m.league_id,
         m.player1_id, m.player2_id,
-        (p1.first_name || ' ' || p1.last_name) AS player1_name,
-        (p2.first_name || ' ' || p2.last_name) AS player2_name,
+        CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+        CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
         (rb.first_name || ' ' || rb.last_name) AS raised_by_name,
         l.name AS league_name
       FROM disputes d
@@ -33,8 +33,8 @@ export default async function AdminDisputesPage() {
       SELECT
         d.id, d.reason, d.status, d.match_id,
         m.score_player1, m.score_player2, m.played_at, m.league_id,
-        (p1.first_name || ' ' || p1.last_name) AS player1_name,
-        (p2.first_name || ' ' || p2.last_name) AS player2_name,
+        CASE WHEN p1.is_placeholder AND p1.placeholder_anonymized THEN p1.placeholder_alias ELSE (p1.first_name || ' ' || p1.last_name) END AS player1_name,
+        CASE WHEN p2.is_placeholder AND p2.placeholder_anonymized THEN p2.placeholder_alias ELSE (p2.first_name || ' ' || p2.last_name) END AS player2_name,
         (rb.first_name || ' ' || rb.last_name) AS raised_by_name,
         l.name AS league_name
       FROM disputes d
