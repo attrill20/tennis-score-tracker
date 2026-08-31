@@ -25,9 +25,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 });
   }
 
+  // Only a clash with another real member is blocked - a name matching an existing placeholder
+  // is allowed through, since an admin can swap the placeholder into this new real account
+  // (see getPlaceholderNameMatches / the placeholder-match notice).
   const nameClash = await sql`
     SELECT id FROM profiles
     WHERE LOWER(first_name) = LOWER(${firstName}) AND LOWER(last_name) = LOWER(${lastName})
+      AND is_placeholder = false
   `;
   if (nameClash.length > 0) {
     return NextResponse.json({

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { suggestPlaceholderAlias } from '@/lib/placeholderAlias';
+import SwitchPlaceholderControl from '@/components/SwitchPlaceholderControl';
 
 type Member = {
   id: string;
@@ -127,6 +128,7 @@ export default function AssignPlayersPanel({
   maxPlayers?: number;
 }) {
   const router = useRouter();
+  const realMembers = members.filter((m) => !m.is_placeholder);
 
   const [selected, setSelected] = useState<string[]>([]);
   const [pairs, setPairs] = useState<Pair[]>([]);
@@ -314,17 +316,39 @@ export default function AssignPlayersPanel({
               return (
                 <div
                   key={pairKey(pair)}
-                  className={`flex items-center justify-between px-3 py-2.5 ${i < pairs.length - 1 ? 'border-b border-gray-100' : ''}`}
+                  className={`px-3 py-2.5 ${i < pairs.length - 1 ? 'border-b border-gray-100' : ''}`}
                 >
-                  <span className="text-sm text-gray-800">
-                    <span className="font-medium">{p1 ? <MemberLabel member={p1} /> : 'Unknown'}</span>
-                    <span className="text-gray-400 mx-2">+</span>
-                    <span className="font-medium">{p2 ? <MemberLabel member={p2} /> : 'Unknown'}</span>
-                  </span>
-                  <button type="button" onClick={() => removePair(pair)} disabled={saving}
-                    className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40">
-                    Remove
-                  </button>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-800">
+                      <span className="font-medium">{p1 ? <MemberLabel member={p1} /> : 'Unknown'}</span>
+                      <span className="text-gray-400 mx-2">+</span>
+                      <span className="font-medium">{p2 ? <MemberLabel member={p2} /> : 'Unknown'}</span>
+                    </span>
+                    <button type="button" onClick={() => removePair(pair)} disabled={saving}
+                      className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40">
+                      Remove
+                    </button>
+                  </div>
+                  {(p1?.is_placeholder || p2?.is_placeholder) && (
+                    <div className="mt-1.5 flex flex-wrap gap-3">
+                      {p1?.is_placeholder && (
+                        <SwitchPlaceholderControl
+                          placeholderId={p1.id}
+                          placeholderFullName={p1.full_name}
+                          realMembers={realMembers}
+                          onSwapped={() => router.refresh()}
+                        />
+                      )}
+                      {p2?.is_placeholder && (
+                        <SwitchPlaceholderControl
+                          placeholderId={p2.id}
+                          placeholderFullName={p2.full_name}
+                          realMembers={realMembers}
+                          onSwapped={() => router.refresh()}
+                        />
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -438,17 +462,29 @@ export default function AssignPlayersPanel({
             return (
               <div
                 key={id}
-                className={`flex items-center justify-between px-3 py-2.5 ${i < selected.length - 1 ? 'border-b border-gray-100' : ''}`}
+                className={`px-3 py-2.5 ${i < selected.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <span className="text-sm font-medium text-gray-800">{member ? <MemberLabel member={member} /> : 'Unknown'}</span>
-                <button
-                  type="button"
-                  onClick={() => togglePlayer(id)}
-                  disabled={saving}
-                  className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40"
-                >
-                  Remove
-                </button>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-800">{member ? <MemberLabel member={member} /> : 'Unknown'}</span>
+                  <button
+                    type="button"
+                    onClick={() => togglePlayer(id)}
+                    disabled={saving}
+                    className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40"
+                  >
+                    Remove
+                  </button>
+                </div>
+                {member?.is_placeholder && (
+                  <div className="mt-1.5">
+                    <SwitchPlaceholderControl
+                      placeholderId={member.id}
+                      placeholderFullName={member.full_name}
+                      realMembers={realMembers}
+                      onSwapped={() => router.refresh()}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}

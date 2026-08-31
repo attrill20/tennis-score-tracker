@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { getCurrentRoundDivisions } from '@/lib/divisionDrafts';
+import { findPlaceholderTournamentNameConflict } from '@/lib/placeholders';
 
 export async function POST(req: Request, { params }: { params: Promise<{ tournamentId: string }> }) {
   const session = await auth();
@@ -31,6 +32,17 @@ export async function POST(req: Request, { params }: { params: Promise<{ tournam
     : [];
   const partnerId = existing?.partner_id as string | undefined;
   const idsToMove = partnerId ? [playerId, partnerId] : [playerId];
+
+  if (targetLeagueId) {
+    for (const id of idsToMove) {
+      const conflict = await findPlaceholderTournamentNameConflict(id, tournamentId);
+      if (conflict) {
+        return NextResponse.json({
+          error: `${conflict.fullName} is already in this tournament with the same name - rename one of them to tell them apart before adding.`,
+        }, { status: 400 });
+      }
+    }
+  }
 
   await sql`DELETE FROM league_player_drafts WHERE league_id = ANY(${divisionIds}::uuid[]) AND player_id = ANY(${idsToMove}::uuid[])`;
 

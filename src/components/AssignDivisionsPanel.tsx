@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import { ABILITY_LEVEL_LABELS, type AbilityLevel } from '@/lib/registration';
 import { suggestPlaceholderAlias } from '@/lib/placeholderAlias';
+import SwitchPlaceholderControl from '@/components/SwitchPlaceholderControl';
 
 type Division = {
   id: string;
@@ -73,6 +74,8 @@ function PlayerCard({
   setDraggingId,
   move,
   pair,
+  realMembers,
+  reload,
 }: {
   player: BoardPlayer;
   leagueId: string | null;
@@ -84,8 +87,10 @@ function PlayerCard({
   busy: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  move: (playerId: string, targetLeagueId: string | null) => void;
+  move: (playerId: string, targetLeagueId: string | null, opts?: { silent?: boolean }) => Promise<void>;
   pair: (leagueId: string, p1Id: string, p2Id: string | null) => void;
+  realMembers: { id: string; full_name: string }[];
+  reload: () => Promise<void>;
 }) {
   const draft = draftByPlayer.get(player.player_id);
   const division = leagueId ? divisions.find((d) => d.id === leagueId) : undefined;
@@ -124,6 +129,15 @@ function PlayerCard({
         )}
       </div>
 
+      {player.is_placeholder && (
+        <SwitchPlaceholderControl
+          placeholderId={player.player_id}
+          placeholderFullName={player.full_name}
+          realMembers={realMembers}
+          onSwapped={() => { reload(); }}
+        />
+      )}
+
       {isDoubles && leagueId && (
         partner ? (
           <div className="flex items-center justify-between gap-2 text-xs text-gray-500">
@@ -152,7 +166,7 @@ function PlayerCard({
       <select
         aria-label={`Move ${player.full_name} to`}
         value={leagueId ?? ''}
-        onChange={(e) => move(player.player_id, e.target.value || null)}
+        onChange={(e) => { move(player.player_id, e.target.value || null).catch(() => {}); }}
         disabled={busy}
         className="w-full text-xs px-2 py-1 rounded border border-gray-300 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-40"
       >
@@ -180,7 +194,7 @@ function AddPlayerPicker({
   draftByPlayer: Map<string, Draft>;
   registrationByPlayer: Map<string, Registration>;
   busy: boolean;
-  move: (playerId: string, targetLeagueId: string | null) => void;
+  move: (playerId: string, targetLeagueId: string | null, opts?: { silent?: boolean }) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -223,7 +237,7 @@ function AddPlayerPicker({
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to create placeholder');
-      move(data.id, leagueId);
+      await move(data.id, leagueId, { silent: true });
       close();
     } catch (e) {
       setCreateError(e instanceof Error ? e.message : 'Something went wrong');
@@ -313,7 +327,7 @@ function AddPlayerPicker({
             const status = statusFor(p);
             return (
               <button key={p.id} type="button" disabled={busy}
-                onClick={() => { move(p.id, leagueId); close(); }}
+                onClick={() => { move(p.id, leagueId).catch(() => {}); close(); }}
                 className="w-full text-left px-1 py-1.5 text-xs hover:bg-gray-50 disabled:opacity-40"
               >
                 <span className="text-gray-700">{p.full_name}</span>
@@ -354,6 +368,8 @@ function Column({
   move,
   pair,
   onDrop,
+  realMembers,
+  reload,
 }: {
   title: string;
   leagueId: string | null;
@@ -368,9 +384,11 @@ function Column({
   busy: boolean;
   draggingId: string | null;
   setDraggingId: (id: string | null) => void;
-  move: (playerId: string, targetLeagueId: string | null) => void;
+  move: (playerId: string, targetLeagueId: string | null, opts?: { silent?: boolean }) => Promise<void>;
   pair: (leagueId: string, p1Id: string, p2Id: string | null) => void;
   onDrop: (targetLeagueId: string | null) => void;
+  realMembers: { id: string; full_name: string }[];
+  reload: () => Promise<void>;
 }) {
   return (
     <div
@@ -401,6 +419,8 @@ function Column({
               setDraggingId={setDraggingId}
               move={move}
               pair={pair}
+              realMembers={realMembers}
+              reload={reload}
             />
           ))
         )}
@@ -461,6 +481,7 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
 
   const registrationByPlayer = new Map(registrations.map((r) => [r.player_id, r]));
   const playerById = new Map(players.map((p) => [p.id, p]));
+  const realMembers = players.filter((p) => !p.is_placeholder);
   const draftByPlayer = new Map(drafts.map((d) => [d.player_id, d]));
   const unassigned = registrations.filter((r) => !draftByPlayer.has(r.player_id));
   const unassignedBoardPlayers: BoardPlayer[] = unassigned.map((r) => ({
@@ -470,10 +491,10 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
     is_placeholder: false,
   }));
 
-  async function move(playerId: string, targetLeagueId: string | null) {
+  async function move(playerId: string, targetLeagueId: string | null, opts?: { silent?: boolean }) {
     setUndoSnapshot(null);
     setBusy(true);
-    setError('');
+    if (!opts?.silent) setError('');
     try {
       const res = await fetch(`/api/admin/tournaments/${tournamentId}/assign-divisions/move`, {
         method: 'POST',
@@ -483,7 +504,8 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
       if (!res.ok) throw new Error((await res.json()).error || 'Failed to move player');
       await reload();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Something went wrong');
+      if (!opts?.silent) setError(e instanceof Error ? e.message : 'Something went wrong');
+      throw e;
     } finally {
       setBusy(false);
     }
@@ -564,7 +586,7 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
     const playerId = draggingId;
     setDraggingId(null);
     if (draftByPlayer.get(playerId)?.league_id === targetLeagueId) return;
-    move(playerId, targetLeagueId);
+    move(playerId, targetLeagueId).catch(() => {});
   }
 
   if (loading) {
@@ -610,6 +632,7 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
               boardPlayers={unassignedBoardPlayers} divisions={divisions} draftByPlayer={draftByPlayer}
               playerById={playerById} registrationByPlayer={registrationByPlayer} drafts={drafts} players={players}
               busy={busy} draggingId={draggingId} setDraggingId={setDraggingId} move={move} pair={pair} onDrop={handleDrop}
+              realMembers={realMembers} reload={reload}
             />
           )}
           {divisions.map((d) => {
@@ -621,6 +644,7 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
                 boardPlayers={boardPlayers} divisions={divisions} draftByPlayer={draftByPlayer}
                 playerById={playerById} registrationByPlayer={registrationByPlayer} drafts={drafts} players={players}
                 busy={busy} draggingId={draggingId} setDraggingId={setDraggingId} move={move} pair={pair} onDrop={handleDrop}
+                realMembers={realMembers} reload={reload}
               />
             );
           })}

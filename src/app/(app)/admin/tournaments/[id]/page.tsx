@@ -9,6 +9,8 @@ import DeleteLeagueButton from './DeleteLeagueButton';
 import AdminMatchesSection from './AdminMatchesSection';
 import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
+import PlaceholderMatchNotice from '@/components/PlaceholderMatchNotice';
+import { getPlaceholderNameMatchesForTournament } from '@/lib/placeholders';
 
 export default async function AdminLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -67,6 +69,10 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
   const registrationQuestions = (tournamentRow?.registration_questions as import('@/lib/registration').RegistrationQuestion[] | null) ?? [];
   const isMultiFormat = tournamentRow?.format === 'multi';
 
+  const placeholderMatches = league.tournament_id
+    ? await getPlaceholderNameMatchesForTournament(league.tournament_id as string)
+    : [];
+
   const pendingRegistrations = hasRegistrationForm
     ? (await sql`
         SELECT r.id, r.player_id, (p.first_name || ' ' || p.last_name) AS full_name, p.phone, p.email,
@@ -96,6 +102,19 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
           ← Back to leagues
         </Link>
       </div>
+
+      {placeholderMatches.map((pm) => (
+        <PlaceholderMatchNotice
+          key={pm.placeholderId}
+          placeholderId={pm.placeholderId}
+          placeholderFullName={pm.placeholderFullName}
+          placeholderAlias={pm.placeholderAlias}
+          placeholderAnonymized={pm.placeholderAnonymized}
+          memberId={pm.memberId}
+          memberFullName={pm.memberFullName}
+          memberEmailVerified={pm.memberEmailVerified}
+        />
+      ))}
 
       <EditLeagueForm
         leagueId={id}

@@ -9,6 +9,9 @@ import {
   retirePlaceholder,
   mergePlaceholderIntoAccount,
   MergeConflictError,
+  getPlaceholderNameMatches,
+  getPlaceholderNameMatchesForTournament,
+  findPlaceholderTournamentNameConflict,
 } from '@/lib/placeholders';
 
 describe('splitFullName', () => {
@@ -98,7 +101,7 @@ describe('mergePlaceholderIntoAccount', () => {
     expect(mockSql).toHaveBeenCalledTimes(3); // never reaches BEGIN
   });
 
-  it('re-points matches and league_players onto the real account, then retires the placeholder', async () => {
+  it('re-points matches, league_players and league_player_drafts onto the real account, then retires the placeholder', async () => {
     mockSql
       .mockResolvedValueOnce([{ id: 'ph-1' }]) // placeholder found
       .mockResolvedValueOnce([{ id: 'real-1' }]) // real account found
@@ -112,7 +115,23 @@ describe('mergePlaceholderIntoAccount', () => {
     expect(calls.some((c) => c.includes('COMMIT'))).toBe(true);
     expect(calls.some((c) => c.includes('UPDATE matches') && c.includes('player1_id'))).toBe(true);
     expect(calls.some((c) => c.includes('UPDATE league_players') && c.includes('partner_id'))).toBe(true);
+    expect(calls.some((c) => c.includes('UPDATE league_player_drafts') && c.includes('player_id') && !c.includes('partner_id'))).toBe(true);
+    expect(calls.some((c) => c.includes('UPDATE league_player_drafts') && c.includes('partner_id'))).toBe(true);
     expect(calls.some((c) => c.includes('UPDATE profiles') && c.includes('deleted_at'))).toBe(true);
+  });
+
+  it('checks league_player_drafts for conflicts alongside league_players', async () => {
+    mockSql
+      .mockResolvedValueOnce([{ id: 'ph-1' }])
+      .mockResolvedValueOnce([{ id: 'real-1' }])
+      .mockResolvedValueOnce([{ league_id: 'league-2' }]); // conflict found only in the drafts half of the query
+
+    await expect(mergePlaceholderIntoAccount('ph-1', 'real-1')).rejects.toThrow(MergeConflictError);
+
+    const conflictCall = mockSql.mock.calls[2];
+    const sqlText = (conflictCall[0] as TemplateStringsArray).join('?');
+    expect(sqlText).toContain('league_player_drafts');
+    expect(sqlText).toContain('league_players');
   });
 
   it('rolls back if a transaction step fails', async () => {
@@ -127,5 +146,78 @@ describe('mergePlaceholderIntoAccount', () => {
 
     const calls = mockSql.mock.calls.map((c) => (c[0] as TemplateStringsArray).join('?'));
     expect(calls.some((c) => c.includes('ROLLBACK'))).toBe(true);
+  });
+});
+
+describe('getPlaceholderNameMatches', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('maps matched rows into camelCase PlaceholderMatch objects', async () => {
+    mockSql.mockResolvedValueOnce([{
+      placeholder_id: 'ph-1', placeholder_full_name: 'Bob Smith',
+      placeholder_alias: 'Guest 1', placeholder_anonymized: true,
+      member_id: 'real-1', member_full_name: 'Bob Smith', member_email_verified: false,
+    }]);
+
+    const matches = await getPlaceholderNameMatches();
+
+    expect(matches).toEqual([{
+      placeholderId: 'ph-1', placeholderFullName: 'Bob Smith',
+      placeholderAlias: 'Guest 1', placeholderAnonymized: true,
+      memberId: 'real-1', memberFullName: 'Bob Smith', memberEmailVerified: false,
+    }]);
+    const sqlText = (mockSql.mock.calls[0][0] as TemplateStringsArray).join('?');
+    expect(sqlText).toContain('is_placeholder = true');
+    expect(sqlText).toContain('is_placeholder = false');
+  });
+
+  it('returns an empty array when nothing matches', async () => {
+    mockSql.mockResolvedValueOnce([]);
+    expect(await getPlaceholderNameMatches()).toEqual([]);
+  });
+});
+
+describe('getPlaceholderNameMatchesForTournament', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('scopes the match query to placeholders playing in the given tournament', async () => {
+    mockSql.mockResolvedValueOnce([{
+      placeholder_id: 'ph-1', placeholder_full_name: 'Carl Jones',
+      placeholder_alias: null, placeholder_anonymized: false,
+      member_id: 'real-2', member_full_name: 'Carl Jones', member_email_verified: true,
+    }]);
+
+    const matches = await getPlaceholderNameMatchesForTournament('tournament-1');
+
+    expect(matches).toEqual([{
+      placeholderId: 'ph-1', placeholderFullName: 'Carl Jones',
+      placeholderAlias: null, placeholderAnonymized: false,
+      memberId: 'real-2', memberFullName: 'Carl Jones', memberEmailVerified: true,
+    }]);
+    const call = mockSql.mock.calls[0];
+    const sqlText = (call[0] as TemplateStringsArray).join('?');
+    expect(sqlText).toContain('league_player_drafts');
+    expect(sqlText).toContain('l.tournament_id');
+    expect(call.slice(1)).toContain('tournament-1');
+  });
+});
+
+describe('findPlaceholderTournamentNameConflict', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('returns the conflicting player when someone else in the tournament already has that name', async () => {
+    mockSql.mockResolvedValueOnce([{ id: 'real-1', full_name: 'Bob Smith' }]);
+
+    const conflict = await findPlaceholderTournamentNameConflict('ph-1', 'tournament-1');
+
+    expect(conflict).toEqual({ id: 'real-1', fullName: 'Bob Smith' });
+    const sqlText = (mockSql.mock.calls[0][0] as TemplateStringsArray).join('?');
+    expect(sqlText).toContain('is_placeholder = true');
+    expect(sqlText).toContain('p2.id != p1.id');
+  });
+
+  it('returns null when there is no conflict', async () => {
+    mockSql.mockResolvedValueOnce([]);
+    expect(await findPlaceholderTournamentNameConflict('ph-1', 'tournament-1')).toBeNull();
   });
 });

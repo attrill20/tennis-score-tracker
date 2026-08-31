@@ -78,3 +78,40 @@ describe('AssignPlayersPanel placeholders', () => {
     expect(global.fetch).not.toHaveBeenCalledWith('/api/admin/placeholder-players', expect.anything());
   });
 });
+
+describe('AssignPlayersPanel switch-to-real-member', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('offers "Switch to real member" next to an assigned placeholder, and merges the picked member', async () => {
+    global.fetch = jest.fn((url: string, opts?: RequestInit) => {
+      if (!opts) return Promise.resolve({ ok: true, json: async () => ['player-2'] });
+      return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+    }) as unknown as typeof fetch;
+    window.confirm = jest.fn().mockReturnValue(true);
+
+    render(<AssignPlayersPanel leagueId="league-1" leagueType="singles" members={mockMembers} />);
+    await waitFor(() => screen.getByText('Bob Guest'));
+
+    expect(screen.queryByText('Switch to real member')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByRole('button', { name: 'Alice Smith' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/admin/placeholder-players/player-2/merge',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ realAccountId: 'player-1' }) })
+      );
+    });
+    await waitFor(() => expect(mockRefresh).toHaveBeenCalled());
+  });
+
+  it('does not show the switch control next to a non-placeholder member', async () => {
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ['player-1'] });
+    render(<AssignPlayersPanel leagueId="league-1" leagueType="singles" members={mockMembers} />);
+    await waitFor(() => screen.getByText('Alice Smith'));
+
+    expect(screen.queryByText('Switch to real member')).not.toBeInTheDocument();
+  });
+});

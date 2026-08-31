@@ -9,21 +9,43 @@ jest.mock('next/navigation', () => ({
 
 const division = { id: 'div-1', name: 'Division 1', division_order: 1, max_players: 8, league_type: 'singles', status: 'upcoming' };
 
-function boardResponse(players: Array<{ id: string; full_name: string; is_placeholder: boolean; placeholder_alias: string | null; placeholder_anonymized: boolean }> = []) {
-  return { divisions: [division], registrations: [], drafts: [], players };
+function boardResponse(
+  players: Array<{ id: string; full_name: string; is_placeholder: boolean; placeholder_alias: string | null; placeholder_anonymized: boolean }> = [],
+  drafts: Array<{ league_id: string; player_id: string; partner_id: string | null; confirmed: boolean }> = []
+) {
+  return { divisions: [division], registrations: [], drafts, players };
 }
 
-function mockFetch(players: Parameters<typeof boardResponse>[0] = []) {
+function mockFetch(
+  players: Parameters<typeof boardResponse>[0] = [],
+  drafts: Parameters<typeof boardResponse>[1] = []
+) {
   return jest.fn((url: string, opts?: RequestInit) => {
     const method = opts?.method ?? 'GET';
     if (url.endsWith('/assign-divisions') && method === 'GET') {
-      return Promise.resolve({ ok: true, json: async () => boardResponse(players) });
+      return Promise.resolve({ ok: true, json: async () => boardResponse(players, drafts) });
     }
     if (url === '/api/admin/placeholder-players' && method === 'POST') {
       return Promise.resolve({ ok: true, json: async () => ({ id: 'ph-new' }) });
     }
     if (url.endsWith('/assign-divisions/move') && method === 'POST') {
       return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+    }
+    return Promise.resolve({ ok: true, json: async () => ({}) });
+  }) as unknown as typeof fetch;
+}
+
+function mockFetchWithFailingMove(moveError: string) {
+  return jest.fn((url: string, opts?: RequestInit) => {
+    const method = opts?.method ?? 'GET';
+    if (url.endsWith('/assign-divisions') && method === 'GET') {
+      return Promise.resolve({ ok: true, json: async () => boardResponse() });
+    }
+    if (url === '/api/admin/placeholder-players' && method === 'POST') {
+      return Promise.resolve({ ok: true, json: async () => ({ id: 'ph-new' }) });
+    }
+    if (url.endsWith('/assign-divisions/move') && method === 'POST') {
+      return Promise.resolve({ ok: false, json: async () => ({ error: moveError }) });
     }
     return Promise.resolve({ ok: true, json: async () => ({}) });
   }) as unknown as typeof fetch;
@@ -103,5 +125,71 @@ describe('AssignDivisionsPanel inline placeholder creation', () => {
 
     expect(screen.getByPlaceholderText('Search...')).toBeInTheDocument();
     expect(global.fetch).not.toHaveBeenCalledWith('/api/admin/placeholder-players', expect.anything());
+  });
+
+  it('keeps the create form open and shows the error inline when assigning the new placeholder fails', async () => {
+    global.fetch = mockFetchWithFailingMove('Bob Smith is already in this tournament with the same name - rename one of them to tell them apart before adding.');
+    render(<AssignDivisionsPanel tournamentId="tournament-1" />);
+    await openCreatePlaceholderForm();
+
+    await userEvent.type(screen.getByPlaceholderText('Full name'), 'Bob Smith');
+    await userEvent.click(screen.getByText('Add to division'));
+
+    expect(await screen.findByText(/already in this tournament/i)).toBeInTheDocument();
+    // Stays on the create form rather than closing back to the collapsed picker.
+    expect(screen.getByText('Add to division')).toBeInTheDocument();
+    // move() was called with { silent: true }, so the panel-level error banner shouldn't also duplicate the message.
+    expect(screen.getAllByText(/already in this tournament/i)).toHaveLength(1);
+  });
+});
+
+describe('AssignDivisionsPanel switch-to-real-member', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  it('offers "Switch to real member" on a placeholder card and merges the picked member', async () => {
+    const players = [
+      { id: 'ph-1', full_name: 'Guest Player', is_placeholder: true, placeholder_alias: null, placeholder_anonymized: false },
+      { id: 'real-1', full_name: 'Alice Smith', is_placeholder: false, placeholder_alias: null, placeholder_anonymized: false },
+    ];
+    const drafts = [{ league_id: 'div-1', player_id: 'ph-1', partner_id: null, confirmed: false }];
+    global.fetch = jest.fn((url: string, opts?: RequestInit) => {
+      const method = opts?.method ?? 'GET';
+      if (url.endsWith('/assign-divisions') && method === 'GET') {
+        return Promise.resolve({ ok: true, json: async () => boardResponse(players, drafts) });
+      }
+      if (url === '/api/admin/placeholder-players/ph-1/merge' && method === 'POST') {
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      }
+      return Promise.resolve({ ok: true, json: async () => ({}) });
+    }) as unknown as typeof fetch;
+    window.confirm = jest.fn().mockReturnValue(true);
+
+    render(<AssignDivisionsPanel tournamentId="tournament-1" />);
+    await waitFor(() => screen.getByText('Guest Player'));
+
+    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByRole('button', { name: 'Alice Smith' }));
+
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/admin/placeholder-players/ph-1/merge',
+        expect.objectContaining({ method: 'POST', body: JSON.stringify({ realAccountId: 'real-1' }) })
+      );
+    });
+  });
+
+  it('does not show the switch control on a non-placeholder card', async () => {
+    const players = [
+      { id: 'real-1', full_name: 'Alice Smith', is_placeholder: false, placeholder_alias: null, placeholder_anonymized: false },
+    ];
+    const drafts = [{ league_id: 'div-1', player_id: 'real-1', partner_id: null, confirmed: false }];
+    global.fetch = mockFetch(players, drafts);
+
+    render(<AssignDivisionsPanel tournamentId="tournament-1" />);
+    await waitFor(() => screen.getByText('Alice Smith'));
+
+    expect(screen.queryByText('Switch to real member')).not.toBeInTheDocument();
   });
 });

@@ -77,6 +77,54 @@ describe('/api/admin/leagues/[id]/players - draft-aware branching', () => {
     });
   });
 
+  describe('POST - placeholder tournament name conflicts', () => {
+    it('blocks adding a placeholder whose name already exists in the tournament (singles)', async () => {
+      mockSql
+        .mockResolvedValueOnce([{ gender_category: 'either', status: 'upcoming', tournament_id: 'tournament-1' }])
+        .mockResolvedValueOnce([{ id: 'real-1', full_name: 'Bob Smith' }]); // conflict found
+
+      const res = await POST(makeRequest({ playerIds: ['ph-1'], force: true }) as never, { params } as never);
+      const data = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(data.error).toMatch(/Bob Smith is already in this tournament/i);
+      expect(mockSql).toHaveBeenCalledTimes(2); // never reaches the insert
+    });
+
+    it('blocks adding a placeholder whose name already exists in the tournament (doubles pair)', async () => {
+      mockSql
+        .mockResolvedValueOnce([{ gender_category: 'either', status: 'upcoming', tournament_id: 'tournament-1' }])
+        .mockResolvedValueOnce([{ id: 'real-1', full_name: 'Bob Smith' }]); // conflict on p1Id
+
+      const res = await POST(makeRequest({ pairs: [{ p1Id: 'ph-1', p2Id: 'p2' }], force: true }) as never, { params } as never);
+
+      expect(res.status).toBe(400);
+      expect(mockSql).toHaveBeenCalledTimes(2);
+    });
+
+    it('allows adding when there is no name conflict in the tournament', async () => {
+      mockSql
+        .mockResolvedValueOnce([{ gender_category: 'either', status: 'upcoming', tournament_id: 'tournament-1' }])
+        .mockResolvedValueOnce([]) // no conflict
+        .mockResolvedValueOnce([]); // insert
+
+      const res = await POST(makeRequest({ playerIds: ['ph-1'], force: true }) as never, { params } as never);
+
+      expect(res.status).toBe(201);
+    });
+
+    it('skips the conflict check entirely when the league has no tournament_id', async () => {
+      mockSql
+        .mockResolvedValueOnce([{ gender_category: 'either', status: 'upcoming' }]) // no tournament_id
+        .mockResolvedValueOnce([]); // insert
+
+      const res = await POST(makeRequest({ playerIds: ['ph-1'], force: true }) as never, { params } as never);
+
+      expect(res.status).toBe(201);
+      expect(mockSql).toHaveBeenCalledTimes(2);
+    });
+  });
+
   describe('DELETE singles', () => {
     it('deletes from league_player_drafts and skips tournament_registrations when upcoming', async () => {
       mockSql

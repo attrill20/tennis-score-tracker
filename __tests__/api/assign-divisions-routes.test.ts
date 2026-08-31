@@ -137,6 +137,7 @@ describe('assign-divisions API', () => {
       mockSql
         .mockResolvedValueOnce(singlesDivisions) // getCurrentRoundDivisions
         .mockResolvedValueOnce([]) // existing draft lookup (none)
+        .mockResolvedValueOnce([]) // placeholder tournament name conflict check (none)
         .mockResolvedValueOnce([]) // delete
         .mockResolvedValueOnce([]); // insert
 
@@ -164,6 +165,20 @@ describe('assign-divisions API', () => {
       mockSql.mockResolvedValueOnce(singlesDivisions);
       const res = await MOVE(makeRequest({ playerId: 'p1', targetLeagueId: 'not-in-round' }) as never, { params } as never);
       expect(res.status).toBe(400);
+    });
+
+    it('blocks moving a placeholder into a division when the name already exists in the tournament', async () => {
+      mockSql
+        .mockResolvedValueOnce(singlesDivisions) // getCurrentRoundDivisions
+        .mockResolvedValueOnce([]) // existing draft lookup (none)
+        .mockResolvedValueOnce([{ id: 'real-1', full_name: 'Bob Smith' }]); // conflict found
+
+      const res = await MOVE(makeRequest({ playerId: 'ph-1', targetLeagueId: 'league-2' }) as never, { params } as never);
+      const data = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(data.error).toMatch(/Bob Smith is already in this tournament/i);
+      expect(mockSql).toHaveBeenCalledTimes(3); // never reaches delete/insert
     });
   });
 

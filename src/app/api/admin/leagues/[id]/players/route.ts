@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { individualEligible, pairEligible } from '@/lib/genderCategory';
+import { findPlaceholderTournamentNameConflict } from '@/lib/placeholders';
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -48,8 +49,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await req.json();
   const force = body.force === true;
 
-  const [league] = await sql`SELECT gender_category, status FROM leagues WHERE id = ${leagueId}`;
+  const [league] = await sql`SELECT gender_category, status, tournament_id FROM leagues WHERE id = ${leagueId}`;
   const genderCategory = (league?.gender_category as string) ?? 'either';
+  const tournamentId = (league?.tournament_id as string) ?? null;
   // While a division is upcoming, assignment is staged as a draft - it never touches
   // league_players or tournament_registrations.assigned_league_id until the division
   // actually goes active (see src/lib/divisionDrafts.ts), so nothing is visible early.
@@ -59,6 +61,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (body.pairs) {
     const pairs = body.pairs as { p1Id: string; p2Id: string }[];
     if (!pairs.length) return NextResponse.json({ error: 'No pairs provided' }, { status: 400 });
+
+    if (tournamentId) {
+      for (const { p1Id, p2Id } of pairs) {
+        for (const id of [p1Id, p2Id]) {
+          const conflict = await findPlaceholderTournamentNameConflict(id, tournamentId);
+          if (conflict) {
+            return NextResponse.json({
+              error: `${conflict.fullName} is already in this tournament with the same name - rename one of them to tell them apart before adding.`,
+            }, { status: 400 });
+          }
+        }
+      }
+    }
 
     if (!force) {
       for (const { p1Id, p2Id } of pairs) {
@@ -116,6 +131,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const { playerIds } = body;
   if (!Array.isArray(playerIds) || playerIds.length === 0) {
     return NextResponse.json({ error: 'No players provided' }, { status: 400 });
+  }
+
+  if (tournamentId) {
+    for (const playerId of playerIds) {
+      const conflict = await findPlaceholderTournamentNameConflict(playerId, tournamentId);
+      if (conflict) {
+        return NextResponse.json({
+          error: `${conflict.fullName} is already in this tournament with the same name - rename one of them to tell them apart before adding.`,
+        }, { status: 400 });
+      }
+    }
   }
 
   if (!force) {

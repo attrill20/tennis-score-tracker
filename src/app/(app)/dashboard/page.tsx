@@ -8,14 +8,17 @@ import DisputeResolutionNotification from '@/components/DisputeResolutionNotific
 import NewMatchNotification from '@/components/NewMatchNotification';
 import LeagueNotification from '@/components/LeagueNotification';
 import WelcomeNotification from '@/components/WelcomeNotification';
+import PlaceholderMatchNotice from '@/components/PlaceholderMatchNotice';
 import ArchiveLeagueButton from '@/app/(app)/tournaments/ArchiveLeagueButton';
 import RegisterButton from '@/components/RegisterButton';
+import { getPlaceholderNameMatches } from '@/lib/placeholders';
 
 export default async function DashboardPage() {
   const session = await auth();
   const userId = session!.user.id;
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin';
 
-  const [leagues, profileRows, pendingRegistrations] = await Promise.all([
+  const [leagues, profileRows, pendingRegistrations, placeholderMatches] = await Promise.all([
     sql`
       SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, l.max_players, l.points_config, lp.final_position,
         lp.started_seen, lp.ended_seen,
@@ -42,6 +45,7 @@ export default async function DashboardPage() {
       WHERE r.player_id = ${userId} AND r.assigned_league_id IS NULL
       ORDER BY r.created_at DESC
     `,
+    isAdmin ? getPlaceholderNameMatches() : Promise.resolve([]),
   ]);
   const isInjured = (profileRows[0]?.is_injured as boolean) ?? false;
   const showWelcome = !(profileRows[0]?.welcome_seen as boolean);
@@ -230,6 +234,24 @@ export default async function DashboardPage() {
               click here to unmark yourself
             </Link>.
           </span>
+        </div>
+      )}
+
+      {isAdmin && placeholderMatches.length > 0 && (
+        <div className="mb-4 space-y-2">
+          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">Admin - Placeholder Matches</h2>
+          {placeholderMatches.map((pm) => (
+            <PlaceholderMatchNotice
+              key={pm.placeholderId}
+              placeholderId={pm.placeholderId}
+              placeholderFullName={pm.placeholderFullName}
+              placeholderAlias={pm.placeholderAlias}
+              placeholderAnonymized={pm.placeholderAnonymized}
+              memberId={pm.memberId}
+              memberFullName={pm.memberFullName}
+              memberEmailVerified={pm.memberEmailVerified}
+            />
+          ))}
         </div>
       )}
 

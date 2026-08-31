@@ -7,6 +7,8 @@ import DeleteTournamentButton from './DeleteTournamentButton';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
 import AssignDivisionsPanel from '@/components/AssignDivisionsPanel';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import PlaceholderMatchNotice from '@/components/PlaceholderMatchNotice';
+import { getPlaceholderNameMatchesForTournament } from '@/lib/placeholders';
 import { computeSuggestedDivisions, type RegistrationQuestion } from '@/lib/registration';
 import { type PointsConfig } from '@/lib/league';
 
@@ -69,6 +71,8 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
   `) as unknown as Division[];
   const isCurrentRoundUpcoming = divisions.length > 0 && divisions[0].status === 'upcoming';
 
+  const placeholderMatches = await getPlaceholderNameMatchesForTournament(tournament.id);
+
   let registrationCount = 0;
   let pendingRegistrations: {
     id: string; player_id: string; full_name: string; phone: string | null; email: string;
@@ -119,6 +123,19 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
           View public page
         </Link>
       </div>
+
+      {placeholderMatches.map((pm) => (
+        <PlaceholderMatchNotice
+          key={pm.placeholderId}
+          placeholderId={pm.placeholderId}
+          placeholderFullName={pm.placeholderFullName}
+          placeholderAlias={pm.placeholderAlias}
+          placeholderAnonymized={pm.placeholderAnonymized}
+          memberId={pm.memberId}
+          memberFullName={pm.memberFullName}
+          memberEmailVerified={pm.memberEmailVerified}
+        />
+      ))}
 
       <TournamentSettingsForm
         tid={tournament.id}
