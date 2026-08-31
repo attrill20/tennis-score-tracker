@@ -11,6 +11,7 @@ type Member = {
   is_placeholder?: boolean;
   placeholder_alias?: string | null;
   placeholder_anonymized?: boolean;
+  is_unverified?: boolean;
 };
 type Pair = { p1Id: string; p2Id: string };
 
@@ -19,13 +20,19 @@ function pairKey(p: Pair) {
 }
 
 function MemberLabel({ member }: { member: Member }) {
-  if (!member.is_placeholder) return <>{member.full_name}</>;
   return (
     <>
       {member.full_name}
-      <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
-        Placeholder{member.placeholder_anonymized ? ` - shown as "${member.placeholder_alias}"` : ''}
-      </span>
+      {member.is_placeholder && (
+        <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-medium bg-blue-100 text-blue-700">
+          Placeholder{member.placeholder_anonymized ? ` - shown as "${member.placeholder_alias}"` : ''}
+        </span>
+      )}
+      {member.is_unverified && (
+        <span className="ml-1.5 text-xs px-1.5 py-0.5 rounded-full font-medium bg-yellow-100 text-yellow-700">
+          Unverified
+        </span>
+      )}
     </>
   );
 }

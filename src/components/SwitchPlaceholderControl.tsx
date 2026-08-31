@@ -2,16 +2,21 @@
 
 import { useState } from 'react';
 
+const DEFAULT_TRIGGER_CLASS = 'text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium';
+
 export default function SwitchPlaceholderControl({
   placeholderId,
   placeholderFullName,
   realMembers,
   onSwapped,
+  triggerClassName,
 }: {
   placeholderId: string;
   placeholderFullName: string;
   realMembers: { id: string; full_name: string }[];
   onSwapped: () => void;
+  /** Overrides the collapsed trigger button's classes - e.g. to match sibling badges' padding/spacing. */
+  triggerClassName?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -50,7 +55,7 @@ export default function SwitchPlaceholderControl({
 
   if (!open) {
     return (
-      <button type="button" onClick={() => setOpen(true)} className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium">
+      <button type="button" onClick={() => setOpen(true)} className={triggerClassName ?? DEFAULT_TRIGGER_CLASS}>
         Switch
       </button>
     );

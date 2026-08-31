@@ -44,10 +44,10 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
       ORDER BY m.played_at DESC, m.submitted_at DESC
     `,
     sql`
-      SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized
+      SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized,
+        role = 'unverified' AS is_unverified
       FROM profiles
-      WHERE role != 'unverified'
-        AND deleted_at IS NULL
+      WHERE deleted_at IS NULL
         AND email != 'qptcscoreadmin@gmail.com'
       ORDER BY first_name, last_name
     `,
@@ -161,6 +161,7 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
             is_placeholder: boolean;
             placeholder_alias: string | null;
             placeholder_anonymized: boolean;
+            is_unverified: boolean;
           }[]}
           maxPlayers={Number(league.max_players ?? 8)}
         />

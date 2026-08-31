@@ -65,6 +65,25 @@ describe('assign-divisions API', () => {
       expect(data.drafts).toHaveLength(1);
       expect(data.players).toHaveLength(1);
     });
+
+    it('includes unverified members in the addable-players list, flagged as unverified', async () => {
+      mockSql
+        .mockResolvedValueOnce([{ format: 'multi' }])
+        .mockResolvedValueOnce(singlesDivisions)
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([{ id: 'p1', full_name: 'New Member', is_placeholder: false, placeholder_alias: null, placeholder_anonymized: false, is_unverified: true }]);
+
+      const res = await GET({} as never, { params } as never);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.players).toEqual([{ id: 'p1', full_name: 'New Member', is_placeholder: false, placeholder_alias: null, placeholder_anonymized: false, is_unverified: true }]);
+
+      const playersSql = (mockSql.mock.calls[4][0] as TemplateStringsArray).join('?');
+      expect(playersSql).not.toContain("role != 'unverified'");
+      expect(playersSql).toContain("role = 'unverified' AS is_unverified");
+    });
   });
 
   describe('suggest', () => {

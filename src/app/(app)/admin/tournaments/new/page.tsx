@@ -11,10 +11,10 @@ export default async function NewLeaguePage() {
   }
 
   const members = await sql`
-    SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized
+    SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized,
+      role = 'unverified' AS is_unverified
     FROM profiles
-    WHERE role != 'unverified'
-      AND deleted_at IS NULL
+    WHERE deleted_at IS NULL
       AND email != 'qptcscoreadmin@gmail.com'
     ORDER BY first_name, last_name
   `;
@@ -35,6 +35,7 @@ export default async function NewLeaguePage() {
           is_placeholder: boolean;
           placeholder_alias: string | null;
           placeholder_anonymized: boolean;
+          is_unverified: boolean;
         }[]} />
       </div>
     </div>

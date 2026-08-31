@@ -29,6 +29,7 @@ type Player = {
   is_placeholder: boolean;
   placeholder_alias: string | null;
   placeholder_anonymized: boolean;
+  is_unverified: boolean;
 };
 type Draft = { league_id: string; player_id: string; partner_id: string | null; confirmed: boolean };
 type BoardPlayer = {
@@ -36,6 +37,7 @@ type BoardPlayer = {
   full_name: string;
   ability_level: AbilityLevel | null;
   is_placeholder: boolean;
+  is_unverified: boolean;
 };
 
 function boardPlayerFor(playerId: string, playerById: Map<string, Player>, registrationByPlayer: Map<string, Registration>): BoardPlayer | undefined {
@@ -47,6 +49,7 @@ function boardPlayerFor(playerId: string, playerById: Map<string, Player>, regis
     full_name: player?.full_name ?? registration?.full_name ?? 'Unknown',
     ability_level: registration?.ability_level ?? null,
     is_placeholder: player?.is_placeholder ?? false,
+    is_unverified: player?.is_unverified ?? false,
   };
 }
 
@@ -207,6 +210,9 @@ function PlayerCard({
         {!player.ability_level && !player.is_placeholder && (
           <span className="inline-block text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">Not registered</span>
         )}
+        {player.is_unverified && (
+          <span className="inline-block text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-medium">Unverified</span>
+        )}
         {player.is_placeholder && (
           <div className="ml-auto">
             <SwitchPlaceholderControl
@@ -214,6 +220,7 @@ function PlayerCard({
               placeholderFullName={player.full_name}
               realMembers={realMembers}
               onSwapped={() => { reload(); }}
+              triggerClassName="inline-block text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium hover:bg-indigo-100"
             />
           </div>
         )}
@@ -415,6 +422,9 @@ function AddPlayerPicker({
                 {p.is_placeholder && (
                   <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-purple-100 text-purple-700 font-medium">Placeholder</span>
                 )}
+                {p.is_unverified && (
+                  <span className="ml-1.5 text-[10px] px-1 py-0.5 rounded-full bg-yellow-100 text-yellow-700 font-medium">Unverified</span>
+                )}
                 {status && <span className="ml-1.5 text-gray-400">({status})</span>}
               </button>
             );
@@ -570,6 +580,7 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
     full_name: r.full_name,
     ability_level: r.ability_level,
     is_placeholder: false,
+    is_unverified: false,
   }));
 
   async function move(playerId: string, targetLeagueId: string | null, opts?: { silent?: boolean }) {
@@ -681,11 +692,37 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
     const pageWidth = doc.internal.pageSize.getWidth();
     const pageHeight = doc.internal.pageSize.getHeight();
-    const marginX = 10;
-    const marginTop = 26;
-    const columnGap = 4;
-    const columnWidth = (pageWidth - marginX * 2) / Math.max(divisions.length, 1);
+    const marginX = 8;
+    const marginBottom = 6;
+    // Below the logo (top 6mm + 16mm tall = bottom at 22mm) with clear breathing room, since the
+    // rightmost grid column sits directly underneath it.
+    const headerHeight = 32;
+    const columnGap = 6;
+    const rowGap = 10;
     const lineHeight = 4.5;
+    const headingGap = 4;
+
+    // Wide, shallow grid - at most 5 divisions per row (wrapping into further rows beyond that)
+    // so each column gets real width and player names fit on one line, rather than cramming
+    // every division into a single ever-narrower row.
+    const columnsPerRow = Math.min(divisions.length, 5) || 1;
+    const columnWidth = (pageWidth - marginX * 2) / columnsPerRow;
+    const textWidth = columnWidth - columnGap;
+
+    // Each row's height comes from its tallest division's actual content, not an even split of
+    // the whole page - otherwise a row of small divisions leaves a huge gap before the next row.
+    function divisionContentHeight(division: Division): number {
+      doc.setFontSize(9);
+      const nameLines: string[] = doc.splitTextToSize(division.name, textWidth);
+      let height = nameLines.length * lineHeight + headingGap;
+      doc.setFontSize(8);
+      for (const line of divisionEntryLines(division, drafts, playerById, registrationByPlayer)) {
+        const wrapped: string[] = doc.splitTextToSize(line, textWidth);
+        height += wrapped.length * lineHeight;
+      }
+      return height;
+    }
+    const divisionHeights = divisions.map(divisionContentHeight);
 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(16);
@@ -702,10 +739,16 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
       // The logo is a nice-to-have - still produce the PDF if it fails to load.
     }
 
+    let rowTop = headerHeight;
     divisions.forEach((division, i) => {
-      const x = marginX + i * columnWidth;
-      const textWidth = columnWidth - columnGap;
-      let y = marginTop;
+      const col = i % columnsPerRow;
+      if (i > 0 && col === 0) {
+        // Starting a new row - advance past the tallest division in the row just finished.
+        const previousRowHeights = divisionHeights.slice(i - columnsPerRow, i);
+        rowTop += Math.max(...previousRowHeights) + rowGap;
+      }
+      const x = marginX + col * columnWidth;
+      let y = rowTop;
 
       doc.setFont('helvetica', 'bold');
       doc.setFontSize(9);
@@ -714,14 +757,14 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
       y += nameLines.length * lineHeight;
       doc.setDrawColor(180);
       doc.line(x, y, x + textWidth, y);
-      y += 4;
+      y += headingGap;
 
       doc.setFont('helvetica', 'normal');
       doc.setFontSize(8);
       for (const line of divisionEntryLines(division, drafts, playerById, registrationByPlayer)) {
         const wrapped: string[] = doc.splitTextToSize(line, textWidth);
         for (const wrappedLine of wrapped) {
-          if (y > pageHeight - marginX) break;
+          if (y > pageHeight - marginBottom) break;
           doc.text(wrappedLine, x, y);
           y += lineHeight;
         }

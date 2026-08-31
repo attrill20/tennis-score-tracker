@@ -26,6 +26,17 @@ describe('AssignPlayersPanel placeholders', () => {
     expect(screen.getByText(/Placeholder - shown as "Guest 1"/)).toBeInTheDocument();
   });
 
+  it('badges an unverified member so they can still be selected for a tournament', async () => {
+    const membersWithUnverified = [
+      ...mockMembers,
+      { id: 'player-3', full_name: 'Carl Newguy', is_unverified: true },
+    ];
+    render(<AssignPlayersPanel leagueId="league-1" leagueType="singles" members={membersWithUnverified} />);
+
+    await waitFor(() => screen.getByText('Carl Newguy'));
+    expect(screen.getByText('Unverified')).toBeInTheDocument();
+  });
+
   it('pre-fills the alias with the next available numbered placeholder name', async () => {
     render(<AssignPlayersPanel leagueId="league-1" leagueType="singles" members={mockMembers} />);
     await waitFor(() => screen.getByText('Alice Smith'));

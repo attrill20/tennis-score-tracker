@@ -35,10 +35,10 @@ export async function GET(_req: Request, { params }: { params: Promise<{ tournam
     // not just those who filled in the registration form - same picker source as the
     // per-league assign-players panel.
     sql`
-      SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized
+      SELECT id, (first_name || ' ' || last_name) AS full_name, is_placeholder, placeholder_alias, placeholder_anonymized,
+        role = 'unverified' AS is_unverified
       FROM profiles
-      WHERE role != 'unverified'
-        AND deleted_at IS NULL
+      WHERE deleted_at IS NULL
         AND email != 'qptcscoreadmin@gmail.com'
       ORDER BY first_name, last_name
     `,
