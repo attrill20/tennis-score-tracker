@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import jsPDF from 'jspdf';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import { ABILITY_LEVEL_LABELS, type AbilityLevel } from '@/lib/registration';
 import { suggestPlaceholderAlias } from '@/lib/placeholderAlias';
@@ -61,6 +62,85 @@ function playersInDivision(
     .filter((p): p is BoardPlayer => !!p);
 }
 
+function csvEscape(value: string): string {
+  if (/[",\r\n]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/**
+ * Exports only what's currently drafted into a division - unassigned registrants have no
+ * allocation yet, so they're left out, same as the board itself. A plain reference table
+ * (not meant to be re-imported) so someone can mark up proposed moves in a spreadsheet.
+ */
+export function buildAllocationsCsv(
+  divisions: Division[],
+  drafts: Draft[],
+  playerById: Map<string, Player>,
+  registrationByPlayer: Map<string, Registration>
+): string {
+  const rows: string[][] = [['Division', 'Player', 'Type', 'Ability Level', 'Partner']];
+  for (const division of divisions) {
+    const entries = drafts
+      .filter((d) => d.league_id === division.id)
+      .map((d) => ({ draft: d, player: boardPlayerFor(d.player_id, playerById, registrationByPlayer) }))
+      .filter((e): e is { draft: Draft; player: BoardPlayer } => !!e.player)
+      .sort((a, b) => a.player.full_name.localeCompare(b.player.full_name));
+    for (const { draft, player } of entries) {
+      const partner = draft.partner_id ? boardPlayerFor(draft.partner_id, playerById, registrationByPlayer) : undefined;
+      rows.push([
+        division.name,
+        player.full_name,
+        player.is_placeholder ? 'Placeholder' : 'Member',
+        player.ability_level ? ABILITY_LEVEL_LABELS[player.ability_level] ?? player.ability_level : '',
+        partner?.full_name ?? '',
+      ]);
+    }
+  }
+  return rows.map((row) => row.map(csvEscape).join(',')).join('\r\n');
+}
+
+/** Lowercased tournament name with filesystem-unsafe characters stripped, for use in a download filename. */
+export function filenameSafeName(name: string): string {
+  return name.toLowerCase().replace(/[\\/:*?"<>|]/g, '').trim();
+}
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error(`Failed to load ${src}`));
+    img.src = src;
+  });
+}
+
+/**
+ * One display line per player drafted into a division, for the PDF export - doubles pairs
+ * collapse onto a single "A / B" line instead of appearing twice (once per side of the pair).
+ */
+export function divisionEntryLines(
+  division: Division,
+  drafts: Draft[],
+  playerById: Map<string, Player>,
+  registrationByPlayer: Map<string, Registration>
+): string[] {
+  const boardPlayers = playersInDivision(drafts, playerById, registrationByPlayer, division.id)
+    .slice()
+    .sort((a, b) => a.full_name.localeCompare(b.full_name));
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const player of boardPlayers) {
+    if (seen.has(player.player_id)) continue;
+    seen.add(player.player_id);
+    const draft = drafts.find((d) => d.league_id === division.id && d.player_id === player.player_id);
+    const partner = draft?.partner_id ? boardPlayerFor(draft.partner_id, playerById, registrationByPlayer) : undefined;
+    if (partner) seen.add(partner.player_id);
+    lines.push(partner ? `${player.full_name} / ${partner.full_name}` : player.full_name);
+  }
+  return lines;
+}
+
 function PlayerCard({
   player,
   leagueId,
@@ -115,7 +195,7 @@ function PlayerCard({
           <span className="shrink-0 text-xs px-1.5 py-0.5 rounded-full font-medium bg-green-100 text-green-700">Confirmed</span>
         )}
       </div>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex flex-wrap items-center gap-1">
         {player.ability_level && (
           <span className="inline-block text-xs bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded-full font-medium">
             {ABILITY_LEVEL_LABELS[player.ability_level] ?? player.ability_level}
@@ -127,16 +207,17 @@ function PlayerCard({
         {!player.ability_level && !player.is_placeholder && (
           <span className="inline-block text-xs bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-full font-medium">Not registered</span>
         )}
+        {player.is_placeholder && (
+          <div className="ml-auto">
+            <SwitchPlaceholderControl
+              placeholderId={player.player_id}
+              placeholderFullName={player.full_name}
+              realMembers={realMembers}
+              onSwapped={() => { reload(); }}
+            />
+          </div>
+        )}
       </div>
-
-      {player.is_placeholder && (
-        <SwitchPlaceholderControl
-          placeholderId={player.player_id}
-          placeholderFullName={player.full_name}
-          realMembers={realMembers}
-          onSwapped={() => { reload(); }}
-        />
-      )}
 
       {isDoubles && leagueId && (
         partner ? (
@@ -440,7 +521,7 @@ function Column({
   );
 }
 
-export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: string }) {
+export default function AssignDivisionsPanel({ tournamentId, tournamentName }: { tournamentId: string; tournamentName: string }) {
   const router = useRouter();
   const [divisions, setDivisions] = useState<Division[]>([]);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -581,6 +662,75 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
     }
   }
 
+  function exportCsv() {
+    const csv = buildAllocationsCsv(divisions, drafts, playerById, registrationByPlayer);
+    // Leading UTF-8 BOM so Excel detects the encoding correctly instead of guessing.
+    const BOM = '﻿';
+    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `league-allocations-${filenameSafeName(tournamentName)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportPdf() {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const marginX = 10;
+    const marginTop = 26;
+    const columnGap = 4;
+    const columnWidth = (pageWidth - marginX * 2) / Math.max(divisions.length, 1);
+    const lineHeight = 4.5;
+
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(16);
+    doc.text(tournamentName, marginX, 12);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('League Allocations', marginX, 19);
+
+    try {
+      const logo = await loadImage('/qptc-logo.jpg');
+      const logoSize = 16;
+      doc.addImage(logo, 'JPEG', pageWidth - marginX - logoSize, 6, logoSize, logoSize);
+    } catch {
+      // The logo is a nice-to-have - still produce the PDF if it fails to load.
+    }
+
+    divisions.forEach((division, i) => {
+      const x = marginX + i * columnWidth;
+      const textWidth = columnWidth - columnGap;
+      let y = marginTop;
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(9);
+      const nameLines = doc.splitTextToSize(division.name, textWidth);
+      doc.text(nameLines, x, y);
+      y += nameLines.length * lineHeight;
+      doc.setDrawColor(180);
+      doc.line(x, y, x + textWidth, y);
+      y += 4;
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(8);
+      for (const line of divisionEntryLines(division, drafts, playerById, registrationByPlayer)) {
+        const wrapped: string[] = doc.splitTextToSize(line, textWidth);
+        for (const wrappedLine of wrapped) {
+          if (y > pageHeight - marginX) break;
+          doc.text(wrappedLine, x, y);
+          y += lineHeight;
+        }
+      }
+    });
+
+    doc.save(`league-allocations-${filenameSafeName(tournamentName)}.pdf`);
+  }
+
   function handleDrop(targetLeagueId: string | null) {
     if (!draggingId || busy) return;
     const playerId = draggingId;
@@ -620,6 +770,14 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
           <button type="button" onClick={confirmChoices} disabled={busy || drafts.length === 0}
             className="text-sm bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white font-medium px-3 py-2 rounded-lg transition-colors">
             Confirm choices
+          </button>
+          <button type="button" onClick={exportCsv} disabled={drafts.length === 0}
+            className="text-sm border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
+            Export as CSV
+          </button>
+          <button type="button" onClick={() => { exportPdf().catch(() => {}); }} disabled={drafts.length === 0}
+            className="text-sm border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
+            Download PDF
           </button>
         </div>
 

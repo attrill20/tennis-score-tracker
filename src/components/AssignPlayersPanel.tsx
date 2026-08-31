@@ -318,19 +318,13 @@ export default function AssignPlayersPanel({
                   key={pairKey(pair)}
                   className={`px-3 py-2.5 ${i < pairs.length - 1 ? 'border-b border-gray-100' : ''}`}
                 >
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-gray-800">
+                  <div className="flex items-start justify-between gap-2 flex-wrap">
+                    <span className="text-sm text-gray-800 min-w-0">
                       <span className="font-medium">{p1 ? <MemberLabel member={p1} /> : 'Unknown'}</span>
                       <span className="text-gray-400 mx-2">+</span>
                       <span className="font-medium">{p2 ? <MemberLabel member={p2} /> : 'Unknown'}</span>
                     </span>
-                    <button type="button" onClick={() => removePair(pair)} disabled={saving}
-                      className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40">
-                      Remove
-                    </button>
-                  </div>
-                  {(p1?.is_placeholder || p2?.is_placeholder) && (
-                    <div className="mt-1.5 flex flex-wrap gap-3">
+                    <div className="flex items-center gap-3 flex-wrap justify-end shrink-0">
                       {p1?.is_placeholder && (
                         <SwitchPlaceholderControl
                           placeholderId={p1.id}
@@ -347,8 +341,12 @@ export default function AssignPlayersPanel({
                           onSwapped={() => router.refresh()}
                         />
                       )}
+                      <button type="button" onClick={() => removePair(pair)} disabled={saving}
+                        className="text-xs text-red-500 hover:text-red-700 hover:underline disabled:opacity-40">
+                        Remove
+                      </button>
                     </div>
-                  )}
+                  </div>
                 </div>
               );
             })}
@@ -464,27 +462,27 @@ export default function AssignPlayersPanel({
                 key={id}
                 className={`px-3 py-2.5 ${i < selected.length - 1 ? 'border-b border-gray-100' : ''}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-800">{member ? <MemberLabel member={member} /> : 'Unknown'}</span>
-                  <button
-                    type="button"
-                    onClick={() => togglePlayer(id)}
-                    disabled={saving}
-                    className="text-xs text-red-500 hover:text-red-700 hover:underline shrink-0 ml-4 disabled:opacity-40"
-                  >
-                    Remove
-                  </button>
-                </div>
-                {member?.is_placeholder && (
-                  <div className="mt-1.5">
-                    <SwitchPlaceholderControl
-                      placeholderId={member.id}
-                      placeholderFullName={member.full_name}
-                      realMembers={realMembers}
-                      onSwapped={() => router.refresh()}
-                    />
+                <div className="flex items-start justify-between gap-2 flex-wrap">
+                  <span className="text-sm font-medium text-gray-800 min-w-0">{member ? <MemberLabel member={member} /> : 'Unknown'}</span>
+                  <div className="flex items-center gap-3 flex-wrap justify-end shrink-0">
+                    {member?.is_placeholder && (
+                      <SwitchPlaceholderControl
+                        placeholderId={member.id}
+                        placeholderFullName={member.full_name}
+                        realMembers={realMembers}
+                        onSwapped={() => router.refresh()}
+                      />
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => togglePlayer(id)}
+                      disabled={saving}
+                      className="text-xs text-red-500 hover:text-red-700 hover:underline disabled:opacity-40"
+                    >
+                      Remove
+                    </button>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}

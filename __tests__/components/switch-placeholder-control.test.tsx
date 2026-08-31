@@ -24,7 +24,7 @@ describe('SwitchPlaceholderControl', () => {
     const onSwapped = jest.fn();
     render(<SwitchPlaceholderControl {...props} onSwapped={onSwapped} />);
 
-    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByText('Switch'));
 
     expect(screen.getByText('Alice Smith')).toBeInTheDocument();
     expect(screen.getByText('Bob Jones')).toBeInTheDocument();
@@ -32,7 +32,7 @@ describe('SwitchPlaceholderControl', () => {
 
   it('filters candidates by search text', async () => {
     render(<SwitchPlaceholderControl {...props} onSwapped={jest.fn()} />);
-    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByText('Switch'));
 
     await userEvent.type(screen.getByPlaceholderText('Search real members...'), 'Alice');
 
@@ -43,7 +43,7 @@ describe('SwitchPlaceholderControl', () => {
   it('confirms, then merges the picked real member via the merge endpoint', async () => {
     const onSwapped = jest.fn();
     render(<SwitchPlaceholderControl {...props} onSwapped={onSwapped} />);
-    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByText('Switch'));
 
     await userEvent.click(screen.getByText('Alice Smith'));
 
@@ -63,7 +63,7 @@ describe('SwitchPlaceholderControl', () => {
   it('does not call the merge endpoint if the confirmation is cancelled', async () => {
     window.confirm = jest.fn().mockReturnValue(false);
     render(<SwitchPlaceholderControl {...props} onSwapped={jest.fn()} />);
-    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByText('Switch'));
 
     await userEvent.click(screen.getByText('Alice Smith'));
 
@@ -74,7 +74,7 @@ describe('SwitchPlaceholderControl', () => {
     global.fetch = jest.fn().mockResolvedValue({ ok: false, json: async () => ({ error: 'Target account not found' }) });
     const onSwapped = jest.fn();
     render(<SwitchPlaceholderControl {...props} onSwapped={onSwapped} />);
-    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByText('Switch'));
 
     await userEvent.click(screen.getByText('Alice Smith'));
 
@@ -84,11 +84,11 @@ describe('SwitchPlaceholderControl', () => {
 
   it('closes without swapping on Cancel', async () => {
     render(<SwitchPlaceholderControl {...props} onSwapped={jest.fn()} />);
-    await userEvent.click(screen.getByText('Switch to real member'));
+    await userEvent.click(screen.getByText('Switch'));
 
     await userEvent.click(screen.getByText('Cancel'));
 
-    expect(screen.getByText('Switch to real member')).toBeInTheDocument();
+    expect(screen.getByText('Switch')).toBeInTheDocument();
     expect(global.fetch).not.toHaveBeenCalled();
   });
 });

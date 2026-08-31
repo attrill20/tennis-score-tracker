@@ -94,8 +94,8 @@ describe('AssignPlayersPanel switch-to-real-member', () => {
     render(<AssignPlayersPanel leagueId="league-1" leagueType="singles" members={mockMembers} />);
     await waitFor(() => screen.getByText('Bob Guest'));
 
-    expect(screen.queryByText('Switch to real member')).toBeInTheDocument();
-    await userEvent.click(screen.getByText('Switch to real member'));
+    expect(screen.queryByText('Switch')).toBeInTheDocument();
+    await userEvent.click(screen.getByText('Switch'));
     await userEvent.click(screen.getByRole('button', { name: 'Alice Smith' }));
 
     await waitFor(() => {
@@ -112,6 +112,6 @@ describe('AssignPlayersPanel switch-to-real-member', () => {
     render(<AssignPlayersPanel leagueId="league-1" leagueType="singles" members={mockMembers} />);
     await waitFor(() => screen.getByText('Alice Smith'));
 
-    expect(screen.queryByText('Switch to real member')).not.toBeInTheDocument();
+    expect(screen.queryByText('Switch')).not.toBeInTheDocument();
   });
 });

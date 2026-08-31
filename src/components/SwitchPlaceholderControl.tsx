@@ -51,7 +51,7 @@ export default function SwitchPlaceholderControl({
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)} className="text-xs text-blue-600 hover:text-blue-800 hover:underline font-medium">
-        Switch to real member
+        Switch
       </button>
     );
   }

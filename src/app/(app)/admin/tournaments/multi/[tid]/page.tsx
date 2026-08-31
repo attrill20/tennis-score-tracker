@@ -176,7 +176,7 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
       </CollapsibleSection>
 
       {isCurrentRoundUpcoming && (
-        <AssignDivisionsPanel tournamentId={tournament.id} />
+        <AssignDivisionsPanel tournamentId={tournament.id} tournamentName={tournament.name} />
       )}
 
       {tournament.has_registration_form && (
