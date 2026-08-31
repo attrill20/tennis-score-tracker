@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import { ABILITY_LEVEL_LABELS, type AbilityLevel } from '@/lib/registration';
+import { suggestPlaceholderAlias } from '@/lib/placeholderAlias';
 
 type Division = {
   id: string;
@@ -183,10 +184,52 @@ function AddPlayerPicker({
 }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
+  const [creating, setCreating] = useState(false);
+  const [fullName, setFullName] = useState('');
+  const [alias, setAlias] = useState('');
+  const [anonymized, setAnonymized] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [createError, setCreateError] = useState('');
 
   function close() {
     setOpen(false);
     setSearch('');
+    setCreating(false);
+    setFullName('');
+    setAlias('');
+    setAnonymized(false);
+    setCreateError('');
+  }
+
+  function openCreate() {
+    setAlias(suggestPlaceholderAlias(players.filter((p) => p.is_placeholder).map((p) => p.placeholder_alias)));
+    setCreateError('');
+    setCreating(true);
+  }
+
+  async function handleCreate() {
+    if (!fullName.trim()) return;
+    if (anonymized && !alias.trim()) {
+      setCreateError('An alias is required when anonymizing this placeholder');
+      return;
+    }
+    setSaving(true);
+    setCreateError('');
+    try {
+      const res = await fetch('/api/admin/placeholder-players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fullName: fullName.trim(), alias: alias.trim() || null, anonymized }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to create placeholder');
+      move(data.id, leagueId);
+      close();
+    } catch (e) {
+      setCreateError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setSaving(false);
+    }
   }
 
   if (!open) {
@@ -195,6 +238,46 @@ function AddPlayerPicker({
         className="w-full text-xs text-green-700 hover:text-green-900 font-medium hover:underline py-1 disabled:opacity-40">
         + Add player
       </button>
+    );
+  }
+
+  if (creating) {
+    return (
+      <div className="bg-gray-50 border border-gray-200 rounded-lg p-2.5 space-y-1.5">
+        <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">New placeholder player</p>
+        <input
+          type="text"
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+          placeholder="Full name"
+          autoFocus
+          disabled={saving}
+          className="w-full text-xs px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-40"
+        />
+        <input
+          type="text"
+          value={alias}
+          onChange={(e) => setAlias(e.target.value)}
+          placeholder="Alias (shown when anonymized)"
+          disabled={saving}
+          className="w-full text-xs px-2 py-1.5 rounded border border-gray-300 bg-white focus:outline-none focus:ring-2 focus:ring-green-500 disabled:opacity-40"
+        />
+        <label className="flex items-center gap-2 text-xs text-gray-700">
+          <input type="checkbox" checked={anonymized} onChange={(e) => setAnonymized(e.target.checked)} disabled={saving} className="accent-green-700 w-3.5 h-3.5" />
+          Anonymize - show the alias everywhere instead of the full name
+        </label>
+        {createError && <p className="text-xs text-red-600">{createError}</p>}
+        <div className="flex gap-2">
+          <button type="button" onClick={() => setCreating(false)} disabled={saving}
+            className="flex-1 text-xs border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-1.5 rounded-lg transition-colors disabled:opacity-40">
+            Back
+          </button>
+          <button type="button" onClick={handleCreate} disabled={saving || !fullName.trim()}
+            className="flex-1 text-xs bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white font-medium py-1.5 rounded-lg transition-colors">
+            {saving ? 'Adding...' : 'Add to division'}
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -243,6 +326,10 @@ function AddPlayerPicker({
           })
         )}
       </div>
+      <button type="button" onClick={openCreate} disabled={busy}
+        className="w-full text-xs text-green-700 hover:text-green-900 font-medium hover:underline py-1 disabled:opacity-40">
+        + Create new placeholder
+      </button>
       <button type="button" onClick={close} className="w-full text-xs text-gray-500 hover:text-gray-700 py-1">
         Cancel
       </button>
@@ -482,7 +569,7 @@ export default function AssignDivisionsPanel({ tournamentId }: { tournamentId: s
 
   if (loading) {
     return (
-      <CollapsibleSection title="Assign divisions">
+      <CollapsibleSection title="Assign divisions" defaultOpen>
         <p className="text-sm text-gray-400 py-1">Loading...</p>
       </CollapsibleSection>
     );
