@@ -814,14 +814,16 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
             className="text-sm bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white font-medium px-3 py-2 rounded-lg transition-colors">
             Confirm choices
           </button>
-          <button type="button" onClick={exportCsv} disabled={drafts.length === 0}
-            className="text-sm border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
-            Export as CSV
-          </button>
-          <button type="button" onClick={() => { exportPdf().catch(() => {}); }} disabled={drafts.length === 0}
-            className="text-sm border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
-            Download PDF
-          </button>
+          <div className="ml-auto flex flex-wrap gap-2">
+            <button type="button" onClick={exportCsv} disabled={drafts.length === 0}
+              className="text-sm border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
+              Export as CSV
+            </button>
+            <button type="button" onClick={() => { exportPdf().catch(() => {}); }} disabled={drafts.length === 0}
+              className="text-sm border border-gray-300 hover:border-gray-400 text-gray-700 font-medium px-3 py-2 rounded-lg transition-colors disabled:opacity-40">
+              Download PDF
+            </button>
+          </div>
         </div>
 
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
