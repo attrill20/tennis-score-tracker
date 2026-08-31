@@ -19,6 +19,8 @@ export default function TournamentSettingsForm({
   initialMaxRegistrations,
   initialScoringMethod,
   initialPointsConfig,
+  initialNumDivisions,
+  isCurrentRoundUpcoming,
 }: {
   tid: string;
   initialName: string;
@@ -31,6 +33,8 @@ export default function TournamentSettingsForm({
   initialMaxRegistrations: number | null;
   initialScoringMethod: string;
   initialPointsConfig: PointsConfig | null;
+  initialNumDivisions: number;
+  isCurrentRoundUpcoming: boolean;
 }) {
   const router = useRouter();
   const [name, setName] = useState(initialName);
@@ -45,6 +49,40 @@ export default function TournamentSettingsForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
+
+  const [numDivisions, setNumDivisions] = useState(initialNumDivisions);
+  const [resizing, setResizing] = useState(false);
+  const [resizeError, setResizeError] = useState('');
+  const [resizeConfirm, setResizeConfirm] = useState<{ message: string } | null>(null);
+  const [resizeSaved, setResizeSaved] = useState(false);
+
+  async function resizeDivisions(force = false) {
+    setResizeError('');
+    setResizeSaved(false);
+    if (!force) setResizeConfirm(null);
+    setResizing(true);
+    try {
+      const res = await fetch(`/api/admin/tournaments/${tid}/assign-divisions/resize`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ numDivisions, ...(force ? { force: true } : {}) }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 409 && data.needsConfirmation) {
+          setResizeConfirm({ message: data.error });
+          return;
+        }
+        throw new Error(data.error || 'Failed to update the number of divisions');
+      }
+      setResizeSaved(true);
+      router.refresh();
+    } catch (e) {
+      setResizeError(e instanceof Error ? e.message : 'Something went wrong');
+    } finally {
+      setResizing(false);
+    }
+  }
 
   function setRoundDate(i: number, val: string) {
     setRoundDates((prev) => prev.map((d, idx) => (idx === i ? val : d)));
@@ -155,6 +193,57 @@ export default function TournamentSettingsForm({
       </div>
 
       <PointsConfigFields value={pointsConfig} onChange={setPointsConfig} />
+
+      <div className="bg-green-50/50 border border-green-100 rounded-xl p-4 space-y-2">
+        <label htmlFor="t-numDivisions" className="block text-sm font-medium text-gray-700 mb-1">Number of divisions</label>
+        {isCurrentRoundUpcoming ? (
+          <>
+            <p className="text-xs text-gray-400">
+              Only changes the current round, and only while it hasn&apos;t started yet. Adding a division clones the settings of the bottom division; removing one deletes the bottom division(s) - any players already drafted into them are returned to the unassigned pool.
+            </p>
+            <select
+              id="t-numDivisions"
+              name="numDivisions"
+              value={numDivisions}
+              onChange={(e) => { setNumDivisions(Number(e.target.value)); setResizeSaved(false); setResizeError(''); setResizeConfirm(null); }}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+            >
+              {[2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => (
+                <option key={n} value={n}>{n} divisions</option>
+              ))}
+            </select>
+            {resizeConfirm && (
+              <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-3 space-y-2">
+                <p className="text-sm text-amber-800">{resizeConfirm.message}</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => setResizeConfirm(null)}
+                    className="flex-1 text-xs border border-gray-300 hover:border-gray-400 text-gray-600 font-medium py-1.5 rounded-lg transition-colors">
+                    Cancel
+                  </button>
+                  <button type="button" onClick={() => resizeDivisions(true)} disabled={resizing}
+                    className="flex-1 text-xs bg-amber-600 hover:bg-amber-700 disabled:opacity-40 text-white font-medium py-1.5 rounded-lg transition-colors">
+                    Continue anyway
+                  </button>
+                </div>
+              </div>
+            )}
+            {resizeError && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{resizeError}</p>}
+            {resizeSaved && <p className="text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">Number of divisions updated</p>}
+            <button
+              type="button"
+              onClick={() => resizeDivisions()}
+              disabled={resizing || numDivisions === initialNumDivisions}
+              className="text-sm bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white font-medium px-4 py-2 rounded-lg transition-colors"
+            >
+              {resizing ? 'Updating...' : 'Update divisions'}
+            </button>
+          </>
+        ) : (
+          <p className="text-sm text-gray-500 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
+            {initialNumDivisions} divisions <span className="text-gray-400 text-xs ml-1">(the current round has already started, so this can&apos;t be changed until the next round is generated)</span>
+          </p>
+        )}
+      </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>

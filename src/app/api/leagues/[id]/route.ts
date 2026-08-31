@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { NextRequest, NextResponse } from 'next/server';
 import { parsePointsConfig } from '@/lib/league';
 import { validGenderCategories } from '@/lib/genderCategory';
+import { deleteLeagueCascade } from '@/lib/divisionDrafts';
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const session = await auth();
@@ -107,10 +108,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
   const { id } = await params;
   const [row] = await sql`SELECT tournament_id FROM leagues WHERE id = ${id}`;
 
-  await sql`DELETE FROM disputes WHERE match_id IN (SELECT id FROM matches WHERE league_id = ${id})`;
-  await sql`DELETE FROM matches WHERE league_id = ${id}`;
-  await sql`DELETE FROM league_players WHERE league_id = ${id}`;
-  await sql`DELETE FROM leagues WHERE id = ${id}`;
+  await deleteLeagueCascade(id);
 
   // Remove the parent tournament once it has no divisions left, so it doesn't linger in the admin list.
   if (row?.tournament_id) {

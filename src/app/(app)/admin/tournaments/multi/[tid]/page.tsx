@@ -149,6 +149,8 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
         initialMaxRegistrations={tournament.max_registrations}
         initialScoringMethod={tournament.scoring_method}
         initialPointsConfig={tournament.points_config}
+        initialNumDivisions={divisions.length || tournament.num_divisions}
+        isCurrentRoundUpcoming={isCurrentRoundUpcoming}
       />
 
       <CollapsibleSection

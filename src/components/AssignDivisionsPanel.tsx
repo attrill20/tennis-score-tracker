@@ -214,7 +214,7 @@ function PlayerCard({
           <span className="inline-block text-xs bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded-full font-medium">Unverified</span>
         )}
         {player.is_placeholder && (
-          <div className="ml-auto">
+          <div className="ml-auto flex">
             <SwitchPlaceholderControl
               placeholderId={player.player_id}
               placeholderFullName={player.full_name}
