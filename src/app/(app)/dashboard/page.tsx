@@ -215,7 +215,7 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-bold text-gray-800 mb-1">
         Welcome back, {session?.user?.name?.split(' ')[0]}
       </h1>
-      <p className="text-gray-500 text-sm mb-6">Queen's Park Tennis Club</p>
+      <p className="text-gray-500 text-sm mb-6">Queen&apos;s Park Tennis Club</p>
 
       {isInjured && (
         <div className="mb-6 flex items-start gap-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700">

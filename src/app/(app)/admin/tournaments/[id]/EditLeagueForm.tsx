@@ -68,7 +68,12 @@ export default function EditLeagueForm({
   const hasStoredColor = currentColor && LEAGUE_COLOR_KEYS.includes(currentColor as LeagueColorKey);
   const [color, setColor] = useState<LeagueColorKey>(hasStoredColor ? currentColor as LeagueColorKey : LEAGUE_COLOR_KEYS[0]);
   useEffect(() => {
+    // Picking the random default with Math.random() must stay client-only (an effect, not the
+    // useState initializer) so the server-rendered swatch always matches the client's first
+    // render and hydration never mismatches - the randomised pick then applies just after.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!hasStoredColor) setColor(LEAGUE_COLOR_KEYS[Math.floor(Math.random() * LEAGUE_COLOR_KEYS.length)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

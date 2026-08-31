@@ -288,7 +288,6 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           {matches.map((match) => {
             const isPlayer1 = match.player1_id === userId;
             const isPlayer3 = match.player3_id === userId;
-            const isPlayer4 = match.player4_id === userId;
             const isTeam1 = isPlayer1 || isPlayer3;
             const isInvolved = match.player1_id === userId || match.player2_id === userId || match.player3_id === userId || match.player4_id === userId;
             const submittedByMe = match.submitted_by === userId;

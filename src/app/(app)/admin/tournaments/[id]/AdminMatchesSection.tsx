@@ -244,7 +244,7 @@ function MatchForm({
               </select>
             </div>
             <div>
-              <label htmlFor="admin-player3" className="block text-sm font-medium text-gray-700 mb-1">Player 1's partner</label>
+              <label htmlFor="admin-player3" className="block text-sm font-medium text-gray-700 mb-1">Player 1&apos;s partner</label>
               <select
                 id="admin-player3"
                 name="player3"
@@ -279,7 +279,7 @@ function MatchForm({
               </select>
             </div>
             <div>
-              <label htmlFor="admin-player4" className="block text-sm font-medium text-gray-700 mb-1">Player 2's partner</label>
+              <label htmlFor="admin-player4" className="block text-sm font-medium text-gray-700 mb-1">Player 2&apos;s partner</label>
               <select
                 id="admin-player4"
                 name="player4"

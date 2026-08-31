@@ -44,12 +44,16 @@ export default function DatePicker({
   const [viewMonth, setViewMonth] = useState(() => selected?.getMonth() ?? new Date().getMonth());
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  // Keep the visible month/year in sync with `value` when it changes externally, without
+  // reaching for an effect (see https://react.dev/learn/you-might-not-need-an-effect).
+  const [prevValue, setPrevValue] = useState(value);
+  if (value !== prevValue) {
+    setPrevValue(value);
     if (selected) {
       setViewYear(selected.getFullYear());
       setViewMonth(selected.getMonth());
     }
-  }, [value]); // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {

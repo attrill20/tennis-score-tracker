@@ -359,7 +359,7 @@ export default function AssignPlayersPanel({
                 <div className="max-h-44 overflow-y-auto">
                   {p1Options.length === 0 ? (
                     <p className="text-xs text-gray-400 px-2 py-3 text-center">{p1Search ? 'No match' : 'None available'}</p>
-                  ) : p1Options.map((m, i) => (
+                  ) : p1Options.map((m) => (
                     <button key={m.id} type="button" onClick={() => { setNewP1(m.id); setP1Search(''); }} disabled={saving}
                       className={`w-full text-left px-2 py-2 text-xs border-b border-gray-100 last:border-0 transition-colors disabled:opacity-40 ${
                         newP1 === m.id ? 'bg-green-100 text-green-800 font-medium' : 'hover:bg-white text-gray-700'

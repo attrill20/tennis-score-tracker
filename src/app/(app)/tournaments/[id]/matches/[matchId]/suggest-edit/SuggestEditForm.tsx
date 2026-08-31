@@ -93,12 +93,6 @@ export default function SuggestEditForm({
       return [tbMy ?? 0, tbTheir ?? 0];
     });
 
-    let mySetsWon = 0, theirSetsWon = 0;
-    for (const [my, their] of playedSets) {
-      if (my > their) mySetsWon++;
-      else if (their > my) theirSetsWon++;
-    }
-
     if (playedSets.length < 2) {
       setError('At least 2 sets must be entered.');
       return;
