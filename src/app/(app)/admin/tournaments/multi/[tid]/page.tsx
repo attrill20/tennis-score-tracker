@@ -30,6 +30,7 @@ type Tournament = {
   registration_questions: RegistrationQuestion[] | null;
   scoring_method: string;
   points_config: PointsConfig | null;
+  zero_matches_policy: 'relegate' | 'double_relegate' | 'remove';
 };
 
 type Division = {
@@ -150,6 +151,7 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
         initialScoringMethod={tournament.scoring_method}
         initialPointsConfig={tournament.points_config}
         initialNumDivisions={divisions.length || tournament.num_divisions}
+        initialZeroMatchesPolicy={tournament.zero_matches_policy}
         isCurrentRoundUpcoming={isCurrentRoundUpcoming}
       />
 

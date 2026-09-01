@@ -8,6 +8,7 @@ import { validateRegistrationQuestions } from '@/lib/registration';
 const VALID_SCORING = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
 const VALID_TIEBREAKERS = ['head_to_head', 'most_sets_won', 'set_difference'];
 const VALID_COLORS = ['blue', 'purple', 'orange', 'pink', 'teal', 'indigo', 'cyan', 'rose', 'yellow', 'green', 'lime', 'violet', 'amber', 'sky'];
+const VALID_ZERO_MATCHES_POLICIES = ['relegate', 'double_relegate', 'remove'];
 
 function dayBefore(dateStr: string): string {
   const d = new Date(dateStr);
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
     hasRegistrationForm,
     maxRegistrations,
     registrationQuestions,
+    zeroMatchesPolicy,
   } = body;
 
   if (!name) {
@@ -103,6 +105,7 @@ export async function POST(req: NextRequest) {
     if (promoted + relegated > playerCount) {
       return NextResponse.json({ error: 'Promoted + relegated cannot exceed players per division' }, { status: 400 });
     }
+    const resolvedZeroMatchesPolicy = VALID_ZERO_MATCHES_POLICIES.includes(zeroMatchesPolicy) ? zeroMatchesPolicy : 'relegate';
 
     let resolvedMaxRegistrations: number | null = null;
     if (resolvedHasRegistrationForm && maxRegistrations !== null && maxRegistrations !== undefined && maxRegistrations !== '') {
@@ -116,8 +119,8 @@ export async function POST(req: NextRequest) {
     const sortedRounds = [...roundDates].sort();
 
     const [{ id: tournamentId }] = await sql`
-      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, round_dates, is_public, color, description, created_by, has_registration_form, max_registrations, registration_questions, scoring_method, points_config)
-      VALUES (${name}, 'multi', ${statusForStart(sortedRounds[0])}, ${numDivisions}, ${promoted}, ${relegated}, ${sortedRounds.length}, ${finalEnd}, ${sortedRounds}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id}, ${resolvedHasRegistrationForm}, ${resolvedMaxRegistrations}, ${registrationQuestionsToStore}, ${scoringMethod}, ${pointsConfigToStore})
+      INSERT INTO tournaments (name, format, status, num_divisions, num_promoted, num_relegated, num_rounds, final_end, round_dates, is_public, color, description, created_by, has_registration_form, max_registrations, registration_questions, scoring_method, points_config, zero_matches_policy)
+      VALUES (${name}, 'multi', ${statusForStart(sortedRounds[0])}, ${numDivisions}, ${promoted}, ${relegated}, ${sortedRounds.length}, ${finalEnd}, ${sortedRounds}, ${isPub}, ${resolvedColor}, ${description ?? null}, ${session.user.id}, ${resolvedHasRegistrationForm}, ${resolvedMaxRegistrations}, ${registrationQuestionsToStore}, ${scoringMethod}, ${pointsConfigToStore}, ${resolvedZeroMatchesPolicy})
       RETURNING id
     `;
 

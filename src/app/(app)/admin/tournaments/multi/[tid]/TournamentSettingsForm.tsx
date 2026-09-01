@@ -20,6 +20,7 @@ export default function TournamentSettingsForm({
   initialScoringMethod,
   initialPointsConfig,
   initialNumDivisions,
+  initialZeroMatchesPolicy,
   isCurrentRoundUpcoming,
 }: {
   tid: string;
@@ -34,6 +35,7 @@ export default function TournamentSettingsForm({
   initialScoringMethod: string;
   initialPointsConfig: PointsConfig | null;
   initialNumDivisions: number;
+  initialZeroMatchesPolicy: 'relegate' | 'double_relegate' | 'remove';
   isCurrentRoundUpcoming: boolean;
 }) {
   const router = useRouter();
@@ -46,6 +48,7 @@ export default function TournamentSettingsForm({
   const [maxRegistrations, setMaxRegistrations] = useState(initialMaxRegistrations !== null ? String(initialMaxRegistrations) : '');
   const [scoringMethod, setScoringMethod] = useState(initialScoringMethod);
   const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(initialPointsConfig);
+  const [zeroMatchesPolicy, setZeroMatchesPolicy] = useState(initialZeroMatchesPolicy);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
@@ -104,7 +107,7 @@ export default function TournamentSettingsForm({
       body: JSON.stringify({
         name, description, roundDates: roundDates.filter(Boolean), finalEnd, numPromoted, numRelegated,
         maxRegistrations: maxRegistrations !== '' ? Number(maxRegistrations) : null,
-        scoringMethod, pointsConfig,
+        scoringMethod, pointsConfig, zeroMatchesPolicy,
       }),
     });
     const data = await res.json();
@@ -270,6 +273,22 @@ export default function TournamentSettingsForm({
             {[0, 1, 2, 3, 4, 5].map((n) => <option key={n} value={n}>{n}</option>)}
           </select>
         </div>
+      </div>
+
+      <div>
+        <label htmlFor="t-zeroMatchesPolicy" className="block text-sm font-medium text-gray-700 mb-1">Player plays no matches in a round</label>
+        <select
+          id="t-zeroMatchesPolicy"
+          name="zeroMatchesPolicy"
+          value={zeroMatchesPolicy}
+          onChange={(e) => setZeroMatchesPolicy(e.target.value as 'relegate' | 'double_relegate' | 'remove')}
+          className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+        >
+          <option value="relegate">Relegate as normal</option>
+          <option value="double_relegate">Double relegation</option>
+          <option value="remove">Remove from tournament</option>
+        </select>
+        <p className="text-xs text-gray-400 mt-1">Applies to a player who plays zero matches in their division during a round, regardless of where the standings would otherwise place them</p>
       </div>
 
       {hasRegistrationForm && (

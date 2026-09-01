@@ -33,6 +33,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   const [pointsConfig, setPointsConfig] = useState<PointsConfig | null>(null);
   const [numPromoted, setNumPromoted] = useState(0);
   const [numRelegated, setNumRelegated] = useState(0);
+  const [zeroMatchesPolicy, setZeroMatchesPolicy] = useState<'relegate' | 'double_relegate' | 'remove'>('relegate');
   const [tiebreaker, setTiebreaker] = useState('head_to_head');
   const [leagueType, setLeagueType] = useState<'singles' | 'doubles'>('singles');
   const [genderCategory, setGenderCategory] = useState<GenderCategory>('either');
@@ -88,6 +89,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             maxPlayers,
             numPromoted,
             numRelegated,
+            zeroMatchesPolicy,
             numDivisions,
             roundDates: roundDates.filter(Boolean),
             finalEnd,
@@ -408,6 +410,24 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           </select>
         </div>
       </div>
+
+      {format === 'multi' && (
+        <div>
+          <label htmlFor="zeroMatchesPolicy" className="block text-sm font-medium text-gray-700 mb-1">Player plays no matches in a round</label>
+          <select
+            id="zeroMatchesPolicy"
+            name="zeroMatchesPolicy"
+            value={zeroMatchesPolicy}
+            onChange={(e) => setZeroMatchesPolicy(e.target.value as 'relegate' | 'double_relegate' | 'remove')}
+            className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+          >
+            <option value="relegate">Relegate as normal</option>
+            <option value="double_relegate">Double relegation</option>
+            <option value="remove">Remove from tournament</option>
+          </select>
+          <p className="text-xs text-gray-400 mt-1">Applies to a player who plays zero matches in their division during a round, regardless of where the standings would otherwise place them</p>
+        </div>
+      )}
 
       {format === 'single' && (
         <div>

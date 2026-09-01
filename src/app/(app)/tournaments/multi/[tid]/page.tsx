@@ -22,6 +22,13 @@ type Tournament = {
   description: string | null;
   has_registration_form: boolean;
   max_registrations: number | null;
+  zero_matches_policy: 'relegate' | 'double_relegate' | 'remove';
+};
+
+const ZERO_MATCHES_POLICY_LABELS: Record<Tournament['zero_matches_policy'], string> = {
+  relegate: 'Relegated as normal',
+  double_relegate: 'Double relegation',
+  remove: 'Removed from the tournament',
 };
 
 type Division = {
@@ -192,6 +199,7 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
           <p><span className="font-semibold text-gray-500">Round:</span> {String(current_round)} of {tournament.num_rounds}</p>
           <p><span className="font-semibold text-gray-500">Format:</span> Multi-league, {tournament.num_divisions} divisions</p>
           <p><span className="font-semibold text-gray-500">Promotion/Relegation:</span> {tournament.num_promoted} promoted / {tournament.num_relegated} relegated<span className="hidden sm:inline"> each round</span></p>
+          <p><span className="font-semibold text-gray-500">Zero matches played:</span> {ZERO_MATCHES_POLICY_LABELS[tournament.zero_matches_policy]}</p>
           <p><span className="font-semibold text-gray-500">Scoring System:</span> {SCORING_METHOD_LABELS[divisions[0]?.scoring_method] ?? divisions[0]?.scoring_method}</p>
           <div className="sm:flex sm:items-center sm:gap-2">
             <p><span className="font-semibold text-gray-500">Points:</span> {pointsTypeName(divisions[0]?.points_config ?? null)} -</p>

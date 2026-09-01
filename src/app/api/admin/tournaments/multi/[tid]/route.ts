@@ -4,6 +4,7 @@ import sql from '@/lib/db';
 import { parsePointsConfig } from '@/lib/league';
 
 const VALID_SCORING = ['1_set_tiebreak', '1_set_no_tiebreak', 'best_of_3_tiebreak', 'best_of_3_no_tiebreak', 'best_of_5_tiebreak', 'best_of_5_no_tiebreak'];
+const VALID_ZERO_MATCHES_POLICIES = ['relegate', 'double_relegate', 'remove'];
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ tid: string }> }) {
   const session = await auth();
@@ -13,13 +14,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
 
   const { tid } = await params;
   const body = await req.json();
-  const { name, description, roundDates, finalEnd, numPromoted, numRelegated, maxRegistrations, scoringMethod, pointsConfig } = body;
+  const { name, description, roundDates, finalEnd, numPromoted, numRelegated, maxRegistrations, scoringMethod, pointsConfig, zeroMatchesPolicy } = body;
 
   if (!name || typeof name !== 'string') {
     return NextResponse.json({ error: 'Tournament name is required' }, { status: 400 });
   }
   if (!VALID_SCORING.includes(scoringMethod)) {
     return NextResponse.json({ error: 'Invalid scoring method' }, { status: 400 });
+  }
+  if (!VALID_ZERO_MATCHES_POLICIES.includes(zeroMatchesPolicy)) {
+    return NextResponse.json({ error: 'Invalid zero-matches policy' }, { status: 400 });
   }
   const resolvedPointsConfig = parsePointsConfig(pointsConfig);
   if (resolvedPointsConfig === 'invalid') {
@@ -69,7 +73,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ ti
         num_relegated = ${relegated},
         max_registrations = ${resolvedMaxRegistrations},
         scoring_method = ${scoringMethod},
-        points_config = ${pointsConfigToStore}
+        points_config = ${pointsConfigToStore},
+        zero_matches_policy = ${zeroMatchesPolicy}
     WHERE id = ${tid}
   `;
 

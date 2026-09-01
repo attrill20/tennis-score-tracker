@@ -1,6 +1,6 @@
 import sql from '@/lib/db';
 import { calculateStandings, type Tiebreaker } from '@/lib/league';
-import { computePromotionMoves } from '@/lib/promotion';
+import { computePromotionMoves, computePromotionMovesWithNoShows, type ZeroMatchesPolicy } from '@/lib/promotion';
 
 export { computePromotionMoves };
 
@@ -39,6 +39,7 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
     num_rounds: number;
     scoring_method: string;
     points_config: import('@/lib/league').PointsConfig | null;
+    zero_matches_policy: ZeroMatchesPolicy;
   };
 
   const nextRound = completedRound + 1;
@@ -61,8 +62,8 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
   `) as unknown as DivisionRow[];
   if (divisions.length === 0) return [];
 
-  // Build ordered standings (player ids, best first) for each division.
-  const standings: string[][] = [];
+  // Build ordered standings (player ids + matches played, best first) for each division.
+  const standings: { id: string; played: number }[][] = [];
   for (const div of divisions) {
     const players = (await sql`
       SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name
@@ -76,10 +77,10 @@ export async function generateNextRound(tournamentId: string, completedRound: nu
     `) as unknown as Parameters<typeof calculateStandings>[1];
 
     const ordered = calculateStandings(players, matches, (div.tiebreaker as Tiebreaker) ?? 'head_to_head', div.points_config ?? undefined);
-    standings.push(ordered.map((s) => s.id));
+    standings.push(ordered.map((s) => ({ id: s.id, played: s.played })));
   }
 
-  const nextMembership = computePromotionMoves(standings, t.num_promoted, t.num_relegated);
+  const nextMembership = computePromotionMovesWithNoShows(standings, t.num_promoted, t.num_relegated, t.zero_matches_policy ?? 'relegate');
 
   // Guard against resurrecting a player who deleted their account mid-tournament.
   const allCandidateIds = nextMembership.flat();
