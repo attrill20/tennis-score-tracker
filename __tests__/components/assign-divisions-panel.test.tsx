@@ -87,6 +87,14 @@ function mockFetchWithFailingMove(moveError: string) {
   }) as unknown as typeof fetch;
 }
 
+// The "Assign divisions" section is collapsed by default (like every other CollapsibleSection),
+// so its content isn't in the DOM until expanded.
+async function renderAssignDivisionsPanel() {
+  const utils = render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+  await userEvent.click(screen.getByText('Assign divisions'));
+  return utils;
+}
+
 async function openCreatePlaceholderForm() {
   await waitFor(() => screen.getByText('Division 1'));
   await userEvent.click(screen.getByText('+ Add player'));
@@ -100,7 +108,7 @@ describe('AssignDivisionsPanel inline placeholder creation', () => {
 
   it('creates a placeholder and immediately assigns it to the division', async () => {
     global.fetch = mockFetch();
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await openCreatePlaceholderForm();
 
     const nameInput = screen.getByPlaceholderText('Full name');
@@ -131,7 +139,7 @@ describe('AssignDivisionsPanel inline placeholder creation', () => {
     global.fetch = mockFetch([
       { id: 'existing-ph', full_name: 'Existing Guest', is_placeholder: true, placeholder_alias: 'Placeholder Player 1', placeholder_anonymized: false },
     ]);
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await openCreatePlaceholderForm();
 
     const aliasInput = screen.getByPlaceholderText('Alias (shown when anonymized)') as HTMLInputElement;
@@ -140,7 +148,7 @@ describe('AssignDivisionsPanel inline placeholder creation', () => {
 
   it('requires an alias when anonymizing a new placeholder', async () => {
     global.fetch = mockFetch();
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await openCreatePlaceholderForm();
 
     await userEvent.type(screen.getByPlaceholderText('Full name'), 'Carl Newguest');
@@ -154,7 +162,7 @@ describe('AssignDivisionsPanel inline placeholder creation', () => {
 
   it('returns to the search list without creating anything when Back is clicked', async () => {
     global.fetch = mockFetch();
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await openCreatePlaceholderForm();
 
     await userEvent.click(screen.getByText('Back'));
@@ -165,7 +173,7 @@ describe('AssignDivisionsPanel inline placeholder creation', () => {
 
   it('keeps the create form open and shows the error inline when assigning the new placeholder fails', async () => {
     global.fetch = mockFetchWithFailingMove('Bob Smith is already in this tournament with the same name - rename one of them to tell them apart before adding.');
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await openCreatePlaceholderForm();
 
     await userEvent.type(screen.getByPlaceholderText('Full name'), 'Bob Smith');
@@ -191,7 +199,7 @@ describe('AssignDivisionsPanel unverified members', () => {
     const drafts = [{ league_id: 'div-1', player_id: 'p1', partner_id: null, confirmed: false }];
     global.fetch = mockFetch(players, drafts);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Carl Newguy'));
 
     expect(screen.getByText('Unverified')).toBeInTheDocument();
@@ -203,7 +211,7 @@ describe('AssignDivisionsPanel unverified members', () => {
     ];
     global.fetch = mockFetch(players, []);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Division 1'));
     await userEvent.click(screen.getByText('+ Add player'));
 
@@ -235,7 +243,7 @@ describe('AssignDivisionsPanel switch-to-real-member', () => {
     }) as unknown as typeof fetch;
     window.confirm = jest.fn().mockReturnValue(true);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Guest Player'));
 
     await userEvent.click(screen.getByText('Switch'));
@@ -256,7 +264,7 @@ describe('AssignDivisionsPanel switch-to-real-member', () => {
     const drafts = [{ league_id: 'div-1', player_id: 'real-1', partner_id: null, confirmed: false }];
     global.fetch = mockFetch(players, drafts);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Alice Smith'));
 
     expect(screen.queryByText('Switch')).not.toBeInTheDocument();
@@ -269,7 +277,7 @@ describe('AssignDivisionsPanel switch-to-real-member', () => {
     const drafts = [{ league_id: 'div-1', player_id: 'ph-1', partner_id: null, confirmed: false }];
     global.fetch = mockFetch(players, drafts);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Guest Player'));
 
     const switchButton = screen.getByRole('button', { name: 'Switch' });
@@ -346,7 +354,7 @@ describe('AssignDivisionsPanel export as CSV', () => {
 
   it('disables the export button when there is nothing drafted', async () => {
     global.fetch = mockFetch();
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Division 1'));
 
     expect(screen.getByText('Export as CSV')).toBeDisabled();
@@ -368,7 +376,7 @@ describe('AssignDivisionsPanel export as CSV', () => {
       downloadedFilename = this.download;
     });
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Alice Smith'));
 
     await userEvent.click(screen.getByText('Export as CSV'));
@@ -439,7 +447,7 @@ describe('AssignDivisionsPanel download PDF', () => {
 
   it('disables the download button when there is nothing drafted', async () => {
     global.fetch = mockFetch();
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Division 1'));
 
     expect(screen.getByText('Download PDF')).toBeDisabled();
@@ -452,7 +460,7 @@ describe('AssignDivisionsPanel download PDF', () => {
     const drafts = [{ league_id: 'div-1', player_id: 'p1', partner_id: null, confirmed: false }];
     global.fetch = mockFetch(players, drafts);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Alice Smith'));
 
     await userEvent.click(screen.getByText('Download PDF'));
@@ -480,7 +488,7 @@ describe('AssignDivisionsPanel download PDF', () => {
     const drafts = [{ league_id: 'div-1', player_id: 'p1', partner_id: null, confirmed: false }];
     global.fetch = mockFetch(players, drafts);
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Alice Smith'));
 
     await userEvent.click(screen.getByText('Download PDF'));
@@ -507,7 +515,7 @@ describe('AssignDivisionsPanel download PDF', () => {
       return Promise.resolve({ ok: true, json: async () => ({}) });
     }) as unknown as typeof fetch;
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Alice Smith'));
 
     await userEvent.click(screen.getByText('Download PDF'));
@@ -554,7 +562,7 @@ describe('AssignDivisionsPanel download PDF', () => {
       return Promise.resolve({ ok: true, json: async () => ({}) });
     }) as unknown as typeof fetch;
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Alice Smith'));
 
     await userEvent.click(screen.getByText('Download PDF'));
@@ -596,7 +604,7 @@ describe('AssignDivisionsPanel download PDF', () => {
       return Promise.resolve({ ok: true, json: async () => ({}) });
     }) as unknown as typeof fetch;
 
-    render(<AssignDivisionsPanel tournamentId="tournament-1" tournamentName="Winter League" />);
+    await renderAssignDivisionsPanel();
     await waitFor(() => screen.getByText('Player 1'));
 
     await userEvent.click(screen.getByText('Download PDF'));

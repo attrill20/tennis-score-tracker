@@ -784,7 +784,7 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
 
   if (loading) {
     return (
-      <CollapsibleSection title="Assign divisions" defaultOpen>
+      <CollapsibleSection title="Assign divisions">
         <p className="text-sm text-gray-400 py-1">Loading...</p>
       </CollapsibleSection>
     );
@@ -793,7 +793,6 @@ export default function AssignDivisionsPanel({ tournamentId, tournamentName }: {
   return (
     <CollapsibleSection
       title="Assign divisions"
-      defaultOpen
       meta={<span className="text-xs text-gray-400">Hidden from members until the round starts</span>}
     >
       <div className="space-y-3">
