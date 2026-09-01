@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import PasswordInput from '@/components/PasswordInput';
+import { suggestEmailCorrection } from '@/lib/emailTypo';
 
 const inputClass = 'w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-900 focus:border-transparent text-sm text-gray-900 placeholder:text-gray-500';
 
@@ -41,6 +42,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [nameWarning, setNameWarning] = useState('');
   const [emailWarning, setEmailWarning] = useState('');
+  const [emailSuggestion, setEmailSuggestion] = useState('');
   const [phoneWarning, setPhoneWarning] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -74,11 +76,22 @@ export default function RegisterPage() {
     checkName(firstName, normalized);
   }
 
-  async function handleEmailBlur() {
-    if (!email.trim()) return;
-    const res = await fetch(`/api/check-field?field=email&value=${encodeURIComponent(email)}`);
+  async function checkEmail(value: string) {
+    if (!value.trim()) return;
+    setEmailSuggestion(suggestEmailCorrection(value) || '');
+    const res = await fetch(`/api/check-field?field=email&value=${encodeURIComponent(value)}`);
     const data = await res.json();
     setEmailWarning(data.taken ? 'An account with this email address already exists.' : '');
+  }
+
+  function handleEmailBlur() {
+    checkEmail(email);
+  }
+
+  function acceptEmailSuggestion() {
+    setEmail(emailSuggestion);
+    checkEmail(emailSuggestion);
+    setEmailSuggestion('');
   }
 
   async function handlePhoneBlur() {
@@ -204,7 +217,7 @@ export default function RegisterPage() {
             name="email"
             type="email"
             value={email}
-            onChange={(e) => { setEmail(e.target.value); setEmailWarning(''); }}
+            onChange={(e) => { setEmail(e.target.value); setEmailWarning(''); setEmailSuggestion(''); }}
             onBlur={handleEmailBlur}
             required
             autoComplete="email"
@@ -215,6 +228,19 @@ export default function RegisterPage() {
             placeholder="you@example.com"
           />
           <p className="text-xs text-gray-400 mt-1">Displayed as primary contact method if no phone number entered</p>
+          {emailSuggestion && (
+            <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">
+              Did you mean{' '}
+              <button
+                type="button"
+                onClick={acceptEmailSuggestion}
+                className="underline font-medium hover:text-amber-900"
+              >
+                {emailSuggestion}
+              </button>
+              ?
+            </p>
+          )}
           {emailWarning && (
             <p className="text-sm text-amber-700 bg-amber-50 border border-amber-200 px-3 py-2 rounded-lg mt-2">{emailWarning}</p>
           )}
