@@ -198,8 +198,6 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
         <div className="text-sm text-gray-400 space-y-1">
           <p><span className="font-semibold text-gray-500">Round:</span> {String(current_round)} of {tournament.num_rounds}</p>
           <p><span className="font-semibold text-gray-500">Format:</span> Multi-league, {tournament.num_divisions} divisions</p>
-          <p><span className="font-semibold text-gray-500">Promotion/Relegation:</span> {tournament.num_promoted} promoted / {tournament.num_relegated} relegated<span className="hidden sm:inline"> each round</span></p>
-          <p><span className="font-semibold text-gray-500">Zero matches played:</span> {ZERO_MATCHES_POLICY_LABELS[tournament.zero_matches_policy]}</p>
           <p><span className="font-semibold text-gray-500">Scoring System:</span> {SCORING_METHOD_LABELS[divisions[0]?.scoring_method] ?? divisions[0]?.scoring_method}</p>
           <div className="sm:flex sm:items-center sm:gap-2">
             <p><span className="font-semibold text-gray-500">Points:</span> {pointsTypeName(divisions[0]?.points_config ?? null)} -</p>
@@ -211,6 +209,8 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
               ))}
             </div>
           </div>
+          <p><span className="font-semibold text-gray-500">Promotion/Relegation:</span> {tournament.num_promoted} promoted / {tournament.num_relegated} relegated<span className="hidden sm:inline"> each round</span></p>
+          <p><span className="font-semibold text-gray-500">Zero matches played:</span> {ZERO_MATCHES_POLICY_LABELS[tournament.zero_matches_policy]}</p>
           {tournament.status === 'upcoming'
             ? tournament.has_registration_form && (
                 <p><span className="font-semibold text-gray-500">Registered:</span> {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</p>
