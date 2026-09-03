@@ -3,17 +3,17 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
+export default function WithdrawRegistrationButton({ tournamentId, redirectHref }: { tournamentId: string; redirectHref: string }) {
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  async function handleLeave() {
+  async function handleWithdraw() {
     setLoading(true);
     setError('');
 
-    const res = await fetch(`/api/leagues/${leagueId}/leave`, { method: 'POST' });
+    const res = await fetch(`/api/tournaments/${tournamentId}/register`, { method: 'DELETE' });
     const data = await res.json();
     setLoading(false);
 
@@ -23,7 +23,8 @@ export default function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
       return;
     }
 
-    router.push('/tournaments');
+    router.push(redirectHref);
+    router.refresh();
   }
 
   if (confirming) {
@@ -31,11 +32,11 @@ export default function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
       <div className="flex items-center gap-2">
         <span className="text-xs text-gray-500">Are you sure?</span>
         <button
-          onClick={handleLeave}
+          onClick={handleWithdraw}
           disabled={loading}
           className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-lg bg-red-100 hover:bg-red-200 text-red-700 transition-colors disabled:opacity-50"
         >
-          {loading ? '...' : 'Yes, leave'}
+          {loading ? '...' : 'Yes, withdraw'}
         </button>
         <button
           onClick={() => setConfirming(false)}
@@ -54,8 +55,7 @@ export default function LeaveLeagueButton({ leagueId }: { leagueId: string }) {
         onClick={() => setConfirming(true)}
         className="cursor-pointer text-xs font-medium px-3 py-1.5 rounded-lg border border-red-200 hover:border-red-400 text-red-500 hover:text-red-700 transition-colors"
       >
-        <span className="sm:hidden">Leave</span>
-        <span className="hidden sm:inline">Leave tournament</span>
+        Withdraw registration
       </button>
     </div>
   );

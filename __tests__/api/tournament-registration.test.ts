@@ -4,7 +4,7 @@ const mockAuth = jest.fn();
 jest.mock('@/lib/db', () => ({ __esModule: true, default: (...args: unknown[]) => mockSql(...args) }));
 jest.mock('@/auth', () => ({ auth: () => mockAuth() }));
 
-import { POST } from '@/app/api/tournaments/[tournamentId]/register/route';
+import { POST, DELETE } from '@/app/api/tournaments/[tournamentId]/register/route';
 
 function makeRequest(body: unknown) {
   return { json: async () => body } as unknown as Request;
@@ -90,5 +90,62 @@ describe('POST /api/tournaments/[tournamentId]/register', () => {
 
     expect(res.status).toBe(400);
     expect((await res.json()).error).toMatch(/closed/i);
+  });
+});
+
+describe('DELETE /api/tournaments/[tournamentId]/register', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAuth.mockResolvedValue({ user: { id: 'player-1', role: 'member' } });
+  });
+
+  it('withdraws an unassigned registration while the tournament is upcoming', async () => {
+    mockSql
+      .mockResolvedValueOnce([{ status: 'upcoming' }]) // tournament
+      .mockResolvedValueOnce([{ assigned_league_id: null }]) // existing registration
+      .mockResolvedValueOnce([{}]); // the delete
+
+    const res = await DELETE({} as never, { params } as never);
+
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects when the tournament is no longer upcoming', async () => {
+    mockSql.mockResolvedValueOnce([{ status: 'active' }]);
+
+    const res = await DELETE({} as never, { params } as never);
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/upcoming/i);
+  });
+
+  it('rejects when there is no registration to withdraw', async () => {
+    mockSql
+      .mockResolvedValueOnce([{ status: 'upcoming' }])
+      .mockResolvedValueOnce([]); // no existing registration
+
+    const res = await DELETE({} as never, { params } as never);
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/not registered/i);
+  });
+
+  it('rejects withdrawing a registration that has already been assigned to a division', async () => {
+    mockSql
+      .mockResolvedValueOnce([{ status: 'upcoming' }])
+      .mockResolvedValueOnce([{ assigned_league_id: 'league-1' }]);
+
+    const res = await DELETE({} as never, { params } as never);
+
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/already been placed/i);
+  });
+
+  it('rejects an unauthenticated request', async () => {
+    mockAuth.mockResolvedValue(null);
+
+    const res = await DELETE({} as never, { params } as never);
+
+    expect(res.status).toBe(401);
   });
 });

@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import sql from '@/lib/db';
 import Link from 'next/link';
+import { formatDateOrRange } from '@/lib/format';
 
 export default async function MyTournamentsPage() {
   const session = await auth();
@@ -87,9 +88,7 @@ export default async function MyTournamentsPage() {
                   <div className="flex-1 min-w-0 text-sm">
                     <p className="font-medium text-gray-800 truncate">{displayName}</p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(t.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
-                      {' - '}
-                      {new Date(t.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      {formatDateOrRange(t.season_start as string, t.season_end as string)}
                     </p>
                   </div>
                 </div>

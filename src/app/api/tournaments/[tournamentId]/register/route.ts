@@ -59,3 +59,29 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tou
 
   return NextResponse.json({ success: true });
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ tournamentId: string }> }) {
+  const session = await auth();
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { tournamentId } = await params;
+
+  const [tournament] = await sql`SELECT status FROM tournaments WHERE id = ${tournamentId}`;
+  if (!tournament) return NextResponse.json({ error: 'Tournament not found' }, { status: 404 });
+  if (tournament.status !== 'upcoming') {
+    return NextResponse.json({ error: 'You can only withdraw a registration while the tournament is upcoming' }, { status: 400 });
+  }
+
+  const [existing] = await sql`
+    SELECT assigned_league_id FROM tournament_registrations
+    WHERE tournament_id = ${tournamentId} AND player_id = ${session.user.id}
+  `;
+  if (!existing) return NextResponse.json({ error: 'You are not registered for this tournament' }, { status: 400 });
+  if (existing.assigned_league_id) {
+    return NextResponse.json({ error: "You've already been placed into a division - contact an admin if you need to withdraw" }, { status: 400 });
+  }
+
+  await sql`DELETE FROM tournament_registrations WHERE tournament_id = ${tournamentId} AND player_id = ${session.user.id}`;
+
+  return NextResponse.json({ success: true });
+}

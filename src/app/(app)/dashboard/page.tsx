@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { leagueBorderColor, leagueRightBorderColor, leagueBarColor } from '@/lib/leagueColor';
-import { truncateName } from '@/lib/format';
+import { truncateName, formatDateOrRange } from '@/lib/format';
 import sql from '@/lib/db';
 import { calculateStandings } from '@/lib/league';
 import Link from 'next/link';
@@ -36,7 +36,7 @@ export default async function DashboardPage() {
     `,
     sql`SELECT is_injured, welcome_seen FROM profiles WHERE id = ${userId}`,
     sql`
-      SELECT r.id, r.tournament_id, t.name AS tournament_name, t.format AS tournament_format, t.color AS tournament_color,
+      SELECT r.id, r.tournament_id, t.name AS tournament_name, t.format AS tournament_format, t.color AS tournament_color, t.status AS tournament_status,
         COALESCE(t.round_dates[1], (SELECT l.season_start FROM leagues l WHERE l.tournament_id = t.id AND l.round_number = 1 LIMIT 1))::text AS start_date,
         t.final_end::text AS end_date,
         (SELECT l2.id FROM leagues l2 WHERE l2.tournament_id = t.id AND l2.round_number = 1 LIMIT 1) AS round1_league_id
@@ -454,14 +454,28 @@ export default async function DashboardPage() {
               <Link href={tournamentHref} className="absolute inset-0 rounded-xl z-10" aria-label={reg.tournament_name as string} />
               <div className="relative flex items-center justify-between gap-2">
                 <span className="font-medium text-gray-800">{reg.tournament_name as string}</span>
-                <RegisterButton tournamentId={reg.tournament_id as string} isRegistered />
+                <div className="flex items-center gap-2">
+                  <span className={`hidden sm:inline text-xs px-2 py-1 rounded-full font-medium ${
+                    reg.tournament_status === 'active' ? 'bg-green-100 text-green-700'
+                    : reg.tournament_status === 'upcoming' ? 'bg-blue-100 text-blue-700'
+                    : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {(reg.tournament_status as string).charAt(0).toUpperCase() + (reg.tournament_status as string).slice(1)}
+                  </span>
+                  <RegisterButton tournamentId={reg.tournament_id as string} isRegistered />
+                </div>
               </div>
               <div className="relative flex items-center justify-between mt-2">
-                <span className="text-xs text-gray-400">Awaiting for division to be assigned</span>
+                <span className="text-xs text-gray-400">
+                  {reg.tournament_format === 'multi' ? 'Awaiting for division to be assigned' : 'Awaiting tournament to begin'}
+                </span>
                 <p className="text-xs text-gray-400 shrink-0">
-                  {reg.start_date ? new Date(reg.start_date as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : ''}
-                  {' - '}
-                  {reg.end_date ? new Date(reg.end_date as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : ''}
+                  {formatDateOrRange(
+                    reg.start_date as string | null,
+                    reg.end_date as string | null,
+                    { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' },
+                    { day: 'numeric', month: 'short' }
+                  )}
                 </p>
               </div>
             </div>
@@ -545,9 +559,12 @@ export default async function DashboardPage() {
                     </span>
                   ) : <span />}
                   <p className="text-xs text-gray-400">
-                    {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-                    {' - '}
-                    {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                    {formatDateOrRange(
+                      league.season_start as string,
+                      league.season_end as string,
+                      { day: 'numeric', month: 'short', year: 'numeric' },
+                      { day: 'numeric', month: 'short' }
+                    )}
                   </p>
                 </div>
               </div>

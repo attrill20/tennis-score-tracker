@@ -6,6 +6,7 @@ import { leagueBorderColor } from '@/lib/leagueColor';
 import { SCORING_METHOD_LABELS, DEFAULT_POINTS_CONFIG, presetForConfig, type PointsConfig } from '@/lib/league';
 import RegisterButton from '@/components/RegisterButton';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import { formatDateOrRange } from '@/lib/format';
 
 type Tournament = {
   id: string;
@@ -16,7 +17,7 @@ type Tournament = {
   num_promoted: number;
   num_relegated: number;
   num_rounds: number;
-  final_end: string | null;
+  final_end_text: string | null;
   is_public: boolean;
   color: string | null;
   description: string | null;
@@ -46,11 +47,6 @@ type Division = {
   player_count: string;
   matches_played: string;
 };
-
-function fmt(d: string | null) {
-  if (!d) return '-';
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-}
 
 function pointsTypeName(config: PointsConfig | null): string {
   const preset = presetForConfig(config);
@@ -83,7 +79,7 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
   const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin';
   const today = new Date().toISOString().split('T')[0];
 
-  const tRows = await sql`SELECT * FROM tournaments WHERE id = ${tid}`;
+  const tRows = await sql`SELECT *, final_end::text AS final_end_text FROM tournaments WHERE id = ${tid}`;
   if (tRows.length === 0) notFound();
   const tournament = tRows[0] as unknown as Tournament;
 
@@ -193,7 +189,13 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
 
       <CollapsibleSection
         title="Tournament Details"
-        meta={<span className="text-xs text-gray-400">{fmt(roundSchedule[0]?.start_date ?? null)} - {fmt(roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end)}</span>}
+        meta={<span className="text-xs text-gray-400">
+          {formatDateOrRange(
+            roundSchedule[0]?.start_date ?? null,
+            roundSchedule[roundSchedule.length - 1]?.end_date ?? tournament.final_end_text,
+            { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }
+          )}
+        </span>}
       >
         <div className="text-sm text-gray-400 space-y-1">
           <p><span className="font-semibold text-gray-500">Round:</span> {String(current_round)} of {tournament.num_rounds}</p>
@@ -269,7 +271,9 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
               <div key={r} className="flex items-center justify-between px-4 py-3">
                 <div>
                   <span className="text-sm text-gray-700">Round {r}</span>
-                  <span className="block text-xs text-gray-400 mt-0.5">{fmt(start_date)} - {fmt(end_date)}</span>
+                  <span className="block text-xs text-gray-400 mt-0.5">
+                    {formatDateOrRange(start_date, end_date, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                  </span>
                 </div>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
                   hasEnded ? 'bg-slate-100 text-slate-500'

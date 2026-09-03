@@ -3,6 +3,7 @@ import sql from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
 import RegistrationForm from '@/components/RegistrationForm';
+import WithdrawRegistrationButton from '@/components/WithdrawRegistrationButton';
 import type { RegistrationQuestion } from '@/lib/registration';
 
 export default async function TournamentRegisterPage({ params }: { params: Promise<{ tournamentId: string }> }) {
@@ -72,6 +73,11 @@ export default async function TournamentRegisterPage({ params }: { params: Promi
               answers: (registration.answers as Record<string, string> | null) ?? {},
             } : null}
           />
+          {registration && (
+            <div className="mt-4">
+              <WithdrawRegistrationButton tournamentId={tournament.id as string} redirectHref={backHref} />
+            </div>
+          )}
         </>
       )}
     </div>

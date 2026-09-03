@@ -7,6 +7,7 @@ import RegisterButton from '@/components/RegisterButton';
 import ArchivedLeaguesSection from './ArchivedLeaguesSection';
 import ArchiveLeagueButton from './ArchiveLeagueButton';
 import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
+import { formatDateOrRange } from '@/lib/format';
 
 type League = {
   id: string;
@@ -90,9 +91,12 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
             }
           </span>
           <p className="text-xs text-gray-400">
-            {t.start_date ? new Date(t.start_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }) : ''}
-            {' - '}
-            {new Date((t.final_end_text ?? t.final_end) as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+            {formatDateOrRange(
+              t.start_date,
+              t.final_end_text ?? t.final_end,
+              { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' },
+              { day: 'numeric', month: 'short', timeZone: 'UTC' }
+            )}
           </p>
         </div>
       </div>
@@ -106,6 +110,8 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
   // For doubles: max_players = pair count; unitCount = current pairs
   const unitCount = isDoubles ? Math.floor(playerCount / 2) : playerCount;
   const totalPossible = Math.floor(unitCount * (unitCount - 1) / 2);
+  const isOneDay = new Date(league.season_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    === new Date(league.season_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(league.id, league.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
       <Link href={`/tournaments/${league.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name} />
@@ -122,6 +128,9 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
           <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
             {canJoin && <JoinLeagueButton leagueId={league.id} />}
             {canArchive && <ArchiveLeagueButton leagueId={league.id} />}
+            {isOneDay && (
+              <span className="hidden sm:inline text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">One-Day</span>
+            )}
             {!league.is_public && (
               <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>
             )}
@@ -156,9 +165,12 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
             }
           </span>
           <p className="text-xs text-gray-400">
-            {new Date(league.season_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-            {' - '}
-            {new Date(league.season_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+            {formatDateOrRange(
+              league.season_start,
+              league.season_end,
+              { day: 'numeric', month: 'short', year: 'numeric' },
+              { day: 'numeric', month: 'short' }
+            )}
           </p>
         </div>
       </div>

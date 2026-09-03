@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { formatDateOrRange } from '@/lib/format';
 
 type Row = {
   id: string;
@@ -18,11 +19,6 @@ type Row = {
   start_date: string | null;
   end_date: string | null;
 };
-
-function fmt(d: string | null) {
-  if (!d) return '';
-  return new Date(d).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
-}
 
 export default async function AdminLeaguesPage() {
   const session = await auth();
@@ -97,7 +93,9 @@ export default async function AdminLeaguesPage() {
                       </span>
                       <span className="text-xs text-gray-400">Played: {Number(t.matches_played)}</span>
                     </div>
-                    <p className="text-xs text-gray-400 shrink-0">{fmt(t.start_date)} - {fmt(t.end_date)}</p>
+                    <p className="text-xs text-gray-400 shrink-0">
+                      {formatDateOrRange(t.start_date, t.end_date, { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' })}
+                    </p>
                   </div>
                 </div>
               );

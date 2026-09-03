@@ -8,7 +8,9 @@ import StandingsRow from './StandingsRow';
 import ArchiveLeagueButton from '../ArchiveLeagueButton';
 import LeaveLeagueButton from '@/components/LeaveLeagueButton';
 import ScoringRulesInfo from '@/components/ScoringRulesInfo';
+import RegisterButton from '@/components/RegisterButton';
 import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
+import { formatDateOrRange } from '@/lib/format';
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,11 +24,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
     ? await sql`SELECT id, name, format, description, status, has_registration_form, max_registrations FROM tournaments WHERE id = ${league.tournament_id}`
     : [];
   const tournament = tRows[0];
+  const userId = session?.user?.id;
 
   let registrationCount = 0;
+  let isRegistered = false;
   if (tournament?.has_registration_form) {
     const [{ count }] = await sql`SELECT COUNT(*) FROM tournament_registrations WHERE tournament_id = ${tournament.id}`;
     registrationCount = Number(count);
+    if (userId) {
+      const regRows = await sql`SELECT 1 FROM tournament_registrations WHERE tournament_id = ${tournament.id} AND player_id = ${userId}`;
+      isRegistered = regRows.length > 0;
+    }
   }
   const isMultiDivision = tournament?.format === 'multi';
   // A current-round division counts as active whenever its parent tournament is active.
@@ -140,8 +148,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
   const injuredIds = new Set(players.filter((p) => p.is_injured).map((p) => p.id as string));
 
-  const isInLeague = players.some((p) => p.id === session?.user?.id);
-  const userId = session?.user?.id;
+  const isInLeague = players.some((p) => p.id === userId);
 
   const memberRow = userId && isInLeague ? await sql`
     SELECT user_archived FROM league_players WHERE league_id = ${id} AND player_id = ${userId}
@@ -176,9 +183,12 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       </div>
       <div className="flex items-center justify-between mb-2 gap-2">
         <p className="text-sm text-gray-400">
-          {new Date(league.season_start as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}
-          {' - '}
-          {new Date(league.season_end as string).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
+          {formatDateOrRange(
+            league.season_start as string,
+            league.season_end as string,
+            { day: 'numeric', month: 'long', year: 'numeric' },
+            { day: 'numeric', month: 'long' }
+          )}
           {tournament?.has_registration_form && (
             <> | Registered: {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</>
           )}
@@ -198,6 +208,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
             </span>
           </div>
+          {tournament?.has_registration_form && !isInLeague && league.status === 'upcoming' && (
+            <RegisterButton tournamentId={tournament.id} isRegistered={isRegistered} />
+          )}
           {isInLeague && league.status === 'upcoming' && league.join_type === 'open_invite' && (
             <LeaveLeagueButton leagueId={id} />
           )}
@@ -281,7 +294,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
       <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">Results</h2>
       {matches.length === 0 ? (
         <div className="bg-white rounded-xl border border-gray-200 p-6 text-center text-gray-400 text-sm">
-          No results yet.
+          No results yet
         </div>
       ) : (
         <div className="space-y-2">

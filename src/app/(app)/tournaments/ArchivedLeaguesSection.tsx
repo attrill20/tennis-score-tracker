@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { formatDateOrRange } from '@/lib/format';
 
 type ArchivedLeague = {
   id: string;
@@ -31,9 +32,12 @@ function ArchivedLeagueCard({ league }: { league: ArchivedLeague }) {
           Players: {league.player_count} | Games Played: {league.matches_played}/{totalPossible}
         </span>
         <p className="text-xs text-gray-400">
-          {new Date(league.season_start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
-          {' - '}
-          {new Date(league.season_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
+          {formatDateOrRange(
+            league.season_start,
+            league.season_end,
+            { day: 'numeric', month: 'short', year: 'numeric' },
+            { day: 'numeric', month: 'short' }
+          )}
         </p>
       </div>
     </Link>
