@@ -525,31 +525,22 @@ export default async function DashboardPage() {
                     {league.status === 'completed' && (
                       <ArchiveLeagueButton leagueId={id} />
                     )}
-                    <span
-                      className={`sm:hidden inline-block w-2.5 h-2.5 rounded-full ${
-                        effStatus === 'active'
-                          ? 'bg-green-500'
-                          : effStatus === 'upcoming'
-                          ? 'bg-blue-500'
-                          : 'bg-slate-400'
-                      }`}
-                      role="img"
-                      aria-label={effStatus}
-                    />
-                    <span className={`hidden sm:inline-block text-xs px-2 py-0.5 rounded-full ${
+                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${
                       effStatus === 'active'
                         ? 'bg-green-100 text-green-700'
                         : effStatus === 'upcoming'
                         ? 'bg-blue-100 text-blue-700'
                         : 'bg-slate-100 text-slate-600'
                     }`}>
-                      {effStatus.charAt(0).toUpperCase() + effStatus.slice(1)}
+                      {effStatus === 'upcoming' ? 'Registered' : effStatus.charAt(0).toUpperCase() + effStatus.slice(1)}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   {effStatus === 'upcoming' ? (
-                    <span className="text-xs text-gray-400">Players Registered: {league.player_count as string}/{league.max_players as number}</span>
+                    <span className="text-xs text-gray-400">
+                      {isMultiDivision ? 'Awaiting for division to be assigned' : 'Awaiting tournament to begin'}
+                    </span>
                   ) : stats && (effStatus === 'active' || effStatus === 'completed') ? (
                     <span className="text-xs text-gray-400">
                       {league.status === 'completed'

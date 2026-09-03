@@ -84,7 +84,10 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
         </div>
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-gray-400">
-            {t.num_divisions} divisions | {t.status === 'upcoming' ? `${t.num_rounds} rounds` : `Round ${Number(t.current_round)} of ${t.num_rounds}`}
+            {t.num_divisions} divisions
+            <span className="hidden sm:inline">
+              {' | '}{t.status === 'upcoming' ? `${t.num_rounds} rounds` : `Round ${Number(t.current_round)} of ${t.num_rounds}`}
+            </span>
             {t.status === 'upcoming'
               ? t.has_registration_form && <> | Registered: {Number(t.registration_count)}</>
               : <> | Players: {Number(t.player_count)}</>
