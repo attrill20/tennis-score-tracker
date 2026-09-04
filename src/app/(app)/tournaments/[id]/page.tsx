@@ -32,13 +32,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const adminRows = adminId
     ? tournamentIdForAdmins
       ? await sql`
-          SELECT id, first_name, last_name, title, avatar_url FROM profiles WHERE id = ${adminId}
-          UNION
-          SELECT p.id, p.first_name, p.last_name, p.title, p.avatar_url
+          SELECT id, first_name, last_name, title, avatar_url, 0 AS sort_order, NULL::timestamptz AS added_at
+          FROM profiles WHERE id = ${adminId}
+          UNION ALL
+          SELECT p.id, p.first_name, p.last_name, p.title, p.avatar_url, 1 AS sort_order, ta.added_at
           FROM tournament_admins ta
           JOIN profiles p ON p.id = ta.admin_id AND p.role IN ('admin', 'super_admin')
-          WHERE ta.tournament_id = ${tournamentIdForAdmins}
-          ORDER BY last_name, first_name
+          WHERE ta.tournament_id = ${tournamentIdForAdmins} AND ta.admin_id != ${adminId}
+          ORDER BY sort_order, added_at
         `
       : await sql`SELECT id, first_name, last_name, title, avatar_url FROM profiles WHERE id = ${adminId}`
     : [];

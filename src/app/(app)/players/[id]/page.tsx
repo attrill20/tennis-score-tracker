@@ -114,20 +114,41 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
         {showContactDetails && (
           <>
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Contact Info</h2>
-            <div>
-              <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">
-                {player.phone ? 'Phone' : 'Email'}
-              </p>
-              {player.phone ? (
-                <a href={`tel:${player.phone as string}`} className="text-sm text-green-700 hover:underline">
-                  {player.phone as string}
-                </a>
-              ) : (
-                <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
-                  {player.email as string}
-                </a>
-              )}
-            </div>
+            {targetIsAdmin ? (
+              <div className="space-y-3">
+                {player.email && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Email</p>
+                    <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
+                      {player.email as string}
+                    </a>
+                  </div>
+                )}
+                {player.phone && (
+                  <div>
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">Phone</p>
+                    <a href={`tel:${player.phone as string}`} className="text-sm text-green-700 hover:underline">
+                      {player.phone as string}
+                    </a>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-0.5">
+                  {player.phone ? 'Phone' : 'Email'}
+                </p>
+                {player.phone ? (
+                  <a href={`tel:${player.phone as string}`} className="text-sm text-green-700 hover:underline">
+                    {player.phone as string}
+                  </a>
+                ) : (
+                  <a href={`mailto:${player.email as string}`} className="text-sm text-green-700 hover:underline">
+                    {player.email as string}
+                  </a>
+                )}
+              </div>
+            )}
           </>
         )}
 
