@@ -10,6 +10,7 @@ import AdminMatchesSection from './AdminMatchesSection';
 import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
 import PlaceholderMatchNotice from '@/components/PlaceholderMatchNotice';
+import TournamentAdminsPanel from '@/components/TournamentAdminsPanel';
 import { getPlaceholderNameMatchesForTournament } from '@/lib/placeholders';
 
 export default async function AdminLeagueDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -63,11 +64,21 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
   const leagueType = (league.league_type as string) ?? 'singles';
 
   const [tournamentRow] = league.tournament_id
-    ? await sql`SELECT format, has_registration_form, registration_questions FROM tournaments WHERE id = ${league.tournament_id}`
+    ? await sql`SELECT format, has_registration_form, registration_questions, created_by FROM tournaments WHERE id = ${league.tournament_id}`
     : [];
   const hasRegistrationForm = (tournamentRow?.has_registration_form as boolean) ?? false;
   const registrationQuestions = (tournamentRow?.registration_questions as import('@/lib/registration').RegistrationQuestion[] | null) ?? [];
   const isMultiFormat = tournamentRow?.format === 'multi';
+  const tournamentCreatorId = (tournamentRow?.created_by as string | undefined) ?? (league.created_by as string | undefined) ?? null;
+
+  const adminOptions = league.tournament_id
+    ? await sql`
+        SELECT id, (first_name || ' ' || last_name) AS full_name, avatar_url
+        FROM profiles
+        WHERE role IN ('admin', 'super_admin') AND deleted_at IS NULL
+        ORDER BY first_name, last_name
+      `
+    : [];
 
   const placeholderMatches = league.tournament_id
     ? await getPlaceholderNameMatchesForTournament(league.tournament_id as string)
@@ -137,6 +148,17 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         isMultiFormat={isMultiFormat}
         manageTournamentHref={isMultiFormat ? `/admin/tournaments/multi/${league.tournament_id as string}` : undefined}
       />
+
+      {league.tournament_id && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h2 className="text-base font-semibold text-gray-700 mb-4">Additional admins</h2>
+          <TournamentAdminsPanel
+            tournamentId={league.tournament_id as string}
+            adminOptions={adminOptions as { id: string; full_name: string; avatar_url: string | null }[]}
+            creatorId={tournamentCreatorId}
+          />
+        </div>
+      )}
 
       {hasRegistrationForm && (
         <RegistrationsPanel

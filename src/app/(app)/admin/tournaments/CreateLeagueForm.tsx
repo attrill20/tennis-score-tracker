@@ -7,6 +7,7 @@ import LeagueColorPicker from '@/components/LeagueColorPicker';
 import AssignPlayersPanel from '@/components/AssignPlayersPanel';
 import PointsConfigFields from '@/components/PointsConfigFields';
 import RegistrationQuestionsBuilder from '@/components/RegistrationQuestionsBuilder';
+import AdminsPicker from '@/components/AdminsPicker';
 import { LEAGUE_COLOR_KEYS, type LeagueColorKey } from '@/lib/leagueColor';
 import { type PointsConfig } from '@/lib/league';
 import { DEFAULT_REGISTRATION_QUESTIONS, type RegistrationQuestion } from '@/lib/registration';
@@ -19,10 +20,19 @@ type Member = {
   placeholder_alias?: string | null;
   placeholder_anonymized?: boolean;
 };
+type AdminOption = { id: string; full_name: string; avatar_url: string | null };
 type Division = { id: string; name: string; order: number };
 type Created = { tournamentId: string; format: 'single' | 'multi'; divisions: Division[] };
 
-export default function CreateLeagueForm({ members = [] }: { members?: Member[] }) {
+export default function CreateLeagueForm({
+  members = [],
+  adminOptions = [],
+  currentUserId,
+}: {
+  members?: Member[];
+  adminOptions?: AdminOption[];
+  currentUserId?: string;
+}) {
   const [format, setFormat] = useState<'single' | 'multi'>('single');
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
@@ -44,6 +54,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
   const [hasRegistrationForm, setHasRegistrationForm] = useState(false);
   const [maxRegistrations, setMaxRegistrations] = useState('');
   const [registrationQuestions, setRegistrationQuestions] = useState<RegistrationQuestion[]>([]);
+  const [additionalAdminIds, setAdditionalAdminIds] = useState<string[]>([]);
 
   // Multi-league fields
   const [numDivisions, setNumDivisions] = useState(3);
@@ -96,6 +107,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             hasRegistrationForm,
             maxRegistrations: hasRegistrationForm && maxRegistrations !== '' ? Number(maxRegistrations) : null,
             registrationQuestions: hasRegistrationForm ? registrationQuestions : [],
+            additionalAdminIds,
           }
         : {
             format,
@@ -117,6 +129,7 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
             numRelegated,
             hasRegistrationForm,
             registrationQuestions: hasRegistrationForm ? registrationQuestions : [],
+            additionalAdminIds,
           };
 
     const res = await fetch('/api/admin/tournaments', {
@@ -491,6 +504,21 @@ export default function CreateLeagueForm({ members = [] }: { members?: Member[] 
           </div>
         )}
       </div>
+
+      {adminOptions.length > 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-3">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Additional admins <span className="text-gray-400 font-normal">(optional)</span></label>
+            <p className="text-xs text-gray-400 mt-0.5">Other admins who can help manage this tournament. You&apos;ll be added as its creator automatically</p>
+          </div>
+          <AdminsPicker
+            adminOptions={adminOptions}
+            selectedIds={additionalAdminIds}
+            onChange={setAdditionalAdminIds}
+            excludeId={currentUserId}
+          />
+        </div>
+      )}
 
       <div>
         <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>

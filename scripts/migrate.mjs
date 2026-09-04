@@ -167,6 +167,17 @@ const statements = [
   // Enforce email uniqueness case-insensitively - the app already lowercases on read/write,
   // this closes the gap at the database level.
   `CREATE UNIQUE INDEX IF NOT EXISTS profiles_email_lower_idx ON profiles (LOWER(email))`,
+
+  // Additional admins a tournament's owner can add to help manage it. Purely organisational -
+  // every admin/super_admin already has global permission to manage any tournament, so this
+  // table only drives the "League Admin(s)" display and who shows up in the admins picker.
+  `CREATE TABLE IF NOT EXISTS tournament_admins (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    tournament_id UUID NOT NULL REFERENCES tournaments(id) ON DELETE CASCADE,
+    admin_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
+    added_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (tournament_id, admin_id)
+  )`,
 ];
 
 async function migrate() {

@@ -9,7 +9,7 @@ import ArchiveLeagueButton from '../ArchiveLeagueButton';
 import LeaveLeagueButton from '@/components/LeaveLeagueButton';
 import ScoringRulesInfo from '@/components/ScoringRulesInfo';
 import RegisterButton from '@/components/RegisterButton';
-import PlayerAvatar from '@/components/PlayerAvatar';
+import LeagueAdminsLine from '@/components/LeagueAdminsLine';
 import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
 import { formatDateOrRange } from '@/lib/format';
 
@@ -28,11 +28,25 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const userId = session?.user?.id;
 
   const adminId = (tournament?.created_by as string | undefined) ?? (league.created_by as string | undefined);
+  const tournamentIdForAdmins = tournament?.id as string | undefined;
   const adminRows = adminId
-    ? await sql`SELECT first_name, last_name, title, avatar_url FROM profiles WHERE id = ${adminId}`
+    ? tournamentIdForAdmins
+      ? await sql`
+          SELECT id, first_name, last_name, title, avatar_url FROM profiles WHERE id = ${adminId}
+          UNION
+          SELECT p.id, p.first_name, p.last_name, p.title, p.avatar_url
+          FROM tournament_admins ta
+          JOIN profiles p ON p.id = ta.admin_id AND p.role IN ('admin', 'super_admin')
+          WHERE ta.tournament_id = ${tournamentIdForAdmins}
+          ORDER BY last_name, first_name
+        `
+      : await sql`SELECT id, first_name, last_name, title, avatar_url FROM profiles WHERE id = ${adminId}`
     : [];
-  const admin = adminRows[0];
-  const adminName = admin ? [admin.title, admin.first_name, admin.last_name].filter(Boolean).join(' ') : null;
+  const admins = adminRows.map((a) => ({
+    id: a.id as string,
+    name: [a.title, a.first_name, a.last_name].filter(Boolean).join(' '),
+    avatarUrl: (a.avatar_url as string | null) ?? null,
+  }));
 
   let registrationCount = 0;
   let isRegistered = false;
@@ -231,18 +245,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           )}
         </div>
       </div>
-      {(description || adminName) && (
+      {(description || admins.length > 0) && (
         <div className="mb-6 space-y-2">
           {description && <p className="text-sm text-gray-600">{description}</p>}
-          {adminName && (
-            <div className="flex items-center gap-1.5">
-              <span className="text-sm font-semibold text-gray-600">League Admin:</span>
-              <Link href={`/players/${adminId}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
-                <PlayerAvatar name={adminName} avatarUrl={(admin?.avatar_url as string) ?? null} size="sm" />
-                <span className="text-sm text-gray-600">{adminName}</span>
-              </Link>
-            </div>
-          )}
+          <LeagueAdminsLine admins={admins} textClassName="text-gray-600" />
         </div>
       )}
 

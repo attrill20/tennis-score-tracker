@@ -7,6 +7,7 @@ import DeleteTournamentButton from './DeleteTournamentButton';
 import RegistrationsPanel from '@/components/RegistrationsPanel';
 import AssignDivisionsPanel from '@/components/AssignDivisionsPanel';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import TournamentAdminsPanel from '@/components/TournamentAdminsPanel';
 import PlaceholderMatchNotice from '@/components/PlaceholderMatchNotice';
 import { getPlaceholderNameMatchesForTournament } from '@/lib/placeholders';
 import { computeSuggestedDivisions, type RegistrationQuestion } from '@/lib/registration';
@@ -31,6 +32,7 @@ type Tournament = {
   scoring_method: string;
   points_config: PointsConfig | null;
   zero_matches_policy: 'relegate' | 'double_relegate' | 'remove';
+  created_by: string | null;
 };
 
 type Division = {
@@ -71,6 +73,13 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
     ORDER BY l.division_order ASC
   `) as unknown as Division[];
   const isCurrentRoundUpcoming = divisions.length > 0 && divisions[0].status === 'upcoming';
+
+  const adminOptions = await sql`
+    SELECT id, (first_name || ' ' || last_name) AS full_name, avatar_url
+    FROM profiles
+    WHERE role IN ('admin', 'super_admin') AND deleted_at IS NULL
+    ORDER BY first_name, last_name
+  `;
 
   const placeholderMatches = await getPlaceholderNameMatchesForTournament(tournament.id);
 
@@ -182,6 +191,14 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
       {isCurrentRoundUpcoming && (
         <AssignDivisionsPanel tournamentId={tournament.id} tournamentName={tournament.name} />
       )}
+
+      <CollapsibleSection title="Additional admins">
+        <TournamentAdminsPanel
+          tournamentId={tournament.id}
+          adminOptions={adminOptions as { id: string; full_name: string; avatar_url: string | null }[]}
+          creatorId={tournament.created_by}
+        />
+      </CollapsibleSection>
 
       {tournament.has_registration_form && (
         <RegistrationsPanel

@@ -19,6 +19,13 @@ export default async function NewLeaguePage() {
     ORDER BY first_name, last_name
   `;
 
+  const adminOptions = await sql`
+    SELECT id, (first_name || ' ' || last_name) AS full_name, avatar_url
+    FROM profiles
+    WHERE role IN ('admin', 'super_admin') AND deleted_at IS NULL
+    ORDER BY first_name, last_name
+  `;
+
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-6">
@@ -29,14 +36,18 @@ export default async function NewLeaguePage() {
       </div>
 
       <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <CreateLeagueForm members={members as {
-          id: string;
-          full_name: string;
-          is_placeholder: boolean;
-          placeholder_alias: string | null;
-          placeholder_anonymized: boolean;
-          is_unverified: boolean;
-        }[]} />
+        <CreateLeagueForm
+          members={members as {
+            id: string;
+            full_name: string;
+            is_placeholder: boolean;
+            placeholder_alias: string | null;
+            placeholder_anonymized: boolean;
+            is_unverified: boolean;
+          }[]}
+          adminOptions={adminOptions as { id: string; full_name: string; avatar_url: string | null }[]}
+          currentUserId={session!.user.id}
+        />
       </div>
     </div>
   );

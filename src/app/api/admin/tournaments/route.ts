@@ -21,6 +21,26 @@ function statusForStart(startDate: string): 'upcoming' | 'active' {
   return startDate > today ? 'upcoming' : 'active';
 }
 
+// Additional admins picked at creation time - purely organisational (every admin/super_admin
+// already has global permission to manage any tournament), so this just seeds the same
+// tournament_admins rows the post-creation "Additional admins" picker manages.
+async function addTournamentCoAdmins(tournamentId: string, creatorId: string, adminIds: unknown): Promise<void> {
+  if (!Array.isArray(adminIds) || adminIds.length === 0) return;
+  const ids = [...new Set(adminIds.filter((id): id is string => typeof id === 'string' && id !== creatorId))];
+  if (ids.length === 0) return;
+
+  const validAdmins = await sql`
+    SELECT id FROM profiles WHERE id = ANY(${ids}::uuid[]) AND role IN ('admin', 'super_admin') AND deleted_at IS NULL
+  `;
+  for (const { id } of validAdmins) {
+    await sql`
+      INSERT INTO tournament_admins (tournament_id, admin_id)
+      VALUES (${tournamentId}, ${id})
+      ON CONFLICT (tournament_id, admin_id) DO NOTHING
+    `;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const session = await auth();
   if (session?.user?.role !== 'admin' && session?.user?.role !== 'super_admin') {
@@ -47,6 +67,7 @@ export async function POST(req: NextRequest) {
     maxRegistrations,
     registrationQuestions,
     zeroMatchesPolicy,
+    additionalAdminIds,
   } = body;
 
   if (!name) {
@@ -141,6 +162,8 @@ export async function POST(req: NextRequest) {
       divisions.push({ id: div.id as string, name: divName, order });
     }
 
+    await addTournamentCoAdmins(tournamentId, session.user.id, additionalAdminIds);
+
     return NextResponse.json({ tournamentId, format: 'multi', divisions }, { status: 201 });
   }
 
@@ -161,6 +184,8 @@ export async function POST(req: NextRequest) {
     VALUES (${name}, ${startDate}, ${endDate}, ${status ?? statusForStart(startDate)}, ${playerCount}, ${scoringMethod}, ${promoted}, ${relegated}, ${resolvedTiebreaker}, ${session.user.id}, ${isPub}, ${resolvedJoinType}, ${description ?? null}, ${resolvedLeagueType}, ${resolvedColor}, ${tournamentId}, 1, 1, ${pointsConfigToStore}, ${resolvedGenderCategory})
     RETURNING id
   `;
+
+  await addTournamentCoAdmins(tournamentId, session.user.id, additionalAdminIds);
 
   return NextResponse.json({ tournamentId, format: 'single', divisions: [{ id: div.id as string, name, order: 1 }] }, { status: 201 });
 }
