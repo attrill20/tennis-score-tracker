@@ -12,7 +12,7 @@ export default function RegisterButton({ tournamentId, isRegistered }: { tournam
         onClick={() => router.push(`/tournaments/register/${tournamentId}`)}
         className={`cursor-pointer text-xs font-medium px-2 py-1 rounded-full transition-colors whitespace-nowrap ${
           isRegistered
-            ? 'bg-amber-100 hover:bg-amber-200 text-amber-700'
+            ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-700'
             : 'bg-green-700 hover:bg-green-800 text-white'
         }`}
       >

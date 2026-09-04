@@ -61,7 +61,7 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
             <span className="font-medium text-gray-800">{t.name}</span>
             {t.status === 'upcoming' && (
               t.is_member ? (
-                <span className="sm:hidden shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700 whitespace-nowrap">Registered</span>
+                <span className="sm:hidden shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Registered</span>
               ) : t.has_registration_form ? (
                 <div className="sm:hidden shrink-0">
                   <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
@@ -81,7 +81,7 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
             </span>
             {t.status === 'upcoming' && (
               t.is_member ? (
-                <span className="hidden sm:inline text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">Registered</span>
+                <span className="hidden sm:inline text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700">Registered</span>
               ) : t.has_registration_form ? (
                 <div className="hidden sm:block shrink-0">
                   <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
@@ -134,7 +134,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
               {canJoin && <JoinLeagueButton leagueId={league.id} />}
               {league.status === 'upcoming' && (
                 league.is_member ? (
-                  <span className="shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700 whitespace-nowrap">Registered</span>
+                  <span className="shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Registered</span>
                 ) : league.has_registration_form && league.tournament_id ? (
                   <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
                 ) : null
@@ -165,7 +165,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
             </span>
             {league.status === 'upcoming' && (
               league.is_member ? (
-                <span className="hidden sm:inline text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">Registered</span>
+                <span className="hidden sm:inline text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700">Registered</span>
               ) : league.has_registration_form && league.tournament_id ? (
                 <div className="hidden sm:block shrink-0">
                   <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
