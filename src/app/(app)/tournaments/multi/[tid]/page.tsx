@@ -125,6 +125,28 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
     ORDER BY l.division_order ASC
   `) as unknown as Division[];
 
+  // Draft assignments are never shown to members before the round goes active - admins get an
+  // early look here so they can sanity-check who's currently assigned to each division.
+  const showDraftRosters = isAdmin && divisions.length > 0 && divisions[0].status === 'upcoming';
+  const draftRosterRows = showDraftRosters
+    ? await sql`
+        SELECT lpd.league_id,
+               CASE WHEN p.is_placeholder AND p.placeholder_anonymized THEN p.placeholder_alias ELSE (p.first_name || ' ' || p.last_name) END AS full_name
+        FROM league_player_drafts lpd
+        JOIN profiles p ON p.id = lpd.player_id
+        JOIN leagues l ON l.id = lpd.league_id
+        WHERE l.tournament_id = ${tid} AND l.round_number = ${current_round}
+        ORDER BY full_name
+      `
+    : [];
+  const draftRosterByDivision = new Map<string, string[]>();
+  for (const row of draftRosterRows) {
+    const key = row.league_id as string;
+    const names = draftRosterByDivision.get(key) ?? [];
+    names.push(row.full_name as string);
+    draftRosterByDivision.set(key, names);
+  }
+
   let canView = tournament.is_public || isAdmin;
   if (!canView) {
     const membership = await sql`
@@ -262,6 +284,13 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
                   <div>
                     <span className="block font-medium text-gray-800">{d.name}</span>
                     <span className="block text-xs text-gray-400 mt-0.5">Players: {playerCount}/{d.max_players}</span>
+                    {showDraftRosters && (
+                      <span className="block text-xs text-gray-500 mt-1">
+                        Assigned: {(draftRosterByDivision.get(d.id) ?? []).length > 0
+                          ? draftRosterByDivision.get(d.id)!.join(', ')
+                          : 'None yet'}
+                      </span>
+                    )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
                     {myDivisionIds.has(d.id) && tournamentActive && (

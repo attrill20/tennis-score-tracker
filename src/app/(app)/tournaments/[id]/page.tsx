@@ -10,12 +10,14 @@ import LeaveLeagueButton from '@/components/LeaveLeagueButton';
 import ScoringRulesInfo from '@/components/ScoringRulesInfo';
 import RegisterButton from '@/components/RegisterButton';
 import LeagueAdminsLine from '@/components/LeagueAdminsLine';
+import PlayerAvatar from '@/components/PlayerAvatar';
 import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
 import { formatDateOrRange } from '@/lib/format';
 
 export default async function LeaguePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
+  const isAdmin = session?.user?.role === 'admin' || session?.user?.role === 'super_admin';
 
   const leagues = await sql`SELECT * FROM leagues WHERE id = ${id}`;
   const league = leagues[0];
@@ -178,6 +180,30 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   ` : [];
   const userArchived = (memberRow[0]?.user_archived as boolean) ?? false;
 
+  // Draft assignments are never shown to members before the round goes active - admins get an
+  // early look here so they can sanity-check who's currently assigned to this division.
+  const showDraftRoster = isAdmin && league.status === 'upcoming';
+  const draftPlayerRows = showDraftRoster
+    ? await sql`
+        SELECT p.id,
+               CASE WHEN p.is_placeholder AND p.placeholder_anonymized THEN p.placeholder_alias ELSE (p.first_name || ' ' || p.last_name) END AS full_name,
+               p.avatar_url, p.is_placeholder, lpd.partner_id,
+               CASE WHEN pp.is_placeholder AND pp.placeholder_anonymized THEN pp.placeholder_alias ELSE (pp.first_name || ' ' || pp.last_name) END AS partner_full_name
+        FROM profiles p
+        JOIN league_player_drafts lpd ON lpd.player_id = p.id
+        LEFT JOIN profiles pp ON pp.id = lpd.partner_id
+        WHERE lpd.league_id = ${id}
+        ORDER BY p.last_name, p.first_name
+      `
+    : [];
+  const seenDraftIds = new Set<string>();
+  const draftPlayers = draftPlayerRows.filter((p) => {
+    if (seenDraftIds.has(p.id as string)) return false;
+    seenDraftIds.add(p.id as string);
+    if (p.partner_id) seenDraftIds.add(p.partner_id as string);
+    return true;
+  });
+
   return (
     <div>
       {isMultiDivision ? (
@@ -253,71 +279,97 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
         </div>
       )}
 
-      {/* Tournament Table */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-1.5">
-          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
-          <ScoringRulesInfo pointsConfig={pointsConfig} />
-        </div>
-        {isInLeague && divisionActive && (
-          <Link
-            href={`/tournaments/${id}/submit`}
-            className="text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
-          >
-            Submit a result
-          </Link>
-        )}
-      </div>
-      <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} overflow-x-auto mb-6`}>
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="bg-gray-50 text-gray-500 text-xs">
-              <th className="text-left px-4 py-3 font-medium">Player</th>
-              <th className="text-center px-2 py-3 font-medium">P</th>
-              <th className="text-center px-2 py-3 font-medium">W</th>
-              <th className="text-center px-2 py-3 font-medium">D</th>
-              <th className="text-center px-2 py-3 font-medium">L</th>
-              <th className="text-center px-2 py-3 font-medium">Sets</th>
-              <th className="text-center px-2 py-3 font-medium">Pts</th>
-            </tr>
-          </thead>
-          <tbody>
-            {displayStandings.map((s, i) => {
-              const numPromoted = league.num_promoted as number ?? 0;
-              const numRelegated = league.num_relegated as number ?? 0;
-              const total = displayStandings.length;
-              const isPromotion = numPromoted > 0 && i < numPromoted;
-              const isRelegation = numRelegated > 0 && i >= total - numRelegated;
-              const rowClass = isPromotion ? 'bg-green-50' : isRelegation ? 'bg-red-50' : '';
-              return (
-                <StandingsRow
-                  key={s.id}
-                  playerId={s.id}
-                  userId={userId}
-                  name={s.name}
-                  avatarUrl={s.avatarUrl}
-                  isPlaceholder={s.isPlaceholder}
-                  isInjured={injuredIds.has(s.id)}
-                  position={i + 1}
-                  played={s.played}
-                  won={s.won}
-                  drawn={s.drawn}
-                  lost={s.lost}
-                  setsFor={s.setsFor}
-                  setsAgainst={s.setsAgainst}
-                  points={s.points}
-                  rowClass={rowClass}
-                  partnerId={s.partnerId}
-                  partnerName={s.partnerName}
-                  isPartnerInjured={s.isPartnerInjured}
-                  partnerAvatarUrl={s.partnerAvatarUrl}
-                  partnerIsPlaceholder={s.partnerIsPlaceholder}
-                />
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      {showDraftRoster ? (
+        <>
+          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-1">Assigned players</h2>
+          <p className="text-xs text-gray-400 mb-3">Draft only - not visible to members until this division goes active</p>
+          <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} mb-6`}>
+            {draftPlayers.length === 0 ? (
+              <p className="text-sm text-gray-400 p-4">No players assigned yet</p>
+            ) : (
+              <div className="divide-y divide-gray-100">
+                {draftPlayers.map((p) => (
+                  <div key={p.id as string} className="flex items-center gap-2 px-4 py-2.5">
+                    <PlayerAvatar name={p.full_name as string} avatarUrl={(p.avatar_url as string) ?? null} size="sm" />
+                    <span className="text-sm text-gray-800">
+                      {p.full_name as string}
+                      {p.partner_full_name ? ` / ${p.partner_full_name as string}` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Tournament Table */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-1.5">
+              <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
+              <ScoringRulesInfo pointsConfig={pointsConfig} />
+            </div>
+            {isInLeague && divisionActive && (
+              <Link
+                href={`/tournaments/${id}/submit`}
+                className="text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
+              >
+                Submit a result
+              </Link>
+            )}
+          </div>
+          <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} overflow-x-auto mb-6`}>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-gray-500 text-xs">
+                  <th className="text-left px-4 py-3 font-medium">Player</th>
+                  <th className="text-center px-2 py-3 font-medium">P</th>
+                  <th className="text-center px-2 py-3 font-medium">W</th>
+                  <th className="text-center px-2 py-3 font-medium">D</th>
+                  <th className="text-center px-2 py-3 font-medium">L</th>
+                  <th className="text-center px-2 py-3 font-medium">Sets</th>
+                  <th className="text-center px-2 py-3 font-medium">Pts</th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayStandings.map((s, i) => {
+                  const numPromoted = league.num_promoted as number ?? 0;
+                  const numRelegated = league.num_relegated as number ?? 0;
+                  const total = displayStandings.length;
+                  const isPromotion = numPromoted > 0 && i < numPromoted;
+                  const isRelegation = numRelegated > 0 && i >= total - numRelegated;
+                  const rowClass = isPromotion ? 'bg-green-50' : isRelegation ? 'bg-red-50' : '';
+                  return (
+                    <StandingsRow
+                      key={s.id}
+                      playerId={s.id}
+                      userId={userId}
+                      name={s.name}
+                      avatarUrl={s.avatarUrl}
+                      isPlaceholder={s.isPlaceholder}
+                      isInjured={injuredIds.has(s.id)}
+                      position={i + 1}
+                      played={s.played}
+                      won={s.won}
+                      drawn={s.drawn}
+                      lost={s.lost}
+                      setsFor={s.setsFor}
+                      setsAgainst={s.setsAgainst}
+                      points={s.points}
+                      rowClass={rowClass}
+                      partnerId={s.partnerId}
+                      partnerName={s.partnerName}
+                      isPartnerInjured={s.isPartnerInjured}
+                      partnerAvatarUrl={s.partnerAvatarUrl}
+                      partnerIsPlaceholder={s.partnerIsPlaceholder}
+                    />
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       {/* Submit Score */}
       {/* Recent Results */}

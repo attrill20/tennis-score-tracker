@@ -87,6 +87,7 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
   let pendingRegistrations: {
     id: string; player_id: string; full_name: string; phone: string | null; email: string;
     ability_level: string; answers: Record<string, string>; suggested_division: number | null;
+    current_division_id: string | null; current_division_name: string | null;
   }[] = [];
   const registrationQuestions = tournament.registration_questions ?? [];
 
@@ -103,6 +104,16 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
       ORDER BY r.created_at ASC
     `;
 
+    const currentRoundDrafts = await sql`
+      SELECT lpd.player_id, l.id AS league_id, l.name AS league_name
+      FROM league_player_drafts lpd
+      JOIN leagues l ON l.id = lpd.league_id
+      WHERE l.tournament_id = ${tid} AND l.round_number = ${current_round}
+    `;
+    const draftByPlayer = new Map(
+      currentRoundDrafts.map((r) => [r.player_id as string, { id: r.league_id as string, name: r.league_name as string }])
+    );
+
     const suggestions = computeSuggestedDivisions(
       rows.map((r) => ({
         id: r.id as string,
@@ -112,16 +123,21 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
       tournament.num_divisions
     );
 
-    pendingRegistrations = rows.map((r) => ({
-      id: r.id as string,
-      player_id: r.player_id as string,
-      full_name: r.full_name as string,
-      phone: r.phone as string | null,
-      email: r.email as string,
-      ability_level: r.ability_level as string,
-      answers: (r.answers as Record<string, string> | null) ?? {},
-      suggested_division: suggestions.get(r.id as string) ?? null,
-    }));
+    pendingRegistrations = rows.map((r) => {
+      const draft = draftByPlayer.get(r.player_id as string);
+      return {
+        id: r.id as string,
+        player_id: r.player_id as string,
+        full_name: r.full_name as string,
+        phone: r.phone as string | null,
+        email: r.email as string,
+        ability_level: r.ability_level as string,
+        answers: (r.answers as Record<string, string> | null) ?? {},
+        suggested_division: suggestions.get(r.id as string) ?? null,
+        current_division_id: draft?.id ?? null,
+        current_division_name: draft?.name ?? null,
+      };
+    });
   }
 
   return (
@@ -207,6 +223,8 @@ export default async function AdminMultiTournamentPage({ params }: { params: Pro
           maxRegistrations={tournament.max_registrations}
           divisions={divisions.map((d) => ({ id: d.id, name: d.name, order: d.division_order }))}
           questions={registrationQuestions}
+          tournamentId={tournament.id}
+          isDraft={isCurrentRoundUpcoming}
         />
       )}
 

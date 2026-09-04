@@ -84,6 +84,10 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
     ? await getPlaceholderNameMatchesForTournament(league.tournament_id as string)
     : [];
 
+  const draftPlayerIds = hasRegistrationForm
+    ? new Set((await sql`SELECT player_id FROM league_player_drafts WHERE league_id = ${id}`).map((r) => r.player_id as string))
+    : new Set<string>();
+
   const pendingRegistrations = hasRegistrationForm
     ? (await sql`
         SELECT r.id, r.player_id, (p.first_name || ' ' || p.last_name) AS full_name, p.phone, p.email,
@@ -101,6 +105,8 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
         ability_level: r.ability_level as string,
         answers: (r.answers as Record<string, string> | null) ?? {},
         suggested_division: 1,
+        current_division_id: draftPlayerIds.has(r.player_id as string) ? id : null,
+        current_division_name: draftPlayerIds.has(r.player_id as string) ? (league.name as string) : null,
       }))
     : [];
 
@@ -167,6 +173,8 @@ export default async function AdminLeagueDetailPage({ params }: { params: Promis
           maxRegistrations={null}
           divisions={[{ id, name: league.name as string, order: 1 }]}
           questions={registrationQuestions}
+          tournamentId={league.tournament_id as string}
+          isDraft={league.status === 'upcoming'}
         />
       )}
 

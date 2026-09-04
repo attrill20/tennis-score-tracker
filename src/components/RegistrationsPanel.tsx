@@ -14,6 +14,8 @@ type Registration = {
   ability_level: string;
   answers: Record<string, string>;
   suggested_division: number | null;
+  current_division_id?: string | null;
+  current_division_name?: string | null;
 };
 
 type Division = { id: string; name: string; order: number };
@@ -24,12 +26,16 @@ export default function RegistrationsPanel({
   maxRegistrations,
   divisions,
   questions,
+  tournamentId,
+  isDraft,
 }: {
   registrations: Registration[];
   registrationCount: number;
   maxRegistrations: number | null;
   divisions: Division[];
   questions: RegistrationQuestion[];
+  tournamentId: string;
+  isDraft: boolean;
 }) {
   const router = useRouter();
   const [choice, setChoice] = useState<Record<string, string>>({});
@@ -37,18 +43,28 @@ export default function RegistrationsPanel({
   const [error, setError] = useState('');
 
   const divisionsBySuggestedOrder = (order: number | null) => divisions.find((d) => d.order === order)?.id ?? '';
+  const defaultChoice = (r: Registration) => r.current_division_id || divisionsBySuggestedOrder(r.suggested_division);
 
   async function assign(registration: Registration) {
-    const divisionId = choice[registration.id] || divisionsBySuggestedOrder(registration.suggested_division);
+    const divisionId = choice[registration.id] || defaultChoice(registration);
     if (!divisionId) return;
     setError('');
     setAssigning(registration.id);
     try {
-      const res = await fetch(`/api/admin/leagues/${divisionId}/players`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerIds: [registration.player_id] }),
-      });
+      // While the round is still a draft (upcoming), the "move" endpoint removes any existing
+      // draft row for this player across the round's divisions before adding the new one - a
+      // plain insert would otherwise leave them drafted into two divisions at once.
+      const res = isDraft
+        ? await fetch(`/api/admin/tournaments/${tournamentId}/assign-divisions/move`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerId: registration.player_id, targetLeagueId: divisionId }),
+          })
+        : await fetch(`/api/admin/leagues/${divisionId}/players`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ playerIds: [registration.player_id] }),
+          });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to assign player');
       router.refresh();
@@ -84,7 +100,7 @@ export default function RegistrationsPanel({
                   <div className="flex items-center gap-2">
                     <select
                       aria-label={`Division for ${r.full_name}`}
-                      value={choice[r.id] ?? divisionsBySuggestedOrder(r.suggested_division)}
+                      value={choice[r.id] ?? defaultChoice(r)}
                       onChange={(e) => setChoice((prev) => ({ ...prev, [r.id]: e.target.value }))}
                       className="text-xs px-2 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-green-500"
                     >
@@ -96,10 +112,10 @@ export default function RegistrationsPanel({
                     <button
                       type="button"
                       onClick={() => assign(r)}
-                      disabled={assigning === r.id || !(choice[r.id] || divisionsBySuggestedOrder(r.suggested_division))}
+                      disabled={assigning === r.id || !(choice[r.id] || defaultChoice(r))}
                       className="text-xs bg-green-700 hover:bg-green-800 disabled:opacity-40 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
                     >
-                      {assigning === r.id ? 'Assigning...' : 'Assign'}
+                      {assigning === r.id ? (r.current_division_id ? 'Moving...' : 'Assigning...') : (r.current_division_id ? 'Move' : 'Assign')}
                     </button>
                   </div>
                 </div>
@@ -108,7 +124,12 @@ export default function RegistrationsPanel({
                   <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">
                     {ABILITY_LEVEL_LABELS[r.ability_level as AbilityLevel] ?? r.ability_level}
                   </span>
-                  {r.suggested_division && (
+                  {r.current_division_id && (
+                    <span className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded-full font-medium">
+                      Currently assigned: {r.current_division_name ?? divisions.find((d) => d.id === r.current_division_id)?.name}
+                    </span>
+                  )}
+                  {!r.current_division_id && r.suggested_division && (
                     <span className="text-xs bg-amber-50 text-amber-700 px-2 py-0.5 rounded-full font-medium">
                       Suggested: {divisions.find((d) => d.order === r.suggested_division)?.name ?? `Division ${r.suggested_division}`}
                     </span>
