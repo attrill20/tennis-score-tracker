@@ -12,9 +12,13 @@ export default async function PlayerPage({ params }: { params: Promise<{ id: str
   const role = session!.user.role as string;
   const isAdmin = role === 'admin' || role === 'super_admin';
 
-  let showContactDetails = isAdmin || id === userId;
+  const roleRows = await sql`SELECT role FROM profiles WHERE id = ${id}`;
+  if (roleRows.length === 0) notFound();
+  const targetIsAdmin = roleRows[0].role === 'admin' || roleRows[0].role === 'super_admin';
 
-  if (!isAdmin && id !== userId) {
+  let showContactDetails = isAdmin || id === userId || targetIsAdmin;
+
+  if (!isAdmin && id !== userId && !targetIsAdmin) {
     const shared = await sql`
       SELECT 1
       FROM league_players lp1

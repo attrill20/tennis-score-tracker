@@ -9,6 +9,7 @@ import ArchiveLeagueButton from '../ArchiveLeagueButton';
 import LeaveLeagueButton from '@/components/LeaveLeagueButton';
 import ScoringRulesInfo from '@/components/ScoringRulesInfo';
 import RegisterButton from '@/components/RegisterButton';
+import PlayerAvatar from '@/components/PlayerAvatar';
 import { GENDER_CATEGORY_LABELS } from '@/lib/genderCategory';
 import { formatDateOrRange } from '@/lib/format';
 
@@ -21,10 +22,17 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   if (!league) notFound();
 
   const tRows = league.tournament_id
-    ? await sql`SELECT id, name, format, description, status, has_registration_form, max_registrations FROM tournaments WHERE id = ${league.tournament_id}`
+    ? await sql`SELECT id, name, format, description, status, has_registration_form, max_registrations, created_by FROM tournaments WHERE id = ${league.tournament_id}`
     : [];
   const tournament = tRows[0];
   const userId = session?.user?.id;
+
+  const adminId = (tournament?.created_by as string | undefined) ?? (league.created_by as string | undefined);
+  const adminRows = adminId
+    ? await sql`SELECT first_name, last_name, title, avatar_url FROM profiles WHERE id = ${adminId}`
+    : [];
+  const admin = adminRows[0];
+  const adminName = admin ? [admin.title, admin.first_name, admin.last_name].filter(Boolean).join(' ') : null;
 
   let registrationCount = 0;
   let isRegistered = false;
@@ -223,8 +231,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           )}
         </div>
       </div>
-      {description && (
-        <p className="text-sm text-gray-600 mb-6">{description}</p>
+      {(description || adminName) && (
+        <div className="mb-6 space-y-2">
+          {description && <p className="text-sm text-gray-600">{description}</p>}
+          {adminName && (
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-semibold text-gray-600">League Admin:</span>
+              <Link href={`/players/${adminId}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+                <PlayerAvatar name={adminName} avatarUrl={(admin?.avatar_url as string) ?? null} size="sm" />
+                <span className="text-sm text-gray-600">{adminName}</span>
+              </Link>
+            </div>
+          )}
+        </div>
       )}
 
       {/* Tournament Table */}

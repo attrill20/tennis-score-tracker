@@ -6,6 +6,7 @@ import { leagueBorderColor } from '@/lib/leagueColor';
 import { SCORING_METHOD_LABELS, DEFAULT_POINTS_CONFIG, presetForConfig, type PointsConfig } from '@/lib/league';
 import RegisterButton from '@/components/RegisterButton';
 import CollapsibleSection from '@/components/CollapsibleSection';
+import PlayerAvatar from '@/components/PlayerAvatar';
 import { formatDateOrRange } from '@/lib/format';
 
 type Tournament = {
@@ -24,6 +25,7 @@ type Tournament = {
   has_registration_form: boolean;
   max_registrations: number | null;
   zero_matches_policy: 'relegate' | 'double_relegate' | 'remove';
+  created_by: string | null;
 };
 
 const ZERO_MATCHES_POLICY_LABELS: Record<Tournament['zero_matches_policy'], string> = {
@@ -82,6 +84,12 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
   const tRows = await sql`SELECT *, final_end::text AS final_end_text FROM tournaments WHERE id = ${tid}`;
   if (tRows.length === 0) notFound();
   const tournament = tRows[0] as unknown as Tournament;
+
+  const adminRows = tournament.created_by
+    ? await sql`SELECT first_name, last_name, title, avatar_url FROM profiles WHERE id = ${tournament.created_by}`
+    : [];
+  const admin = adminRows[0];
+  const adminName = admin ? [admin.title, admin.first_name, admin.last_name].filter(Boolean).join(' ') : null;
 
   // A single-division tournament has no overview - send the user straight to its division.
   if (tournament.format !== 'multi') {
@@ -189,6 +197,15 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
           </div>
         </div>
         {tournament.description && <p className="text-sm text-gray-500 mt-2">{tournament.description}</p>}
+        {adminName && (
+          <div className="flex items-center gap-1.5 mt-2">
+            <span className="text-sm font-semibold text-gray-500">League Admin:</span>
+            <Link href={`/players/${tournament.created_by}`} className="flex items-center gap-1.5 hover:opacity-80 transition-opacity">
+              <PlayerAvatar name={adminName} avatarUrl={(admin?.avatar_url as string) ?? null} size="sm" />
+              <span className="text-sm text-gray-500">{adminName}</span>
+            </Link>
+          </div>
+        )}
       </div>
 
       <CollapsibleSection
