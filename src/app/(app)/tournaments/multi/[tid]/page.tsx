@@ -171,8 +171,12 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
             }`}>
               {tournament.status.charAt(0).toUpperCase() + tournament.status.slice(1)}
             </span>
-            {tournament.has_registration_form && !isMember && tournament.status === 'upcoming' && (
-              <RegisterButton tournamentId={tournament.id} isRegistered={isRegistered} />
+            {tournament.status === 'upcoming' && (
+              isMember ? (
+                <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">Registered</span>
+              ) : tournament.has_registration_form ? (
+                <RegisterButton tournamentId={tournament.id} isRegistered={isRegistered} />
+              ) : null
             )}
             {isAdmin && (
               <Link

@@ -59,10 +59,14 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2">
           <div className="flex items-center justify-between gap-2">
             <span className="font-medium text-gray-800">{t.name}</span>
-            {t.has_registration_form && !t.is_member && t.status === 'upcoming' && (
-              <div className="sm:hidden shrink-0">
-                <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
-              </div>
+            {t.status === 'upcoming' && (
+              t.is_member ? (
+                <span className="sm:hidden shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700 whitespace-nowrap">Registered</span>
+              ) : t.has_registration_form ? (
+                <div className="sm:hidden shrink-0">
+                  <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
+                </div>
+              ) : null
             )}
           </div>
           <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
@@ -75,10 +79,14 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
             }`}>
               {t.status.charAt(0).toUpperCase() + t.status.slice(1)}
             </span>
-            {t.has_registration_form && !t.is_member && t.status === 'upcoming' && (
-              <div className="hidden sm:block shrink-0">
-                <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
-              </div>
+            {t.status === 'upcoming' && (
+              t.is_member ? (
+                <span className="hidden sm:inline text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">Registered</span>
+              ) : t.has_registration_form ? (
+                <div className="hidden sm:block shrink-0">
+                  <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
+                </div>
+              ) : null
             )}
           </div>
         </div>
@@ -89,7 +97,7 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
               {' | '}{t.status === 'upcoming' ? `${t.num_rounds} rounds` : `Round ${Number(t.current_round)} of ${t.num_rounds}`}
             </span>
             {t.status === 'upcoming'
-              ? t.has_registration_form && <> | Registered: {Number(t.registration_count)}</>
+              ? <> | Registered: {Number(t.has_registration_form ? t.registration_count : t.player_count)}</>
               : <> | Players: {Number(t.player_count)}</>
             }
           </span>
@@ -122,14 +130,18 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2">
           <div className="flex items-center justify-between gap-2">
             <span className="font-medium text-gray-800">{league.name}</span>
-            {league.has_registration_form && !league.is_member && league.status === 'upcoming' && league.tournament_id && (
-              <div className="sm:hidden shrink-0">
-                <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
-              </div>
-            )}
+            <div className="sm:hidden flex items-center gap-2 shrink-0">
+              {canJoin && <JoinLeagueButton leagueId={league.id} />}
+              {league.status === 'upcoming' && (
+                league.is_member ? (
+                  <span className="shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700 whitespace-nowrap">Registered</span>
+                ) : league.has_registration_form && league.tournament_id ? (
+                  <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+                ) : null
+              )}
+            </div>
           </div>
           <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
-            {canJoin && <JoinLeagueButton leagueId={league.id} />}
             {canArchive && <ArchiveLeagueButton leagueId={league.id} />}
             {isOneDay && (
               <span className="hidden sm:inline text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">One-Day</span>
@@ -151,9 +163,18 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
             }`}>
               {league.status.charAt(0).toUpperCase() + league.status.slice(1)}
             </span>
-            {league.has_registration_form && !league.is_member && league.status === 'upcoming' && league.tournament_id && (
+            {league.status === 'upcoming' && (
+              league.is_member ? (
+                <span className="hidden sm:inline text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">Registered</span>
+              ) : league.has_registration_form && league.tournament_id ? (
+                <div className="hidden sm:block shrink-0">
+                  <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+                </div>
+              ) : null
+            )}
+            {canJoin && (
               <div className="hidden sm:block shrink-0">
-                <RegisterButton tournamentId={league.tournament_id} isRegistered={league.is_registered} />
+                <JoinLeagueButton leagueId={league.id} />
               </div>
             )}
           </div>
@@ -161,7 +182,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
         <div className="flex items-center justify-between mt-2">
           <span className="text-xs text-gray-400">
             {league.status === 'upcoming'
-              ? league.has_registration_form && <>Registered: {Number(league.registration_count)}</>
+              ? <>Registered: {league.has_registration_form ? Number(league.registration_count) : (isDoubles ? unitCount : playerCount)}</>
               : isDoubles
               ? <>Pairs: {unitCount} | Games Played: {league.matches_played}/{totalPossible}</>
               : <>Players: {playerCount} | Games Played: {league.matches_played}/{totalPossible}</>

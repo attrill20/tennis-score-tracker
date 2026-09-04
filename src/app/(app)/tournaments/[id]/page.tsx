@@ -208,8 +208,12 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               {displayStatus.charAt(0).toUpperCase() + displayStatus.slice(1)}
             </span>
           </div>
-          {tournament?.has_registration_form && !isInLeague && league.status === 'upcoming' && (
-            <RegisterButton tournamentId={tournament.id} isRegistered={isRegistered} />
+          {league.status === 'upcoming' && (
+            isInLeague ? (
+              <span className="text-xs px-2 py-1 rounded-full font-medium bg-blue-100 text-blue-700">Registered</span>
+            ) : tournament?.has_registration_form ? (
+              <RegisterButton tournamentId={tournament.id} isRegistered={isRegistered} />
+            ) : null
           )}
           {isInLeague && league.status === 'upcoming' && league.join_type === 'open_invite' && (
             <LeaveLeagueButton leagueId={id} />

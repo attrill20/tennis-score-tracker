@@ -525,7 +525,7 @@ export default async function DashboardPage() {
                     {league.status === 'completed' && (
                       <ArchiveLeagueButton leagueId={id} />
                     )}
-                    <span className={`inline-block text-xs px-2 py-0.5 rounded-full ${
+                    <span className={`inline-block text-xs px-2 py-1 rounded-full font-medium ${
                       effStatus === 'active'
                         ? 'bg-green-100 text-green-700'
                         : effStatus === 'upcoming'
