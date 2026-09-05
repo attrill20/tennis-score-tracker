@@ -45,6 +45,8 @@ type MultiTournament = {
   color: string | null;
   is_public: boolean;
   current_round: number;
+  my_division_order: number | null;
+  my_division_id: string | null;
   is_member: boolean;
   has_registration_form: boolean;
   is_registered: boolean;
@@ -56,20 +58,39 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(t.id, t.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
       <Link href={`/tournaments/multi/${t.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={t.name} />
       <div className="relative">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0 sm:gap-2">
           <div className="flex items-center justify-between gap-2">
-            <span className="font-medium text-gray-800">{t.name}</span>
-            {t.status === 'upcoming' && (
-              t.is_member ? (
-                <span className="sm:hidden shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Registered</span>
-              ) : t.has_registration_form ? (
-                <div className="sm:hidden shrink-0">
+            <span className="font-medium text-gray-800">
+              {t.name}
+              {t.my_division_order != null && (
+                <span className="hidden sm:inline">: Division {Number(t.my_division_order)}</span>
+              )}
+            </span>
+            <div className="sm:hidden flex items-center gap-2 shrink-0">
+              {t.status === 'active' && t.my_division_id && (
+                <Link
+                  href={`/tournaments/${t.my_division_id}/submit`}
+                  className="relative z-20 inline-flex items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+                >
+                  Submit a result
+                </Link>
+              )}
+              {t.status === 'active' && (
+                <span className="relative inline-flex h-2.5 w-2.5" title="Active" aria-label="Active">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+                </span>
+              )}
+              {t.status === 'upcoming' && (
+                t.is_member ? (
+                  <span className="shrink-0 text-xs px-2 py-1 rounded-full font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">Registered</span>
+                ) : t.has_registration_form ? (
                   <RegisterButton tournamentId={t.id} isRegistered={t.is_registered} />
-                </div>
-              ) : null
-            )}
+                ) : null
+              )}
+            </div>
           </div>
-          <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
+          <div className="flex items-center flex-wrap gap-2 justify-end shrink-0">
             <span className="hidden sm:inline text-xs bg-yellow-100 text-yellow-700 px-2 py-1 rounded-full font-medium">Multi-league</span>
             {!t.is_public && <span className="text-xs bg-gray-100 text-gray-500 px-2 py-1 rounded-full font-medium">Private</span>}
             <span className={`hidden sm:inline text-xs px-2 py-1 rounded-full font-medium ${
@@ -88,9 +109,20 @@ function MultiTournamentCard({ t }: { t: MultiTournament }) {
                 </div>
               ) : null
             )}
+            {t.status === 'active' && t.my_division_id && (
+              <Link
+                href={`/tournaments/${t.my_division_id}/submit`}
+                className="hidden sm:inline-flex relative z-20 items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+              >
+                Submit a result
+              </Link>
+            )}
           </div>
         </div>
-        <div className="flex items-center justify-between mt-2">
+        {t.my_division_order != null && (
+          <span className="sm:hidden block text-xs text-gray-400 mt-0.5">Division: {Number(t.my_division_order)}</span>
+        )}
+        <div className="flex items-center justify-between mt-1 sm:mt-2">
           <span className="text-xs text-gray-400">
             {t.num_divisions} divisions
             <span className="hidden sm:inline">
@@ -127,10 +159,24 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(league.id, league.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
       <Link href={`/tournaments/${league.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name} />
       <div className="relative">
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1.5 sm:gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0 sm:gap-2">
           <div className="flex items-center justify-between gap-2">
             <span className="font-medium text-gray-800">{league.name}</span>
             <div className="sm:hidden flex items-center gap-2 shrink-0">
+              {league.status === 'active' && league.is_member && (
+                <Link
+                  href={`/tournaments/${league.id}/submit`}
+                  className="relative z-20 inline-flex items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+                >
+                  Submit a result
+                </Link>
+              )}
+              {league.status === 'active' && (
+                <span className="relative inline-flex h-2.5 w-2.5" title="Active" aria-label="Active">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+                </span>
+              )}
               {canJoin && <JoinLeagueButton leagueId={league.id} />}
               {league.status === 'upcoming' && (
                 league.is_member ? (
@@ -141,7 +187,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
               )}
             </div>
           </div>
-          <div className="flex items-center flex-wrap gap-2 justify-end sm:justify-start shrink-0">
+          <div className="flex items-center flex-wrap gap-2 justify-end shrink-0">
             {canArchive && <ArchiveLeagueButton leagueId={league.id} />}
             {isOneDay && (
               <span className="hidden sm:inline text-xs bg-orange-100 text-orange-700 px-2 py-1 rounded-full font-medium">One-Day</span>
@@ -177,9 +223,17 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
                 <JoinLeagueButton leagueId={league.id} />
               </div>
             )}
+            {league.status === 'active' && league.is_member && (
+              <Link
+                href={`/tournaments/${league.id}/submit`}
+                className="hidden sm:inline-flex relative z-20 items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+              >
+                Submit a result
+              </Link>
+            )}
           </div>
         </div>
-        <div className="flex items-center justify-between mt-2">
+        <div className="flex items-center justify-between mt-1 sm:mt-2">
           <span className="text-xs text-gray-400">
             {league.status === 'upcoming'
               ? <>Registered: {league.has_registration_form ? Number(league.registration_count) : (isDoubles ? unitCount : playerCount)}</>
@@ -202,7 +256,14 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
   );
 }
 
+// Active tournaments sort above upcoming/registered ones, which sort above completed ones.
+const statusPriority = (status: string) => status === 'active' ? 0 : status === 'upcoming' ? 1 : 2;
+
 function Section({ title, leagues, multis = [], joinableIds, archivableIds }: { title: string; leagues: League[]; multis?: MultiTournament[]; joinableIds: Set<string>; archivableIds: Set<string> }) {
+  const items = [
+    ...multis.map((t) => ({ priority: statusPriority(t.status), node: <MultiTournamentCard key={t.id} t={t} /> })),
+    ...leagues.map((l) => ({ priority: statusPriority(l.status), node: <LeagueCard key={l.id} league={l} canJoin={joinableIds.has(l.id)} canArchive={archivableIds.has(l.id)} /> })),
+  ].sort((a, b) => a.priority - b.priority);
   return (
     <div className="mb-8">
       <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">{title}</h2>
@@ -212,8 +273,7 @@ function Section({ title, leagues, multis = [], joinableIds, archivableIds }: { 
         </div>
       ) : (
         <div className="space-y-3">
-          {multis.map((t) => <MultiTournamentCard key={t.id} t={t} />)}
-          {leagues.map((l) => <LeagueCard key={l.id} league={l} canJoin={joinableIds.has(l.id)} canArchive={archivableIds.has(l.id)} />)}
+          {items.map((item) => item.node)}
         </div>
       )}
     </div>
@@ -264,6 +324,14 @@ export default async function LeaguesPage() {
        WHERE l3.tournament_id = t.id
          AND l3.round_number = (SELECT MAX(round_number) FROM leagues WHERE tournament_id = t.id)) AS player_count,
       (SELECT COALESCE(MAX(round_number), 1) FROM leagues WHERE tournament_id = t.id) AS current_round,
+      (SELECT l2.division_order FROM league_players lp JOIN leagues l2 ON l2.id = lp.league_id
+       WHERE l2.tournament_id = t.id AND lp.player_id = ${userId}
+         AND l2.round_number = (SELECT MAX(round_number) FROM leagues WHERE tournament_id = t.id)
+       LIMIT 1) AS my_division_order,
+      (SELECT lp.league_id FROM league_players lp JOIN leagues l2 ON l2.id = lp.league_id
+       WHERE l2.tournament_id = t.id AND lp.player_id = ${userId}
+         AND l2.round_number = (SELECT MAX(round_number) FROM leagues WHERE tournament_id = t.id)
+       LIMIT 1) AS my_division_id,
       EXISTS (
         SELECT 1 FROM league_players lp JOIN leagues l2 ON l2.id = lp.league_id
         WHERE l2.tournament_id = t.id AND lp.player_id = ${userId}

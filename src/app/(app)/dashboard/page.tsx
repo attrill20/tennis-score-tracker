@@ -20,7 +20,7 @@ export default async function DashboardPage() {
 
   const [leagues, profileRows, pendingRegistrations, placeholderMatches] = await Promise.all([
     sql`
-      SELECT l.id, l.name, l.status, l.season_start, l.season_end, l.league_type, l.color, l.max_players, l.points_config, lp.final_position,
+      SELECT l.id, l.name, l.status, l.division_order, l.season_start, l.season_end, l.league_type, l.color, l.max_players, l.points_config, lp.final_position,
         lp.started_seen, lp.ended_seen,
         t.name AS tournament_name, t.format AS tournament_format, t.status AS tournament_status,
         (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count
@@ -445,11 +445,13 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {pendingRegistrations.map((reg) => {
+          {[
+            ...pendingRegistrations.map((reg) => {
             const tournamentHref = reg.tournament_format === 'multi'
               ? `/tournaments/multi/${reg.tournament_id as string}`
               : `/tournaments/${reg.round1_league_id as string}`;
-            return (
+            const priority = reg.tournament_status === 'active' ? 0 : reg.tournament_status === 'upcoming' ? 1 : 2;
+            return { priority, node: (
             <div key={reg.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(reg.tournament_id as string, reg.tournament_color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
               <Link href={tournamentHref} className="absolute inset-0 rounded-xl z-10" aria-label={reg.tournament_name as string} />
               <div className="relative flex items-center justify-between gap-2">
@@ -479,9 +481,9 @@ export default async function DashboardPage() {
                 </p>
               </div>
             </div>
-            );
-          })}
-          {leagues.map((league) => {
+            ) };
+          }),
+            ...leagues.map((league) => {
             const id = league.id as string;
             const stats = leagueStats[id];
             const ordinal = (n: number) => {
@@ -495,6 +497,9 @@ export default async function DashboardPage() {
             const displayName = isMultiDivision
               ? `${league.tournament_name as string}: ${league.name as string}`
               : (league.name as string);
+            // Visible title omits the division name for multi-division leagues - the division
+            // number is shown separately (inline on desktop, on its own line on mobile).
+            const titleText = isMultiDivision ? (league.tournament_name as string) : (league.name as string);
             // A current-round (upcoming) division counts as active whenever its tournament is active.
             const effectiveActive = league.status === 'active' || (isMultiDivision && league.tournament_status === 'active' && league.status === 'upcoming');
             const effStatus = effectiveActive ? 'active' : (league.status as string);
@@ -507,25 +512,29 @@ export default async function DashboardPage() {
               : positionRatio <= 0.5 ? 'bg-yellow-100'
               : positionRatio <= 0.75 ? 'bg-amber-100'
               : 'bg-orange-100';
-            return (
+            const priority = effStatus === 'active' ? 0 : effStatus === 'upcoming' ? 1 : 2;
+            return { priority, node: (
             <div key={id} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
               <Link href={`/tournaments/${id}`} className="absolute inset-0 rounded-xl z-10" aria-label={displayName} />
               <div className="relative">
                 <div className="flex items-center justify-between">
-                  <span className="font-medium text-gray-800">{displayName}</span>
-                  <div className="flex items-center gap-2">
-                    {effectiveActive && (
-                      <Link
-                        href={`/tournaments/${id}/submit`}
-                        className="relative z-20 inline-flex items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
-                      >
-                        Submit a result
-                      </Link>
+                  <span className="font-medium text-gray-800">
+                    {titleText}
+                    {isMultiDivision && (
+                      <span className="hidden sm:inline">: Division {league.division_order as number}</span>
                     )}
+                  </span>
+                  <div className="flex items-center gap-2">
                     {league.status === 'completed' && (
                       <ArchiveLeagueButton leagueId={id} />
                     )}
-                    <span className={`inline-block text-xs px-2 py-1 rounded-full font-medium ${
+                    {effStatus === 'active' && (
+                      <span className="sm:hidden relative inline-flex h-2.5 w-2.5" title="Active" aria-label="Active">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+                      </span>
+                    )}
+                    <span className={`${effStatus === 'active' ? 'hidden sm:inline-block' : 'inline-block'} text-xs px-2 py-1 rounded-full font-medium ${
                       effStatus === 'active'
                         ? 'bg-green-100 text-green-700'
                         : effStatus === 'upcoming'
@@ -534,9 +543,20 @@ export default async function DashboardPage() {
                     }`}>
                       {effStatus === 'upcoming' ? 'Registered' : effStatus.charAt(0).toUpperCase() + effStatus.slice(1)}
                     </span>
+                    {effectiveActive && (
+                      <Link
+                        href={`/tournaments/${id}/submit`}
+                        className="relative z-20 inline-flex items-center justify-center whitespace-nowrap text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1 rounded-full transition-colors"
+                      >
+                        Submit a result
+                      </Link>
+                    )}
                   </div>
                 </div>
-                <div className="flex items-center justify-between mt-2">
+                {isMultiDivision && (
+                  <span className="sm:hidden block text-xs text-gray-400 mt-0.5">Division: {league.division_order as number}</span>
+                )}
+                <div className="flex items-center justify-between mt-1 sm:mt-2">
                   {effStatus === 'upcoming' ? (
                     <span className="text-xs text-gray-400">
                       {isMultiDivision ? 'Awaiting for division to be assigned' : 'Awaiting tournament to begin'}
@@ -560,8 +580,11 @@ export default async function DashboardPage() {
                 </div>
               </div>
             </div>
-            );
-          })}
+            ) };
+          }),
+          ]
+            .sort((a, b) => a.priority - b.priority)
+            .map((item) => item.node)}
         </div>
       )}
 

@@ -161,13 +161,13 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
   if (!canView) redirect('/tournaments');
 
   // Divisions (in the current round) the viewer plays in - so we can offer a submit-result shortcut.
-  const myDivisionIds = new Set(
-    (await sql`
-      SELECT lp.league_id FROM league_players lp
-      JOIN leagues l ON l.id = lp.league_id
-      WHERE l.tournament_id = ${tid} AND l.round_number = ${current_round} AND lp.player_id = ${userId}
-    `).map((r) => r.league_id as string)
-  );
+  const myDivisionRows = await sql`
+    SELECT lp.league_id, l.division_order FROM league_players lp
+    JOIN leagues l ON l.id = lp.league_id
+    WHERE l.tournament_id = ${tid} AND l.round_number = ${current_round} AND lp.player_id = ${userId}
+  `;
+  const myDivisionIds = new Set(myDivisionRows.map((r) => r.league_id as string));
+  const myDivisionOrder = myDivisionRows.length > 0 ? (myDivisionRows[0].division_order as number) : null;
   const tournamentActive = tournament.status === 'active';
 
   const isMemberRows = await sql`
@@ -269,6 +269,12 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
         </div>
       </CollapsibleSection>
 
+      {myDivisionOrder !== null && (
+        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+          <p className="text-sm text-green-800"><span className="font-semibold">Your division:</span> Division {myDivisionOrder}</p>
+        </div>
+      )}
+
       <div>
         <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">
           Round {String(current_round)} divisions
@@ -277,8 +283,9 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
           {divisions.map((d) => {
             const playerCount = Number(d.player_count);
             const totalPossible = Math.floor(playerCount * (playerCount - 1) / 2);
+            const isMine = myDivisionIds.has(d.id);
             return (
-              <div key={d.id} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(d.id, d.color)} p-4 hover:border-green-400 transition-colors`}>
+              <div key={d.id} className={`relative bg-white rounded-xl border-l-4 ${leagueBorderColor(d.id, d.color)} p-4 hover:border-green-400 transition-colors ${isMine ? 'border-2 border-green-600' : 'border border-gray-200'}`}>
                 <Link href={`/tournaments/${d.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={d.name} />
                 <div className="relative flex items-start justify-between gap-3">
                   <div>
@@ -293,7 +300,7 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
                     )}
                   </div>
                   <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    {myDivisionIds.has(d.id) && tournamentActive && (
+                    {isMine && tournamentActive && (
                       <Link
                         href={`/tournaments/${d.id}/submit`}
                         className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
