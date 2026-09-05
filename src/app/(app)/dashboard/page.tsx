@@ -453,7 +453,7 @@ export default async function DashboardPage() {
             const priority = reg.tournament_status === 'active' ? 0 : reg.tournament_status === 'upcoming' ? 1 : 2;
             return { priority, node: (
             <div key={reg.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(reg.tournament_id as string, reg.tournament_color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-              <Link href={tournamentHref} className="absolute inset-0 rounded-xl z-10" aria-label={reg.tournament_name as string} />
+              <Link href={tournamentHref} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label={reg.tournament_name as string} />
               <div className="relative flex items-center justify-between gap-2">
                 <span className="font-medium text-gray-800">{reg.tournament_name as string}</span>
                 <div className="flex items-center gap-2">
@@ -515,7 +515,7 @@ export default async function DashboardPage() {
             const priority = effStatus === 'active' ? 0 : effStatus === 'upcoming' ? 1 : 2;
             return { priority, node: (
             <div key={id} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-              <Link href={`/tournaments/${id}`} className="absolute inset-0 rounded-xl z-10" aria-label={displayName} />
+              <Link href={`/tournaments/${id}`} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label={displayName} />
               <div className="relative">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-800">
@@ -629,7 +629,7 @@ export default async function DashboardPage() {
 
             return (
               <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} overflow-hidden hover:border-green-400 transition-colors cursor-pointer`}>
-                <Link href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl z-10" />
+                <Link href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" />
                 <div className={`sm:hidden flex items-center justify-between gap-2 px-4 py-1 text-sm font-medium text-gray-700 ${barColor.bg}`}>
                   <span>{match.league_name as string}</span>
                   <span className="shrink-0 whitespace-nowrap text-xs">

@@ -18,6 +18,23 @@ const LEAGUE_BORDER_COLORS: Record<LeagueColorKey, string> = {
   sky:    'border-l-sky-300',
 };
 
+const LEAGUE_FULL_BORDER_COLORS: Record<LeagueColorKey, string> = {
+  blue:   'border-blue-300',
+  purple: 'border-purple-300',
+  orange: 'border-orange-300',
+  pink:   'border-pink-300',
+  teal:   'border-teal-300',
+  indigo: 'border-indigo-300',
+  cyan:   'border-cyan-300',
+  rose:   'border-rose-300',
+  yellow: 'border-yellow-300',
+  green:  'border-green-300',
+  lime:   'border-lime-300',
+  violet: 'border-violet-300',
+  amber:  'border-amber-300',
+  sky:    'border-sky-300',
+};
+
 const LEAGUE_RIGHT_BORDER_COLORS: Record<LeagueColorKey, string> = {
   blue:   'border-r-blue-300',
   purple: 'border-r-purple-300',
@@ -62,6 +79,10 @@ function resolveKey(leagueId: string, color?: string | null): LeagueColorKey {
 
 export function leagueBorderColor(leagueId: string, color?: string | null): string {
   return LEAGUE_BORDER_COLORS[resolveKey(leagueId, color)];
+}
+
+export function leagueFullBorderColor(leagueId: string, color?: string | null): string {
+  return LEAGUE_FULL_BORDER_COLORS[resolveKey(leagueId, color)];
 }
 
 export function leagueRightBorderColor(leagueId: string, color?: string | null): string {

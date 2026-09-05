@@ -2,8 +2,8 @@ import { auth } from '@/auth';
 import sql from '@/lib/db';
 import { redirect, notFound } from 'next/navigation';
 import Link from 'next/link';
-import { leagueBorderColor } from '@/lib/leagueColor';
-import { SCORING_METHOD_LABELS, DEFAULT_POINTS_CONFIG, presetForConfig, type PointsConfig } from '@/lib/league';
+import { leagueBorderColor, leagueFullBorderColor } from '@/lib/leagueColor';
+import { SCORING_METHOD_LABELS, DEFAULT_POINTS_CONFIG, presetForConfig, calculateStandings, type PointsConfig } from '@/lib/league';
 import RegisterButton from '@/components/RegisterButton';
 import CollapsibleSection from '@/components/CollapsibleSection';
 import LeagueAdminsLine from '@/components/LeagueAdminsLine';
@@ -44,11 +44,18 @@ type Division = {
   season_end: string;
   color: string | null;
   max_players: number;
+  league_type: string;
   scoring_method: string;
   points_config: PointsConfig | null;
   player_count: string;
   matches_played: string;
 };
+
+function ordinal(n: number): string {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] ?? s[v] ?? s[0]);
+}
 
 function pointsTypeName(config: PointsConfig | null): string {
   const preset = presetForConfig(config);
@@ -117,7 +124,7 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
 
   const divisions = (await sql`
     SELECT
-      l.id, l.name, l.status, l.division_order, l.round_number, l.season_start, l.season_end, l.color, l.max_players, l.scoring_method, l.points_config,
+      l.id, l.name, l.status, l.division_order, l.round_number, l.season_start, l.season_end, l.color, l.max_players, l.league_type, l.scoring_method, l.points_config,
       (SELECT COUNT(*) FROM league_players WHERE league_id = l.id) AS player_count,
       (SELECT COUNT(*) FROM matches m WHERE m.league_id = l.id) AS matches_played
     FROM leagues l
@@ -162,13 +169,75 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
 
   // Divisions (in the current round) the viewer plays in - so we can offer a submit-result shortcut.
   const myDivisionRows = await sql`
-    SELECT lp.league_id, l.division_order FROM league_players lp
+    SELECT lp.league_id FROM league_players lp
     JOIN leagues l ON l.id = lp.league_id
     WHERE l.tournament_id = ${tid} AND l.round_number = ${current_round} AND lp.player_id = ${userId}
   `;
   const myDivisionIds = new Set(myDivisionRows.map((r) => r.league_id as string));
-  const myDivisionOrder = myDivisionRows.length > 0 ? (myDivisionRows[0].division_order as number) : null;
   const tournamentActive = tournament.status === 'active';
+  const myDivision = divisions.find((d) => myDivisionIds.has(d.id)) ?? null;
+
+  // The viewer's own division shows their personal position/games-played rather than division-wide totals.
+  let myPosition: number | null = null;
+  let myPlayed = 0;
+  let myTotal = 0;
+  if (myDivision) {
+    const [myDivisionPlayers, myDivisionMatches] = await Promise.all([
+      sql`
+        SELECT p.id, (p.first_name || ' ' || p.last_name) AS full_name, lp.partner_id
+        FROM profiles p
+        JOIN league_players lp ON lp.player_id = p.id
+        WHERE lp.league_id = ${myDivision.id}
+      `,
+      sql`
+        SELECT player1_id, player2_id, player3_id, player4_id, score_player1, score_player2, status, match_type, winner_id
+        FROM matches WHERE league_id = ${myDivision.id}
+      `,
+    ]);
+    const players = myDivisionPlayers as unknown as { id: string; full_name: string; partner_id: string | null }[];
+    const matches = myDivisionMatches as unknown as {
+      player1_id: string;
+      player2_id: string;
+      player3_id?: string | null;
+      player4_id?: string | null;
+      score_player1: number;
+      score_player2: number;
+      status: string;
+      match_type?: string | null;
+      winner_id?: string | null;
+    }[];
+    const isDoubles = myDivision.league_type === 'doubles';
+    const pointsConfig = myDivision.points_config ?? undefined;
+    const standings = calculateStandings(players, matches, 'head_to_head', pointsConfig);
+    myPlayed = standings.find((s) => s.id === userId)?.played ?? 0;
+
+    if (isDoubles) {
+      const pairCount = Math.floor(players.length / 2);
+      myTotal = pairCount - 1;
+      const partnerMap: Record<string, string> = {};
+      for (const p of players) {
+        if (p.partner_id) partnerMap[p.id] = p.partner_id;
+      }
+      const seen = new Set<string>();
+      let pairPosition = 0;
+      let rank = 0;
+      for (const s of standings) {
+        if (seen.has(s.id)) continue;
+        rank++;
+        seen.add(s.id);
+        const partnerId = partnerMap[s.id];
+        if (partnerId) seen.add(partnerId);
+        if (s.id === userId || partnerId === userId) {
+          pairPosition = rank;
+          break;
+        }
+      }
+      myPosition = pairPosition;
+    } else {
+      myPosition = standings.findIndex((s) => s.id === userId) + 1;
+      myTotal = players.length - 1;
+    }
+  }
 
   const isMemberRows = await sql`
     SELECT 1 FROM league_players lp JOIN leagues l ON l.id = lp.league_id
@@ -198,6 +267,49 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
     WHERE t.id = ${tid}
     ORDER BY r
   `) as unknown as { round: number; start_date: string | null; end_date: string | null }[];
+  const currentRoundSchedule = roundSchedule.find((r) => r.round === current_round) ?? null;
+
+  const renderDivisionCard = (d: Division, isMine: boolean, highlight = true) => {
+    const playerCount = Number(d.player_count);
+    const totalPossible = Math.floor(playerCount * (playerCount - 1) / 2);
+    const leftColor = leagueBorderColor(d.id, d.color);
+    const fullColor = leagueFullBorderColor(d.id, d.color);
+    return (
+      <div key={d.id} className={`relative bg-white rounded-xl p-4 hover:shadow-md transition-shadow ${
+        isMine && highlight ? `border-2 ${fullColor} border-l-4 ${leftColor}` : `border border-gray-200 border-l-4 ${leftColor}`
+      }`}>
+        <Link href={`/tournaments/${d.id}`} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label={d.name} />
+        <div className="relative flex items-start justify-between gap-3">
+          <div>
+            <span className="block font-medium text-gray-800">{d.name}</span>
+            {showDraftRosters && (
+              <span className="block text-xs text-gray-500 mt-1">
+                Assigned: {(draftRosterByDivision.get(d.id) ?? []).length > 0
+                  ? draftRosterByDivision.get(d.id)!.join(', ')
+                  : 'None yet'}
+              </span>
+            )}
+          </div>
+          {isMine && tournamentActive && (
+            <Link
+              href={`/tournaments/${d.id}/submit`}
+              className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap shrink-0"
+            >
+              Submit a result
+            </Link>
+          )}
+        </div>
+        <div className="relative flex items-center justify-between mt-2">
+          <span className="text-xs text-gray-400">
+            {isMine ? <>Position: {myPosition && myPosition > 0 ? ordinal(myPosition) : 'N/A'} &nbsp; My Games: {myPlayed}/{myTotal}</> : <>Players: {playerCount}</>}
+          </span>
+          <span className="text-xs text-gray-400">
+            Games Played: {String(d.matches_played)}/{totalPossible}
+          </span>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -269,53 +381,30 @@ export default async function MultiTournamentPage({ params }: { params: Promise<
         </div>
       </CollapsibleSection>
 
-      {myDivisionOrder !== null && (
-        <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3">
-          <p className="text-sm text-green-800"><span className="font-semibold">Your division:</span> Division {myDivisionOrder}</p>
+      {myDivision && (
+        <div>
+          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">My Division</h2>
+          <div className="space-y-3">
+            {renderDivisionCard(myDivision, true, false)}
+          </div>
         </div>
       )}
 
       <div>
-        <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide mb-3">
-          Round {String(current_round)} divisions
-        </h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">
+            Round {String(current_round)} divisions
+          </h2>
+          <span className="text-xs text-gray-400">
+            {formatDateOrRange(
+              currentRoundSchedule?.start_date ?? null,
+              currentRoundSchedule?.end_date ?? null,
+              { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }
+            )}
+          </span>
+        </div>
         <div className="space-y-3">
-          {divisions.map((d) => {
-            const playerCount = Number(d.player_count);
-            const totalPossible = Math.floor(playerCount * (playerCount - 1) / 2);
-            const isMine = myDivisionIds.has(d.id);
-            return (
-              <div key={d.id} className={`relative bg-white rounded-xl border-l-4 ${leagueBorderColor(d.id, d.color)} p-4 hover:border-green-400 transition-colors ${isMine ? 'border-2 border-green-600' : 'border border-gray-200'}`}>
-                <Link href={`/tournaments/${d.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={d.name} />
-                <div className="relative flex items-start justify-between gap-3">
-                  <div>
-                    <span className="block font-medium text-gray-800">{d.name}</span>
-                    <span className="block text-xs text-gray-400 mt-0.5">Players: {playerCount}/{d.max_players}</span>
-                    {showDraftRosters && (
-                      <span className="block text-xs text-gray-500 mt-1">
-                        Assigned: {(draftRosterByDivision.get(d.id) ?? []).length > 0
-                          ? draftRosterByDivision.get(d.id)!.join(', ')
-                          : 'None yet'}
-                      </span>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-1.5 shrink-0">
-                    {isMine && tournamentActive && (
-                      <Link
-                        href={`/tournaments/${d.id}/submit`}
-                        className="relative z-20 text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors whitespace-nowrap"
-                      >
-                        Submit a result
-                      </Link>
-                    )}
-                    <span className="text-xs text-gray-400">
-                      Games Played: {String(d.matches_played)}/{totalPossible}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+          {divisions.map((d) => renderDivisionCard(d, myDivisionIds.has(d.id)))}
         </div>
       </div>
 

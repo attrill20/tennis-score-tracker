@@ -56,7 +56,7 @@ type MultiTournament = {
 function MultiTournamentCard({ t }: { t: MultiTournament }) {
   return (
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(t.id, t.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-      <Link href={`/tournaments/multi/${t.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={t.name} />
+      <Link href={`/tournaments/multi/${t.id}`} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label={t.name} />
       <div className="relative">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0 sm:gap-2">
           <div className="flex items-center justify-between gap-2">
@@ -157,7 +157,7 @@ function LeagueCard({ league, canJoin, canArchive }: { league: League; canJoin: 
     === new Date(league.season_end).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
   return (
     <div className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(league.id, league.color)} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-      <Link href={`/tournaments/${league.id}`} className="absolute inset-0 rounded-xl z-10" aria-label={league.name} />
+      <Link href={`/tournaments/${league.id}`} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" aria-label={league.name} />
       <div className="relative">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-0 sm:gap-2">
           <div className="flex items-center justify-between gap-2">

@@ -79,7 +79,7 @@ export default async function MyTournamentsPage() {
 
             return (
               <div key={t.id as string} className="relative bg-white rounded-xl border border-gray-200 p-4 hover:border-green-400 transition-colors cursor-pointer">
-                <Link href={`/tournaments/${t.id as string}`} className="absolute inset-0 rounded-xl z-10" />
+                <Link href={`/tournaments/${t.id as string}`} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" />
                 <div className="relative flex items-center gap-3">
                   <span className={`text-xs font-bold px-1.5 py-1 rounded shrink-0 self-center ${finalPosition != null ? positionBadgeClass(finalPosition) : (statusBadgeClass[status] ?? 'bg-gray-100 text-gray-500')}`}>
                     {finalPosition != null ? ordinal(finalPosition) : status.charAt(0).toUpperCase() + status.slice(1)}

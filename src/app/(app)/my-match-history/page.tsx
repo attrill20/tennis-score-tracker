@@ -142,7 +142,7 @@ export default async function MatchesPage() {
               <div key={match.id as string} className="relative bg-white rounded-xl border border-gray-200 overflow-hidden hover:border-green-400 transition-colors cursor-pointer">
                 <Link
                   href={canEdit ? `/tournaments/${match.league_id as string}/matches/${match.id as string}/edit` : `/tournaments/${match.league_id as string}/matches/${match.id as string}`}
-                  className="absolute inset-0 rounded-xl z-10"
+                  className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500"
                 />
                 <div className={`sm:hidden flex items-center justify-between gap-2 px-4 py-1 text-sm font-medium text-gray-700 ${barColor.bg}`}>
                   <span>{match.league_name as string}</span>

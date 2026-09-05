@@ -174,6 +174,8 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const injuredIds = new Set(players.filter((p) => p.is_injured).map((p) => p.id as string));
 
   const isInLeague = players.some((p) => p.id === userId);
+  const myPlayed = standings.find((s) => s.id === userId)?.played ?? 0;
+  const myTotal = displayStandings.length - 1;
 
   const memberRow = userId && isInLeague ? await sql`
     SELECT user_archived FROM league_players WHERE league_id = ${id} AND player_id = ${userId}
@@ -309,14 +311,19 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               <h2 className="text-sm font-semibold text-green-500 uppercase tracking-wide">Table</h2>
               <ScoringRulesInfo pointsConfig={pointsConfig} />
             </div>
-            {isInLeague && divisionActive && (
-              <Link
-                href={`/tournaments/${id}/submit`}
-                className="text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
-              >
-                Submit a result
-              </Link>
-            )}
+            <div className="flex items-center gap-2">
+              {isInLeague && (
+                <span className="text-xs text-gray-400">My Games: {myPlayed}/{myTotal}</span>
+              )}
+              {isInLeague && divisionActive && (
+                <Link
+                  href={`/tournaments/${id}/submit`}
+                  className="text-xs bg-green-700 hover:bg-green-800 text-white font-medium px-3 py-1.5 rounded-lg transition-colors"
+                >
+                  Submit a result
+                </Link>
+              )}
+            </div>
           </div>
           <div className={`bg-white rounded-xl border border-gray-200 border-l-4 ${leagueBorderColor(id, league.color as string | null)} overflow-x-auto mb-6`}>
             <table className="w-full text-sm">
@@ -431,7 +438,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
 
             return (
               <div key={match.id as string} className={`relative bg-white rounded-xl border border-gray-200 border-l-4 ${matchBorderColor} p-4 hover:border-green-400 transition-colors cursor-pointer`}>
-                <Link href={href} className="absolute inset-0 rounded-xl z-10" />
+                <Link href={href} className="absolute inset-0 rounded-xl z-10 focus:outline-none focus:ring-2 focus:ring-green-500" />
                 <div className="relative flex items-start gap-3">
                   <div className="flex flex-1 min-w-0 items-center gap-3">
                   <div className="w-8 shrink-0 flex justify-center">
