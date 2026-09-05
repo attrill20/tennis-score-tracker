@@ -177,6 +177,10 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
   const myPlayed = standings.find((s) => s.id === userId)?.played ?? 0;
   const myTotal = displayStandings.length - 1;
 
+  // Division-wide games played total, shown on desktop only.
+  const unitCount = isDoubles ? Math.floor(players.length / 2) : players.length;
+  const totalPossibleMatches = Math.floor(unitCount * (unitCount - 1) / 2);
+
   const memberRow = userId && isInLeague ? await sql`
     SELECT user_archived FROM league_players WHERE league_id = ${id} AND player_id = ${userId}
   ` : [];
@@ -240,11 +244,14 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
             { day: 'numeric', month: 'long', year: 'numeric' },
             { day: 'numeric', month: 'long' }
           )}
-          {tournament?.has_registration_form && (
+          {tournament?.has_registration_form && !isMultiDivision && (
             <> | Registered: {registrationCount}{tournament.max_registrations !== null ? ` / ${tournament.max_registrations}` : ''}</>
           )}
         </p>
         <div className="flex items-center gap-2">
+          {league.status !== 'upcoming' && (
+            <span className="hidden sm:inline text-xs text-gray-400 whitespace-nowrap">Games Played: {matches.length}/{totalPossibleMatches}</span>
+          )}
           <div className="flex sm:hidden items-center gap-2">
             {league.gender_category !== 'either' && league.gender_category !== 'open' && (
               <span className="text-xs bg-purple-100 text-purple-600 px-2 py-1 rounded-full font-medium">
@@ -274,9 +281,9 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
           )}
         </div>
       </div>
-      {(description || admins.length > 0) && (
+      {((description && !isMultiDivision) || admins.length > 0) && (
         <div className="mb-6 space-y-2">
-          {description && <p className="text-sm text-gray-600">{description}</p>}
+          {description && !isMultiDivision && <p className="text-sm text-gray-600">{description}</p>}
           <LeagueAdminsLine admins={admins} textClassName="text-gray-600" />
         </div>
       )}
@@ -312,7 +319,7 @@ export default async function LeaguePage({ params }: { params: Promise<{ id: str
               <ScoringRulesInfo pointsConfig={pointsConfig} />
             </div>
             <div className="flex items-center gap-2">
-              {isInLeague && (
+              {isInLeague && !isMultiDivision && (
                 <span className="text-xs text-gray-400">My Games: {myPlayed}/{myTotal}</span>
               )}
               {isInLeague && divisionActive && (
